@@ -2,6 +2,10 @@
 __version__ = "0.0.1"
 
 from nous.db import NousDB
+from nous.gap_detector import GapPattern, detect_gaps
+from nous.outcome import OutcomeType, backfill_outcome, get_pending_outcomes
+from nous.rule_proposer import propose_rule_fix, save_proposal
+from nous.ttl import TTLAlert, check_rule_ttl
 
 _db: NousDB | None = None
 
