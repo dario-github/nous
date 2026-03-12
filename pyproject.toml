@@ -1,0 +1,15 @@
+[project]
+name = "nous"
+version = "0.0.1"
+description = "Ontology-driven Agent Decision Engine"
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+cozo = ["pycozo>=0.7"]
+neo4j = ["neo4j>=5.0"]
+typedb = ["typedb-driver>=2.28"]
+dev = ["pytest>=8.0", "watchfiles>=1.0"]
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.backends._legacy:_Backend"
