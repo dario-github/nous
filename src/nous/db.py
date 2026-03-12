@@ -88,7 +88,9 @@ class NousDB:
                 facts: Json,
                 gates: Json,
                 latency_us: Int default 0,
-                outcome: String default ''
+                outcome: String default '',
+                proof_trace: Json,
+                schema_version: String default '1.0'
             }
             """,
             # Layer 1: 自治理
