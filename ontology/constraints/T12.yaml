@@ -1,0 +1,13 @@
+id: T12
+name: Discord 结构化输出格式要求
+priority: 75
+enabled: true
+trigger:
+  output_target: discord
+  content_is_structured: true
+verdict: require
+reason: "T12: Discord 结构化内容必须使用 Components v2 富文本卡片，禁止纯文本 Markdown 表格"
+metadata:
+  agents_md_ref: "T12 Discord 输出格式"
+  migrated_from: "interceptors.dl"
+  ttl_days: 90

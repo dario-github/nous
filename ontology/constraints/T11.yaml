@@ -1,0 +1,14 @@
+id: T11
+name: 搜索语言参数修正
+priority: 60
+enabled: true
+trigger:
+  search_lang: zh
+verdict: rewrite
+reason: "T11: search_lang=zh 需修正为 zh-hans"
+rewrite_params:
+  search_lang: zh-hans
+metadata:
+  agents_md_ref: "T11 搜索语言参数"
+  migrated_from: "interceptors.dl"
+  ttl_days: 90
