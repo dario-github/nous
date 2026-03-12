@@ -1,0 +1,14 @@
+id: T10
+name: 大文件写入防护
+priority: 70
+enabled: true
+trigger:
+  action_type: write_file
+  estimated_lines:
+    gt: 400
+verdict: warn
+reason: "T10: 单次写入超过 400 行，需分步骨架→填充→验证"
+metadata:
+  agents_md_ref: "T10 大文件截断防护"
+  migrated_from: "interceptors.dl"
+  ttl_days: 90

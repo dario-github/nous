@@ -1,0 +1,13 @@
+id: T3
+name: 不可逆操作确认
+priority: 100
+enabled: true
+trigger:
+  action_type:
+    in: [delete_file, modify_config, publish_post, exec_destructive, write_protected]
+verdict: block
+reason: "T3: 不可逆操作需确认"
+metadata:
+  agents_md_ref: "T3 不可逆确认"
+  migrated_from: "interceptors.dl"
+  ttl_days: 90
