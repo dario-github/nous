@@ -396,10 +396,19 @@ class TestFactExtractor:
         assert facts["estimated_lines"] == 500
 
     def test_extract_exec_tool(self):
-        """exec tool → action_type=exec_destructive"""
+        """非破坏性 exec → exec_command（不触发 T3）"""
         tool_call = {
             "tool_name": "exec",
             "command": "echo hello",
+        }
+        facts = extract_facts(tool_call)
+        assert facts["action_type"] == "exec_command"
+
+    def test_extract_exec_destructive(self):
+        """破坏性 exec (rm -rf) → exec_destructive（触发 T3）"""
+        tool_call = {
+            "tool_name": "exec",
+            "params": {"command": "rm -rf /tmp/test"},
         }
         facts = extract_facts(tool_call)
         assert facts["action_type"] == "exec_destructive"

@@ -40,6 +40,27 @@ def _is_social_url(url: str) -> bool:
     return any(pattern in url_lower for pattern in _SOCIAL_PATTERNS)
 
 
+# 破坏性命令模式（对齐 TS engine 的 DESTRUCTIVE_CMDS）
+_DESTRUCTIVE_CMD_PATTERNS = [
+    r"\brm\s+-rf?\b",
+    r"\brmdir\b",
+    r"\bgit\s+push\b",
+    r"\bnpm\s+publish\b",
+    r"\bDROP\s+TABLE\b",
+    r"\bDELETE\s+FROM\b",
+    r"\bformat\b",
+    r"\bdd\s+if=",
+    r"\bunlink\b",
+]
+
+
+def _is_destructive_command(cmd: str) -> bool:
+    """检查命令是否匹配破坏性模式"""
+    if not cmd:
+        return False
+    return any(re.search(p, cmd, re.IGNORECASE) for p in _DESTRUCTIVE_CMD_PATTERNS)
+
+
 def _extract_url(tool_call: dict) -> Optional[str]:
     """从 tool_call 提取 URL（多层查找）"""
     # 直接字段
@@ -111,9 +132,12 @@ def _extract_action_type(tool_call: dict) -> str:
     if tool_name == "read" or action == "read":
         return "read_file"
 
-    # exec → exec_destructive（保守策略）
+    # exec → 检查命令内容分级（对齐 TS engine 的 DESTRUCTIVE_CMDS）
     if tool_name == "exec" or action == "exec":
-        return "exec_destructive"
+        cmd = str(tool_call.get("command") or tool_call.get("params", {}).get("command", ""))
+        if _is_destructive_command(cmd):
+            return "exec_destructive"
+        return "exec_command"  # 普通 exec，不触发 T3
 
     # web_fetch → open_url
     if tool_name == "web_fetch" or action in ("fetch", "open"):
@@ -123,9 +147,14 @@ def _extract_action_type(tool_call: dict) -> str:
     if tool_name == "web_search" or action == "search":
         return "web_search"
 
-    # message → publish_post（发消息类）
-    if tool_name == "message" or action in ("send", "publish"):
-        return "publish_post"
+    # message → 按 action 分级
+    if tool_name == "message":
+        msg_action = str(tool_call.get("params", {}).get("action", action)).lower()
+        if msg_action == "delete":
+            return "delete_message"
+        if msg_action == "send":
+            return "send_message"  # send_message 不在 T3 列表里
+        return f"message_{msg_action}" if msg_action else "send_message"
 
     # browser delete / rm → delete_file
     cmd = str(tool_call.get("command") or tool_call.get("params", {}).get("command", ""))
