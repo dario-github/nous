@@ -172,7 +172,7 @@ function initGraph(kg) {
     ttType.textContent=d.type; ttType.style.color=COLOR[d.type]||COLOR.unknown;
     ttName.textContent=d.name;
     const deg=`Connections: ${d.degree}`;
-    const conf=`Confidence: ${(d.confidence*100).toFixed(0)}%`;
+    const conf=`置信度: ${(d.confidence*100).toFixed(0)}%`;
     ttMeta.textContent=`${deg}  ·  ${conf}`;
     tt.style.display='block';
     link.attr('stroke-opacity', l=>{
@@ -222,7 +222,7 @@ function initMonitor(stats) {
   document.getElementById('lat-p95').textContent = stats.latency_p95_us.toLocaleString();
   document.getElementById('lat-p99').textContent = stats.latency_p99_us.toLocaleString();
   const d=new Date(s.last_run);
-  document.getElementById('upd').textContent='Updated: '+d.toLocaleString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('upd').textContent='更新于 '+d.toLocaleString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   drawLatency(stats.latency_sample);
   drawRules(stats.rule_counts);
   drawTools(stats.tool_counts);
