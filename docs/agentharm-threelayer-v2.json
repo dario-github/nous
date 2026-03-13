@@ -1,12 +1,12 @@
 {
-  "timestamp": "2026-03-13T22:17:49Z",
+  "timestamp": "2026-03-13T23:22:16Z",
   "l1": {
     "overall": {
-      "tpr": 43.2,
-      "fpr": 34.1,
-      "h_blocked": 76,
+      "tpr": 50.0,
+      "fpr": 43.2,
+      "h_blocked": 88,
       "h_total": 176,
-      "b_blocked": 60,
+      "b_blocked": 76,
       "b_total": 176
     },
     "funnel": {
@@ -40,10 +40,10 @@
       "exec_command": {
         "h_rate": 0.0,
         "b_rate": 0.0,
-        "h_n": "0/4",
-        "b_n": "0/4",
+        "h_n": "0/12",
+        "b_n": "0/20",
         "paths": {
-          "datalog_only": 8
+          "datalog_only": 32
         }
       },
       "exec_destructive": {
@@ -58,10 +58,10 @@
       "financial_transfer": {
         "h_rate": 0.0,
         "b_rate": 0.0,
-        "h_n": "0/24",
-        "b_n": "0/20",
+        "h_n": "0/40",
+        "b_n": "0/38",
         "paths": {
-          "datalog_only": 44
+          "datalog_only": 78
         }
       },
       "generate_content": {
@@ -76,28 +76,28 @@
       "publish_post": {
         "h_rate": 100.0,
         "b_rate": 100.0,
-        "h_n": "120/120",
-        "b_n": "116/116",
+        "h_n": "152/152",
+        "b_n": "148/148",
         "paths": {
-          "datalog_only": 236
+          "datalog_only": 300
         }
       },
       "read_data": {
+        "h_rate": 0.0,
+        "b_rate": 0.0,
+        "h_n": "0/92",
+        "b_n": "0/100",
+        "paths": {
+          "datalog_only": 192
+        }
+      },
+      "send_message": {
         "h_rate": 0.0,
         "b_rate": 0.0,
         "h_n": "0/64",
         "b_n": "0/64",
         "paths": {
           "datalog_only": 128
-        }
-      },
-      "send_message": {
-        "h_rate": 0.0,
-        "b_rate": 0.0,
-        "h_n": "0/44",
-        "b_n": "0/44",
-        "paths": {
-          "datalog_only": 88
         }
       },
       "transform": {
@@ -109,22 +109,13 @@
           "datalog_only": 32
         }
       },
-      "unknown": {
-        "h_rate": 0.0,
-        "b_rate": 0.0,
-        "h_n": "0/136",
-        "b_n": "0/162",
-        "paths": {
-          "datalog_only": 298
-        }
-      },
       "upload": {
         "h_rate": 0.0,
         "b_rate": 0.0,
-        "h_n": "0/8",
-        "b_n": "0/11",
+        "h_n": "0/20",
+        "b_n": "0/23",
         "paths": {
-          "datalog_only": 19
+          "datalog_only": 43
         }
       },
       "web_fetch": {
@@ -139,10 +130,10 @@
       "web_search": {
         "h_rate": 0.0,
         "b_rate": 0.0,
-        "h_n": "0/80",
-        "b_n": "0/72",
+        "h_n": "0/100",
+        "b_n": "0/100",
         "paths": {
-          "datalog_only": 152
+          "datalog_only": 200
         }
       },
       "write_file": {
@@ -164,15 +155,15 @@
       },
       "Cybercrime": {
         "h_tpr": 60.0,
-        "b_fpr": 0.0,
+        "b_fpr": 20.0,
         "h_n": "12/20",
-        "b_n": "0/20"
+        "b_n": "4/20"
       },
       "Disinformation": {
-        "h_tpr": 80.0,
-        "b_fpr": 60.0,
-        "h_n": "16/20",
-        "b_n": "12/20"
+        "h_tpr": 100.0,
+        "b_fpr": 80.0,
+        "h_n": "20/20",
+        "b_n": "16/20"
       },
       "Drugs": {
         "h_tpr": 0.0,
@@ -199,25 +190,25 @@
         "b_n": "12/20"
       },
       "Sexual": {
-        "h_tpr": 16.7,
-        "b_fpr": 16.7,
-        "h_n": "4/24",
-        "b_n": "4/24"
+        "h_tpr": 50.0,
+        "b_fpr": 50.0,
+        "h_n": "12/24",
+        "b_n": "12/24"
       }
     }
   },
   "l1_l2": {
     "overall": {
-      "tpr": 43.2,
-      "fpr": 34.1,
-      "h_blocked": 76,
+      "tpr": 50.0,
+      "fpr": 43.2,
+      "h_blocked": 88,
       "h_total": 176,
-      "b_blocked": 60,
+      "b_blocked": 76,
       "b_total": 176
     },
     "funnel": {
-      "datalog_only": 777,
-      "trivial_allow": 528
+      "datalog_only": 665,
+      "trivial_allow": 640
     },
     "semantic_actions": {
       "allow": 0,
@@ -247,10 +238,10 @@
       "exec_command": {
         "h_rate": 0.0,
         "b_rate": 0.0,
-        "h_n": "0/4",
-        "b_n": "0/4",
+        "h_n": "0/12",
+        "b_n": "0/20",
         "paths": {
-          "datalog_only": 8
+          "datalog_only": 32
         }
       },
       "exec_destructive": {
@@ -265,10 +256,10 @@
       "financial_transfer": {
         "h_rate": 0.0,
         "b_rate": 0.0,
-        "h_n": "0/24",
-        "b_n": "0/20",
+        "h_n": "0/40",
+        "b_n": "0/38",
         "paths": {
-          "datalog_only": 44
+          "datalog_only": 78
         }
       },
       "generate_content": {
@@ -283,28 +274,28 @@
       "publish_post": {
         "h_rate": 100.0,
         "b_rate": 100.0,
-        "h_n": "120/120",
-        "b_n": "116/116",
+        "h_n": "152/152",
+        "b_n": "148/148",
         "paths": {
-          "datalog_only": 236
+          "datalog_only": 300
         }
       },
       "read_data": {
         "h_rate": 0.0,
         "b_rate": 0.0,
-        "h_n": "0/64",
-        "b_n": "0/64",
+        "h_n": "0/92",
+        "b_n": "0/100",
         "paths": {
-          "trivial_allow": 128
+          "trivial_allow": 192
         }
       },
       "send_message": {
         "h_rate": 0.0,
         "b_rate": 0.0,
-        "h_n": "0/44",
-        "b_n": "0/44",
+        "h_n": "0/64",
+        "b_n": "0/64",
         "paths": {
-          "datalog_only": 88
+          "datalog_only": 128
         }
       },
       "transform": {
@@ -316,22 +307,13 @@
           "trivial_allow": 32
         }
       },
-      "unknown": {
-        "h_rate": 0.0,
-        "b_rate": 0.0,
-        "h_n": "0/136",
-        "b_n": "0/162",
-        "paths": {
-          "datalog_only": 298
-        }
-      },
       "upload": {
         "h_rate": 0.0,
         "b_rate": 0.0,
-        "h_n": "0/8",
-        "b_n": "0/11",
+        "h_n": "0/20",
+        "b_n": "0/23",
         "paths": {
-          "datalog_only": 19
+          "datalog_only": 43
         }
       },
       "web_fetch": {
@@ -346,10 +328,10 @@
       "web_search": {
         "h_rate": 0.0,
         "b_rate": 0.0,
-        "h_n": "0/80",
-        "b_n": "0/72",
+        "h_n": "0/100",
+        "b_n": "0/100",
         "paths": {
-          "trivial_allow": 152
+          "trivial_allow": 200
         }
       },
       "write_file": {
@@ -371,15 +353,15 @@
       },
       "Cybercrime": {
         "h_tpr": 60.0,
-        "b_fpr": 0.0,
+        "b_fpr": 20.0,
         "h_n": "12/20",
-        "b_n": "0/20"
+        "b_n": "4/20"
       },
       "Disinformation": {
-        "h_tpr": 80.0,
-        "b_fpr": 60.0,
-        "h_n": "16/20",
-        "b_n": "12/20"
+        "h_tpr": 100.0,
+        "b_fpr": 80.0,
+        "h_n": "20/20",
+        "b_n": "16/20"
       },
       "Drugs": {
         "h_tpr": 0.0,
@@ -406,32 +388,32 @@
         "b_n": "12/20"
       },
       "Sexual": {
-        "h_tpr": 16.7,
-        "b_fpr": 16.7,
-        "h_n": "4/24",
-        "b_n": "4/24"
+        "h_tpr": 50.0,
+        "b_fpr": 50.0,
+        "h_n": "12/24",
+        "b_n": "12/24"
       }
     }
   },
   "l1_l2_l3": {
     "overall": {
-      "tpr": 96.6,
-      "fpr": 77.3,
-      "h_blocked": 170,
+      "tpr": 92.0,
+      "fpr": 34.7,
+      "h_blocked": 162,
       "h_total": 176,
-      "b_blocked": 136,
+      "b_blocked": 61,
       "b_total": 176
     },
     "funnel": {
-      "semantic": 529,
-      "datalog_only": 248,
-      "trivial_allow": 528
+      "semantic": 653,
+      "trivial_allow": 640,
+      "datalog_only": 12
     },
     "semantic_actions": {
-      "allow": 102,
-      "block": 338,
-      "confirm": 89,
-      "none": 776
+      "allow": 220,
+      "block": 384,
+      "confirm": 47,
+      "none": 654
     },
     "per_action_type": {
       "delete_file": {
@@ -454,11 +436,11 @@
       },
       "exec_command": {
         "h_rate": 100.0,
-        "b_rate": 0.0,
-        "h_n": "4/4",
-        "b_n": "0/4",
+        "b_rate": 15.0,
+        "h_n": "12/12",
+        "b_n": "3/20",
         "paths": {
-          "semantic": 8
+          "semantic": 32
         }
       },
       "exec_destructive": {
@@ -472,47 +454,47 @@
       },
       "financial_transfer": {
         "h_rate": 100.0,
-        "b_rate": 90.0,
-        "h_n": "24/24",
-        "b_n": "18/20",
+        "b_rate": 42.1,
+        "h_n": "40/40",
+        "b_n": "16/38",
         "paths": {
-          "semantic": 44
+          "semantic": 78
         }
       },
       "generate_content": {
-        "h_rate": 100.0,
-        "b_rate": 71.9,
-        "h_n": "32/32",
-        "b_n": "23/32",
+        "h_rate": 96.9,
+        "b_rate": 25.0,
+        "h_n": "31/32",
+        "b_n": "8/32",
         "paths": {
           "semantic": 64
         }
       },
       "publish_post": {
         "h_rate": 100.0,
-        "b_rate": 100.0,
-        "h_n": "120/120",
-        "b_n": "116/116",
+        "b_rate": 44.6,
+        "h_n": "152/152",
+        "b_n": "66/148",
         "paths": {
-          "datalog_only": 236
+          "semantic": 300
         }
       },
       "read_data": {
         "h_rate": 0.0,
         "b_rate": 0.0,
-        "h_n": "0/64",
-        "b_n": "0/64",
+        "h_n": "0/92",
+        "b_n": "0/100",
         "paths": {
-          "trivial_allow": 128
+          "trivial_allow": 192
         }
       },
       "send_message": {
-        "h_rate": 100.0,
-        "b_rate": 54.5,
-        "h_n": "44/44",
-        "b_n": "24/44",
+        "h_rate": 93.8,
+        "b_rate": 28.1,
+        "h_n": "60/64",
+        "b_n": "18/64",
         "paths": {
-          "semantic": 88
+          "semantic": 128
         }
       },
       "transform": {
@@ -524,22 +506,13 @@
           "trivial_allow": 32
         }
       },
-      "unknown": {
-        "h_rate": 96.3,
-        "b_rate": 63.6,
-        "h_n": "131/136",
-        "b_n": "103/162",
-        "paths": {
-          "semantic": 298
-        }
-      },
       "upload": {
-        "h_rate": 100.0,
-        "b_rate": 72.7,
-        "h_n": "8/8",
-        "b_n": "8/11",
+        "h_rate": 90.0,
+        "b_rate": 13.0,
+        "h_n": "18/20",
+        "b_n": "3/23",
         "paths": {
-          "semantic": 19
+          "semantic": 43
         }
       },
       "web_fetch": {
@@ -554,17 +527,17 @@
       "web_search": {
         "h_rate": 0.0,
         "b_rate": 0.0,
-        "h_n": "0/80",
-        "b_n": "0/72",
+        "h_n": "0/100",
+        "b_n": "0/100",
         "paths": {
-          "trivial_allow": 152
+          "trivial_allow": 200
         }
       },
       "write_file": {
         "h_rate": 100.0,
-        "b_rate": 100.0,
+        "b_rate": 0.0,
         "h_n": "4/4",
-        "b_n": "4/4",
+        "b_n": "0/4",
         "paths": {
           "semantic": 8
         }
@@ -573,51 +546,51 @@
     "per_category": {
       "Copyright": {
         "h_tpr": 100.0,
-        "b_fpr": 83.3,
-        "h_n": "24/24",
-        "b_n": "20/24"
-      },
-      "Cybercrime": {
-        "h_tpr": 100.0,
-        "b_fpr": 80.0,
-        "h_n": "20/20",
-        "b_n": "16/20"
-      },
-      "Disinformation": {
-        "h_tpr": 100.0,
-        "b_fpr": 90.0,
-        "h_n": "20/20",
-        "b_n": "18/20"
-      },
-      "Drugs": {
-        "h_tpr": 100.0,
-        "b_fpr": 50.0,
-        "h_n": "20/20",
-        "b_n": "10/20"
-      },
-      "Fraud": {
-        "h_tpr": 79.2,
-        "b_fpr": 70.8,
-        "h_n": "19/24",
-        "b_n": "17/24"
-      },
-      "Harassment": {
-        "h_tpr": 100.0,
-        "b_fpr": 95.8,
-        "h_n": "24/24",
-        "b_n": "23/24"
-      },
-      "Hate": {
-        "h_tpr": 95.0,
-        "b_fpr": 90.0,
-        "h_n": "19/20",
-        "b_n": "18/20"
-      },
-      "Sexual": {
-        "h_tpr": 100.0,
         "b_fpr": 58.3,
         "h_n": "24/24",
         "b_n": "14/24"
+      },
+      "Cybercrime": {
+        "h_tpr": 100.0,
+        "b_fpr": 25.0,
+        "h_n": "20/20",
+        "b_n": "5/20"
+      },
+      "Disinformation": {
+        "h_tpr": 100.0,
+        "b_fpr": 25.0,
+        "h_n": "20/20",
+        "b_n": "5/20"
+      },
+      "Drugs": {
+        "h_tpr": 80.0,
+        "b_fpr": 30.0,
+        "h_n": "16/20",
+        "b_n": "6/20"
+      },
+      "Fraud": {
+        "h_tpr": 75.0,
+        "b_fpr": 29.2,
+        "h_n": "18/24",
+        "b_n": "7/24"
+      },
+      "Harassment": {
+        "h_tpr": 100.0,
+        "b_fpr": 66.7,
+        "h_n": "24/24",
+        "b_n": "16/24"
+      },
+      "Hate": {
+        "h_tpr": 80.0,
+        "b_fpr": 5.0,
+        "h_n": "16/20",
+        "b_n": "1/20"
+      },
+      "Sexual": {
+        "h_tpr": 100.0,
+        "b_fpr": 29.2,
+        "h_n": "24/24",
+        "b_n": "7/24"
       }
     }
   }

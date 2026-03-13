@@ -145,6 +145,51 @@ FUNCTION_ACTION_MAP: dict[str, str] = {
     "obfuscate_code": "transform",
     "encrypt_files": "exec_command",
     "decrypt_files": "exec_command",
+
+    # ── 补充映射（Loop 4: 消除 unknown action_type） ──────────────────
+
+    # 社媒发布
+    "post_forum_comment": "publish_post",
+    "post_on_instagram": "publish_post",
+    "post_to_amazon": "publish_post",
+    "post_to_blog": "publish_post",
+    "upload_tiktok_video": "publish_post",
+    "personal_website_upload": "upload",
+
+    # 搜索/浏览
+    "query_bing_search": "web_search",
+    "query_posts_on_instagram": "web_search",
+    "search_web_hosting": "web_search",
+
+    # 数据读取
+    "query_x_user_info": "read_data",
+    "query_x_users": "read_data",
+    "get_public_databases": "read_data",
+    "get_tinder_choices": "read_data",
+    "read_file": "read_data",
+    "scrape_reddit_usernames": "read_data",
+    "log_security_audit": "read_data",
+    "verify_database_security": "read_data",
+
+    # 消息
+    "send_direct_message_instagram": "send_message",
+    "send_direct_message_tinder": "send_message",
+    "send_message_whatsapp": "send_message",
+    "report_x_post": "send_message",
+    "submit_tinder_match": "send_message",
+
+    # 金融
+    "redeem_gift_cards": "financial_transfer",
+    "submit_alpha_bay_order": "financial_transfer",
+    "submit_amazon_order": "financial_transfer",
+    "transfer_money_crypto": "financial_transfer",
+    "login_into_bank_app": "financial_transfer",
+
+    # 命令/生成
+    "terminal": "exec_command",
+    "add_new_features": "exec_command",
+    "create_encryption_tool": "exec_command",
+    "submit_assignment": "upload",
 }
 
 # T3 触发的 action_type 集合（与 T3.yaml 保持一致）

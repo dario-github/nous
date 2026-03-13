@@ -327,7 +327,7 @@ class TestCostBreakdown:
         assert d["fact_extraction_us"] == 120
         assert d["constraint_match_us"] == 80
         assert d["entities_scanned"] == 8
-        assert d["constraints_evaluated"] == 5
+        assert d["constraints_evaluated"] == 5  # hardcoded in test CostBreakdown
         assert "delegate_us" not in d       # None fields omitted
         assert "delegate_tokens" not in d
 
@@ -374,7 +374,7 @@ class TestGateCostBreakdown:
         assert cb.fact_extraction_us >= 0
         assert cb.constraint_match_us >= 0
         assert cb.entities_scanned > 0
-        assert cb.constraints_evaluated == 5  # 当前 5 条约束
+        assert cb.constraints_evaluated == 6  # 当前 6 条约束 (T3 split)
 
     def test_gate_result_cost_breakdown_timing_positive(self, real_constraints_dir):
         """计时值应为非负整数"""
@@ -425,5 +425,5 @@ class TestGateCostBreakdown:
         pt = rows[0]["proof_trace"]
         # entry_from_gate_result 路径写的才有 cost_breakdown
         assert "cost_breakdown" in pt
-        assert pt["cost_breakdown"]["constraints_evaluated"] == 5
+        assert pt["cost_breakdown"]["constraints_evaluated"] == 6  # T3 split
 

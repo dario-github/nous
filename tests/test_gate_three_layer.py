@@ -76,7 +76,7 @@ class TestThreeLayerRouting:
         assert result.semantic_verdict["action"] == "allow"
 
     def test_confirm_calls_semantic(self):
-        """publish_post → T3 block → short-circuit (block 不进 semantic)。"""
+        """publish_post → T3-soft confirm → semantic gate (Loop 4: T3 split)。"""
         result = gate(constraints_dir=_CONSTRAINTS_DIR, 
             tool_call={"action_type": "publish_post"},
             triviality_config=TrivialityConfig(),
@@ -85,10 +85,12 @@ class TestThreeLayerRouting:
                 provider=make_mock_provider('{"action":"allow","reason":"benign post","confidence":0.85}'),
             ),
         )
-        # T3 publish_post → block → datalog_only (short-circuit)
-        assert result.layer_path == "datalog_only"
-        assert result.datalog_verdict == "block"
-        assert result.semantic_verdict is None
+        # T3-soft publish_post → confirm → semantic gate (shadow mode: verdict unchanged)
+        assert result.layer_path == "semantic"
+        assert result.datalog_verdict == "confirm"
+        # shadow mode: semantic_verdict recorded but doesn't change final verdict
+        assert result.semantic_verdict is not None
+        assert result.verdict.action == "confirm"  # shadow mode preserves confirm
 
 
 # ── Active Mode 升级/降级 ─────────────────────────────────────────────────

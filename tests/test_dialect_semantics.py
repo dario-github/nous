@@ -36,7 +36,7 @@ class TestDialectDefault:
     def test_existing_constraints_have_default_dialect(self):
         """现有 5 条约束文件未设 dialect → 默认应为 'cozo'"""
         constraints = load_constraints(CONSTRAINTS_DIR)
-        assert len(constraints) == 5
+        assert len(constraints) == 6  # T3 split
         for c in constraints:
             assert c.dialect == "cozo", f"{c.id} dialect should default to 'cozo'"
 
@@ -150,9 +150,9 @@ class TestLoadCompatibility:
     def test_load_real_constraints_not_broken(self):
         """加载真实约束目录：5 条全部解析成功，不受新字段影响"""
         constraints = load_constraints(CONSTRAINTS_DIR)
-        assert len(constraints) == 5
+        assert len(constraints) == 6  # T3 split
         ids = {c.id for c in constraints}
-        assert {"T3", "T5", "T10", "T11", "T12"} == ids
+        assert {"T3", "T3-soft", "T5", "T10", "T11", "T12"} == ids
 
     def test_mixed_dir_old_and_new(self, tmp_constraint_dir):
         """新旧格式混合加载，全部成功"""
