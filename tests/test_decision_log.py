@@ -14,6 +14,7 @@ from pathlib import Path
 from nous.db import NousDB
 from nous.decision_log import (
     DECISION_LOG_SCHEMA_VERSION,
+    CostBreakdown,
     DecisionLogEntry,
     entry_from_gate_result,
     gate_with_decision_log,
@@ -300,3 +301,129 @@ class TestEntryFromGateResult:
         summary = '{"tool_name": "' + "x" * 500 + '"}'
         entry = entry_from_gate_result(result, tool_call_summary=summary)
         assert len(entry.tool_call_summary) <= 200
+
+
+# ── M2.P2: CostBreakdown ─────────────────────────────────────────────────
+
+
+class TestCostBreakdown:
+    def test_default_values(self):
+        cb = CostBreakdown()
+        assert cb.fact_extraction_us == 0
+        assert cb.constraint_match_us == 0
+        assert cb.delegate_us is None
+        assert cb.delegate_tokens is None
+        assert cb.entities_scanned == 0
+        assert cb.constraints_evaluated == 0
+
+    def test_to_dict_basic(self):
+        cb = CostBreakdown(
+            fact_extraction_us=120,
+            constraint_match_us=80,
+            entities_scanned=8,
+            constraints_evaluated=5,
+        )
+        d = cb.to_dict()
+        assert d["fact_extraction_us"] == 120
+        assert d["constraint_match_us"] == 80
+        assert d["entities_scanned"] == 8
+        assert d["constraints_evaluated"] == 5
+        assert "delegate_us" not in d       # None fields omitted
+        assert "delegate_tokens" not in d
+
+    def test_to_dict_with_delegate(self):
+        cb = CostBreakdown(delegate_us=5000, delegate_tokens=256)
+        d = cb.to_dict()
+        assert d["delegate_us"] == 5000
+        assert d["delegate_tokens"] == 256
+
+    def test_entry_cost_breakdown_field(self):
+        cb = CostBreakdown(fact_extraction_us=50, entities_scanned=4)
+        entry = DecisionLogEntry(cost_breakdown=cb)
+        assert entry.cost_breakdown is cb
+
+    def test_entry_cost_breakdown_default_none(self):
+        entry = DecisionLogEntry()
+        assert entry.cost_breakdown is None
+
+    def test_to_db_dict_embeds_cost_breakdown(self):
+        """cost_breakdown 被嵌入 proof_trace JSON blob"""
+        cb = CostBreakdown(fact_extraction_us=100, entities_scanned=7)
+        entry = DecisionLogEntry(cost_breakdown=cb, verdict="block")
+        d = entry.to_db_dict()
+        pt = d["pt"]
+        assert "cost_breakdown" in pt
+        assert pt["cost_breakdown"]["fact_extraction_us"] == 100
+        assert pt["cost_breakdown"]["entities_scanned"] == 7
+
+    def test_to_db_dict_no_cost_breakdown_no_key(self):
+        """无 cost_breakdown 时 proof_trace 中不含该 key"""
+        entry = DecisionLogEntry(verdict="allow")
+        d = entry.to_db_dict()
+        pt = d["pt"]
+        assert "cost_breakdown" not in pt
+
+
+class TestGateCostBreakdown:
+    def test_gate_result_has_cost_breakdown(self, real_constraints_dir):
+        """gate() 返回 GateResult，其中 cost_breakdown 已填充"""
+        tc = {"tool_name": "exec", "action_type": "delete_file"}
+        result = gate(tool_call=tc, constraints_dir=real_constraints_dir)
+        assert result.cost_breakdown is not None
+        cb = result.cost_breakdown
+        assert cb.fact_extraction_us >= 0
+        assert cb.constraint_match_us >= 0
+        assert cb.entities_scanned > 0
+        assert cb.constraints_evaluated == 5  # 当前 5 条约束
+
+    def test_gate_result_cost_breakdown_timing_positive(self, real_constraints_dir):
+        """计时值应为非负整数"""
+        tc = {"tool_name": "web_search", "action_type": "search"}
+        result = gate(tool_call=tc, constraints_dir=real_constraints_dir)
+        cb = result.cost_breakdown
+        assert isinstance(cb.fact_extraction_us, int)
+        assert isinstance(cb.constraint_match_us, int)
+        assert cb.fact_extraction_us >= 0
+        assert cb.constraint_match_us >= 0
+
+    def test_gate_result_cost_breakdown_delegate_none(self, real_constraints_dir):
+        """M2 阶段 delegate 字段应为 None"""
+        tc = {"tool_name": "read", "action_type": "read_file"}
+        result = gate(tool_call=tc, constraints_dir=real_constraints_dir)
+        assert result.cost_breakdown.delegate_us is None
+        assert result.cost_breakdown.delegate_tokens is None
+
+    def test_entry_from_gate_result_transfers_cost_breakdown(self, real_constraints_dir):
+        """entry_from_gate_result 正确转移 cost_breakdown"""
+        tc = {"tool_name": "exec", "action_type": "delete_file"}
+        result = gate(tool_call=tc, constraints_dir=real_constraints_dir)
+        entry = entry_from_gate_result(result, session_id="cb-transfer-test")
+        assert entry.cost_breakdown is result.cost_breakdown
+
+    def test_cost_breakdown_persisted_in_db(self, mem_db, real_constraints_dir):
+        """cost_breakdown 写入 DB 后可从 proof_trace 字段读取"""
+        tc = {"tool_name": "exec", "action_type": "delete_file"}
+        result = gate(
+            tool_call=tc,
+            db=mem_db,
+            constraints_dir=real_constraints_dir,
+            session_key="cb-db-test",
+        )
+        entry = entry_from_gate_result(result, session_id="cb-db-test")
+        from nous.decision_log import persist_decision
+        persist_decision(entry, mem_db)
+
+        rows = mem_db._query_with_params(
+            "?[proof_trace] := *decision_log{session_key, proof_trace}, "
+            "session_key = $sk",
+            {"sk": "cb-db-test"},
+        )
+        # 可能有两条（gate() 自动写一条 + persist_decision 再写一条）
+        assert len(rows) >= 1
+        # gate_with_decision_log 写入的那条含有 cost_breakdown（来自 persist_decision）
+        # 找最后一条（session_key 重复时 cozo put 会覆盖）
+        pt = rows[0]["proof_trace"]
+        # entry_from_gate_result 路径写的才有 cost_breakdown
+        assert "cost_breakdown" in pt
+        assert pt["cost_breakdown"]["constraints_evaluated"] == 5
+

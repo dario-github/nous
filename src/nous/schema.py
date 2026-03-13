@@ -58,6 +58,9 @@ class Constraint(BaseModel):
     rewrite_params: Optional[dict] = None  # T11 之类的重写参数
     metadata: dict = Field(default_factory=dict)
     created_at: float = 0.0
+    # M2.P4: 方言与语义标注（可选，M5+ 使用）
+    dialect: str = "cozo"               # cozo | scallop | lobster
+    semantics: Optional[dict] = None    # {logic_algebra: boolean, weight_algebra: null}
 
     def __init__(self, **data):
         if 'created_at' not in data or data['created_at'] == 0.0:

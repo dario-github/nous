@@ -23,6 +23,43 @@ from nous.verdict import Verdict
 DECISION_LOG_SCHEMA_VERSION = "2.0"
 
 
+# ── CostBreakdown (M2.P2) ─────────────────────────────────────────────────
+
+
+@dataclass
+class CostBreakdown:
+    """
+    gate pipeline 各阶段的资源消耗明细 (M2.P2)。
+
+    Attributes:
+        fact_extraction_us:    事实提取阶段耗时（微秒）
+        constraint_match_us:   约束匹配阶段耗时（微秒）
+        delegate_us:           M5+ LLM 审议阶段耗时（微秒，当前为 None）
+        delegate_tokens:       M5+ LLM 审议 token 数（当前为 None）
+        entities_scanned:      扫描的实体/事实维度数
+        constraints_evaluated: 评估的约束条数
+    """
+    fact_extraction_us: int = 0
+    constraint_match_us: int = 0
+    delegate_us: Optional[int] = None       # M5+ LLM 审议阶段耗时
+    delegate_tokens: Optional[int] = None   # M5+ LLM 审议 token 数
+    entities_scanned: int = 0
+    constraints_evaluated: int = 0
+
+    def to_dict(self) -> dict:
+        d: dict = {
+            "fact_extraction_us": self.fact_extraction_us,
+            "constraint_match_us": self.constraint_match_us,
+            "entities_scanned": self.entities_scanned,
+            "constraints_evaluated": self.constraints_evaluated,
+        }
+        if self.delegate_us is not None:
+            d["delegate_us"] = self.delegate_us
+        if self.delegate_tokens is not None:
+            d["delegate_tokens"] = self.delegate_tokens
+        return d
+
+
 # ── 数据结构 ───────────────────────────────────────────────────────────────
 
 
@@ -42,6 +79,7 @@ class DecisionLogEntry:
         latency_ms:        gate pipeline 耗时（毫秒）
         tool_name:         工具名称（可选）
         facts:             提取到的事实（可选）
+        cost_breakdown:    各阶段资源消耗明细（M2.P2，可选）
     """
     timestamp: float = field(default_factory=time.time)
     tool_call_summary: str = ""
@@ -53,10 +91,14 @@ class DecisionLogEntry:
     latency_ms: float = 0.0
     tool_name: str = ""
     facts: dict = field(default_factory=dict)
+    cost_breakdown: Optional[CostBreakdown] = None  # M2.P2
 
     def to_db_dict(self) -> dict:
         """转换为写入 decision_log 表的字段 dict"""
         trace_dict = self.proof_trace.to_dict() if self.proof_trace else {}
+        # M2.P2: 将 cost_breakdown 嵌入 proof_trace JSON blob
+        if self.cost_breakdown is not None:
+            trace_dict["cost_breakdown"] = self.cost_breakdown.to_dict()
         return {
             "ts": self.timestamp,
             "sk": self.session_id or f"dl:{self.timestamp:.6f}",
@@ -107,6 +149,7 @@ def entry_from_gate_result(
         latency_ms=gate_result.latency_ms,
         tool_name=gate_result.facts.get("tool_name", ""),
         facts=gate_result.facts,
+        cost_breakdown=gate_result.cost_breakdown,  # M2.P2
     )
 
 

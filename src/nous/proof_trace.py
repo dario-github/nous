@@ -17,14 +17,18 @@ class ProofStep:
     fact_bindings: dict             # 绑定的事实（来自 tool_call）
     verdict: str                    # "match" | "no-match"
     timestamp: float = field(default_factory=time.time)
+    provenance: Optional[dict] = None  # M2.P1: 推导来源元数据（引擎/版本/数据集等）
 
     def to_dict(self) -> dict:
-        return {
+        d: dict = {
             "rule_id": self.rule_id,
             "fact_bindings": self.fact_bindings,
             "verdict": self.verdict,
             "timestamp": self.timestamp,
         }
+        if self.provenance is not None:
+            d["provenance"] = self.provenance
+        return d
 
 
 @dataclass
@@ -49,6 +53,7 @@ class ProofTrace:
                 fact_bindings=s["fact_bindings"],
                 verdict=s["verdict"],
                 timestamp=s.get("timestamp", 0.0),
+                provenance=s.get("provenance"),  # M2.P1
             )
             for s in data.get("steps", [])
         ]
