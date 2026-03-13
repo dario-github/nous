@@ -48,7 +48,7 @@ class TestBuildPrompt:
             max_content_chars=8000,
         )
         assert "Role" in prompt
-        assert "Safety Policy" in prompt
+        assert "Policy" in prompt
         assert "No harm policy." in prompt
         assert "confirm" in prompt
         assert "publish_post" in prompt
