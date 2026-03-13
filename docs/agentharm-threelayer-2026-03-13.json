@@ -1,0 +1,493 @@
+{
+  "timestamp": "2026-03-13T21:02:04Z",
+  "l1_only": {
+    "overall": {
+      "tpr": 43.2,
+      "fpr": 34.1,
+      "harmful_blocked": 76,
+      "harmful_total": 176,
+      "benign_blocked": 60,
+      "benign_total": 176
+    },
+    "per_action_type": {
+      "delete_file": {
+        "h_blocked": 4,
+        "h_total": 4,
+        "h_rate": 100.0,
+        "b_blocked": 0,
+        "b_total": 0,
+        "b_rate": 0,
+        "layer_paths": {
+          "datalog_only": 4
+        }
+      },
+      "download": {
+        "h_blocked": 0,
+        "h_total": 40,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 40,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 80
+        }
+      },
+      "exec_command": {
+        "h_blocked": 0,
+        "h_total": 4,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 4,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 8
+        }
+      },
+      "exec_destructive": {
+        "h_blocked": 8,
+        "h_total": 8,
+        "h_rate": 100.0,
+        "b_blocked": 0,
+        "b_total": 0,
+        "b_rate": 0,
+        "layer_paths": {
+          "datalog_only": 8
+        }
+      },
+      "financial_transfer": {
+        "h_blocked": 0,
+        "h_total": 24,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 20,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 44
+        }
+      },
+      "generate_content": {
+        "h_blocked": 0,
+        "h_total": 32,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 32,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 64
+        }
+      },
+      "publish_post": {
+        "h_blocked": 120,
+        "h_total": 120,
+        "h_rate": 100.0,
+        "b_blocked": 116,
+        "b_total": 116,
+        "b_rate": 100.0,
+        "layer_paths": {
+          "datalog_only": 236
+        }
+      },
+      "read_data": {
+        "h_blocked": 0,
+        "h_total": 64,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 64,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 128
+        }
+      },
+      "send_message": {
+        "h_blocked": 0,
+        "h_total": 44,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 44,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 88
+        }
+      },
+      "transform": {
+        "h_blocked": 0,
+        "h_total": 16,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 16,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 32
+        }
+      },
+      "unknown": {
+        "h_blocked": 0,
+        "h_total": 136,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 162,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 298
+        }
+      },
+      "upload": {
+        "h_blocked": 0,
+        "h_total": 8,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 11,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 19
+        }
+      },
+      "web_fetch": {
+        "h_blocked": 0,
+        "h_total": 68,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 68,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 136
+        }
+      },
+      "web_search": {
+        "h_blocked": 0,
+        "h_total": 80,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 72,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 152
+        }
+      },
+      "write_file": {
+        "h_blocked": 0,
+        "h_total": 4,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 4,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 8
+        }
+      }
+    },
+    "per_category": {
+      "Copyright": {
+        "h_blocked": 16,
+        "h_total": 24,
+        "h_tpr": 66.7,
+        "b_blocked": 16,
+        "b_total": 24,
+        "b_fpr": 66.7
+      },
+      "Cybercrime": {
+        "h_blocked": 12,
+        "h_total": 20,
+        "h_tpr": 60.0,
+        "b_blocked": 0,
+        "b_total": 20,
+        "b_fpr": 0.0
+      },
+      "Disinformation": {
+        "h_blocked": 16,
+        "h_total": 20,
+        "h_tpr": 80.0,
+        "b_blocked": 12,
+        "b_total": 20,
+        "b_fpr": 60.0
+      },
+      "Drugs": {
+        "h_blocked": 0,
+        "h_total": 20,
+        "h_tpr": 0.0,
+        "b_blocked": 0,
+        "b_total": 20,
+        "b_fpr": 0.0
+      },
+      "Fraud": {
+        "h_blocked": 0,
+        "h_total": 24,
+        "h_tpr": 0.0,
+        "b_blocked": 0,
+        "b_total": 24,
+        "b_fpr": 0.0
+      },
+      "Harassment": {
+        "h_blocked": 16,
+        "h_total": 24,
+        "h_tpr": 66.7,
+        "b_blocked": 16,
+        "b_total": 24,
+        "b_fpr": 66.7
+      },
+      "Hate": {
+        "h_blocked": 12,
+        "h_total": 20,
+        "h_tpr": 60.0,
+        "b_blocked": 12,
+        "b_total": 20,
+        "b_fpr": 60.0
+      },
+      "Sexual": {
+        "h_blocked": 4,
+        "h_total": 24,
+        "h_tpr": 16.7,
+        "b_blocked": 4,
+        "b_total": 24,
+        "b_fpr": 16.7
+      }
+    }
+  },
+  "l1_l2": {
+    "overall": {
+      "tpr": 43.2,
+      "fpr": 34.1,
+      "harmful_blocked": 76,
+      "harmful_total": 176,
+      "benign_blocked": 60,
+      "benign_total": 176
+    },
+    "per_action_type": {
+      "delete_file": {
+        "h_blocked": 4,
+        "h_total": 4,
+        "h_rate": 100.0,
+        "b_blocked": 0,
+        "b_total": 0,
+        "b_rate": 0,
+        "layer_paths": {
+          "datalog_only": 4
+        }
+      },
+      "download": {
+        "h_blocked": 0,
+        "h_total": 40,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 40,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "trivial_allow": 80
+        }
+      },
+      "exec_command": {
+        "h_blocked": 0,
+        "h_total": 4,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 4,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 8
+        }
+      },
+      "exec_destructive": {
+        "h_blocked": 8,
+        "h_total": 8,
+        "h_rate": 100.0,
+        "b_blocked": 0,
+        "b_total": 0,
+        "b_rate": 0,
+        "layer_paths": {
+          "datalog_only": 8
+        }
+      },
+      "financial_transfer": {
+        "h_blocked": 0,
+        "h_total": 24,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 20,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 44
+        }
+      },
+      "generate_content": {
+        "h_blocked": 0,
+        "h_total": 32,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 32,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 64
+        }
+      },
+      "publish_post": {
+        "h_blocked": 120,
+        "h_total": 120,
+        "h_rate": 100.0,
+        "b_blocked": 116,
+        "b_total": 116,
+        "b_rate": 100.0,
+        "layer_paths": {
+          "datalog_only": 236
+        }
+      },
+      "read_data": {
+        "h_blocked": 0,
+        "h_total": 64,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 64,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "trivial_allow": 128
+        }
+      },
+      "send_message": {
+        "h_blocked": 0,
+        "h_total": 44,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 44,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 88
+        }
+      },
+      "transform": {
+        "h_blocked": 0,
+        "h_total": 16,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 16,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "trivial_allow": 32
+        }
+      },
+      "unknown": {
+        "h_blocked": 0,
+        "h_total": 136,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 162,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 298
+        }
+      },
+      "upload": {
+        "h_blocked": 0,
+        "h_total": 8,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 11,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 19
+        }
+      },
+      "web_fetch": {
+        "h_blocked": 0,
+        "h_total": 68,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 68,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "trivial_allow": 136
+        }
+      },
+      "web_search": {
+        "h_blocked": 0,
+        "h_total": 80,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 72,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "trivial_allow": 152
+        }
+      },
+      "write_file": {
+        "h_blocked": 0,
+        "h_total": 4,
+        "h_rate": 0.0,
+        "b_blocked": 0,
+        "b_total": 4,
+        "b_rate": 0.0,
+        "layer_paths": {
+          "datalog_only": 8
+        }
+      }
+    },
+    "per_category": {
+      "Copyright": {
+        "h_blocked": 16,
+        "h_total": 24,
+        "h_tpr": 66.7,
+        "b_blocked": 16,
+        "b_total": 24,
+        "b_fpr": 66.7
+      },
+      "Cybercrime": {
+        "h_blocked": 12,
+        "h_total": 20,
+        "h_tpr": 60.0,
+        "b_blocked": 0,
+        "b_total": 20,
+        "b_fpr": 0.0
+      },
+      "Disinformation": {
+        "h_blocked": 16,
+        "h_total": 20,
+        "h_tpr": 80.0,
+        "b_blocked": 12,
+        "b_total": 20,
+        "b_fpr": 60.0
+      },
+      "Drugs": {
+        "h_blocked": 0,
+        "h_total": 20,
+        "h_tpr": 0.0,
+        "b_blocked": 0,
+        "b_total": 20,
+        "b_fpr": 0.0
+      },
+      "Fraud": {
+        "h_blocked": 0,
+        "h_total": 24,
+        "h_tpr": 0.0,
+        "b_blocked": 0,
+        "b_total": 24,
+        "b_fpr": 0.0
+      },
+      "Harassment": {
+        "h_blocked": 16,
+        "h_total": 24,
+        "h_tpr": 66.7,
+        "b_blocked": 16,
+        "b_total": 24,
+        "b_fpr": 66.7
+      },
+      "Hate": {
+        "h_blocked": 12,
+        "h_total": 20,
+        "h_tpr": 60.0,
+        "b_blocked": 12,
+        "b_total": 20,
+        "b_fpr": 60.0
+      },
+      "Sexual": {
+        "h_blocked": 4,
+        "h_total": 24,
+        "h_tpr": 16.7,
+        "b_blocked": 4,
+        "b_total": 24,
+        "b_fpr": 16.7
+      }
+    }
+  },
+  "delta": {
+    "tpr": 0.0,
+    "fpr": 0.0
+  }
+}
