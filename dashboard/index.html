@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>νοῦς — Ontology-Driven Decision Engine</title>
+<title>νοῦς — 本体论驱动决策引擎</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -91,14 +91,14 @@ body::before{content:'';position:fixed;inset:0;
 <nav id="nav">
   <div id="nav-brand">
     <div id="nav-title">νοῦς</div>
-    <div id="nav-sub">Ontology-Driven Decision Engine</div>
+    <div id="nav-sub">本体论驱动决策引擎</div>
   </div>
   <div class="nsep"></div>
-  <div class="nstat"><span class="nstat-v" id="cnt-e">24</span><span class="nstat-l">Entities</span></div>
+  <div class="nstat"><span class="nstat-v" id="cnt-e">24</span><span class="nstat-l">实体</span></div>
   <div class="nsep"></div>
-  <div class="nstat"><span class="nstat-v" id="cnt-r">26</span><span class="nstat-l">Relations</span></div>
+  <div class="nstat"><span class="nstat-v" id="cnt-r">26</span><span class="nstat-l">关系</span></div>
   <div class="nsep"></div>
-  <div class="nstat"><span class="nstat-v" id="cnt-ru">2</span><span class="nstat-l">Rules</span></div>
+  <div class="nstat"><span class="nstat-v" id="cnt-ru">2</span><span class="nstat-l">规则</span></div>
   <div id="nav-right">
     <div class="sbadge"><div class="sdot"></div><span class="slbl">SHADOW MODE</span></div>
     <div id="upd">—</div>
@@ -106,27 +106,27 @@ body::before{content:'';position:fixed;inset:0;
 </nav>
 <div id="layout">
   <div id="gwrap">
-    <div id="glabel">Knowledge Graph · Force-Directed · D3.js v7</div>
+    <div id="glabel">知识图谱 · 力导向图 · D3.js v7</div>
     <svg id="kg-svg"></svg>
     <div id="legend">
-      <div class="leg-item"><div class="leg-dot" style="background:#3a8fff"></div>Person</div>
-      <div class="leg-item"><div class="leg-dot" style="background:#2eff8a"></div>Project</div>
-      <div class="leg-item"><div class="leg-dot" style="background:#b06bff"></div>Concept</div>
-      <div class="leg-item"><div class="leg-dot" style="background:#ff8c40"></div>External Ref</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#3a8fff"></div>人物</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#2eff8a"></div>项目</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#b06bff"></div>概念</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#ff8c40"></div>外部引用</div>
     </div>
   </div>
   <div id="mon">
     <div class="card">
-      <div class="ctitle">Shadow Consistency Monitor</div>
+      <div class="ctitle">影子模式一致性监控</div>
       <div class="sgrid">
-        <div class="sbox"><div class="sval c" id="sv-cons">0%</div><div class="slb">Consistency</div></div>
-        <div class="sbox"><div class="sval g" id="sv-tot">0</div><div class="slb">Total Calls</div></div>
-        <div class="sbox"><div class="sval g" id="sv-fp">0</div><div class="slb">False Positives</div></div>
-        <div class="sbox"><div class="sval o" id="sv-fn">0</div><div class="slb">False Negatives</div></div>
+        <div class="sbox"><div class="sval c" id="sv-cons">0%</div><div class="slb">一致率</div></div>
+        <div class="sbox"><div class="sval g" id="sv-tot">0</div><div class="slb">总调用</div></div>
+        <div class="sbox"><div class="sval g" id="sv-fp">0</div><div class="slb">误拦截</div></div>
+        <div class="sbox"><div class="sval o" id="sv-fn">0</div><div class="slb">漏拦截</div></div>
       </div>
     </div>
     <div class="card">
-      <div class="ctitle">Latency Distribution (µs)</div>
+      <div class="ctitle">延迟分布 (µs)</div>
       <div class="chart-wrap"><svg id="lat-chart" height="90" style="width:100%"></svg></div>
       <div style="display:flex;gap:12px;margin-top:8px;font-size:.6rem;color:var(--dim)">
         <span>avg: <b id="lat-avg" style="color:var(--cyan)">—</b> µs</span>
@@ -135,11 +135,11 @@ body::before{content:'';position:fixed;inset:0;
       </div>
     </div>
     <div class="card">
-      <div class="ctitle">Rule Trigger Count</div>
+      <div class="ctitle">规则触发统计</div>
       <div class="chart-wrap"><svg id="rules-chart" height="70" style="width:100%"></svg></div>
     </div>
     <div class="card">
-      <div class="ctitle">Tool Call Distribution</div>
+      <div class="ctitle">工具调用分布</div>
       <div class="chart-wrap" style="display:flex;gap:12px;align-items:center">
         <svg id="pie-chart" width="130" height="130"></svg>
         <div id="pie-legend" style="flex:1;font-size:.6rem;line-height:1.9"></div>
