@@ -71,7 +71,14 @@
 | 方向漂移 | 每轮开头重读 LOOP.md 方向声明，偏离就停 |
 | 优化虚指标 | 每轮反思必须回答："这轮让 Nous 离'理解语义再判断'更近了吗？" |
 
-## 反思模板
+## Git 版本控制规范
+
+- **每轮迭代一个 commit**，message 格式：`loop-N: [模块] 一句话描述`
+- **有意义的变更才 commit**——不要为了"有东西 push"而 commit 空改
+- **关键里程碑打 tag**：`git tag -a vM.N -m "描述"` （如 v0.6-agentharm-baseline）
+- **破坏性变更前开 branch**：`git checkout -b feature/xxx`，验证后 merge
+- **不要 force push**
+- **每轮 push 前跑 `pytest -x -q`**，红了不 push
 
 ```markdown
 # Loop N — YYYY-MM-DD
