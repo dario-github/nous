@@ -35,7 +35,39 @@ _REL_PATTERN = re.compile(
 _VALID_RTYPES = {
     "WORKS_ON", "KNOWS", "DEPENDS_ON", "CAUSED_BY", "PART_OF",
     "OWNS", "LOCATED_IN", "RELATED_TO", "MENTIONS", "TRIGGERS",
+    "USED_BY", "TARGETS",
 }
+
+
+def _etype_from_id(entity_id: str) -> str:
+    """从 entity ID 中提取实体类型，格式 entity:{type}:{slug}"""
+    parts = entity_id.split(":")
+    return parts[1] if len(parts) >= 3 else "unknown"
+
+
+def _infer_rtype(from_id: str, to_id: str) -> str:
+    """
+    根据 from/to 实体类型推断语义关系类型。
+
+    规则（按优先级）：
+      person  → project  : WORKS_ON
+      person  → person   : KNOWS
+      project → project  : DEPENDS_ON
+      concept → project  : USED_BY
+      *       → *        : RELATED_TO（回退）
+    """
+    from_type = _etype_from_id(from_id)
+    to_type = _etype_from_id(to_id)
+
+    if from_type == "person" and to_type == "project":
+        return "WORKS_ON"
+    if from_type == "person" and to_type == "person":
+        return "KNOWS"
+    if from_type == "project" and to_type == "project":
+        return "DEPENDS_ON"
+    if from_type == "concept" and to_type == "project":
+        return "USED_BY"
+    return "RELATED_TO"
 
 
 def _infer_etype(path: Path) -> str:
@@ -174,10 +206,11 @@ def _parse_related_field(
         if not slug:
             continue
         to_id = slug_to_id.get(slug, f"entity:unknown:{slug}")
+        rtype = _infer_rtype(from_id, to_id)
         relations.append(Relation(
             from_id=from_id,
             to_id=to_id,
-            rtype="RELATED_TO",
+            rtype=rtype,
             source=source,
             created_at=now,
         ))
