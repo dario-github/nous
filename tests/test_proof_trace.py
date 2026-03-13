@@ -82,6 +82,35 @@ class TestProofStep:
         t_after = time.time()
         assert t_before <= step.timestamp <= t_after
 
+    # ── M2.P1 provenance ─────────────────────────────────────────────────
+
+    def test_provenance_default_none(self):
+        step = ProofStep(rule_id="r1", fact_bindings={}, verdict="no-match")
+        assert step.provenance is None
+
+    def test_provenance_serialization(self):
+        prov = {"engine": "cozo", "version": "0.7.5", "dataset": "nous-constraints-v1"}
+        step = ProofStep(
+            rule_id="T3-delete-file",
+            fact_bindings={"action_type": "delete_file"},
+            verdict="match",
+            timestamp=1234567890.0,
+            provenance=prov,
+        )
+        d = step.to_dict()
+        assert d["provenance"] == prov
+
+    def test_provenance_omitted_from_dict_when_none(self):
+        step = ProofStep(rule_id="r1", fact_bindings={}, verdict="no-match", timestamp=1.0)
+        d = step.to_dict()
+        assert "provenance" not in d
+
+    def test_provenance_arbitrary_metadata(self):
+        prov = {"source": "unit-test", "rule_version": 2, "tags": ["T3", "safety"]}
+        step = ProofStep(rule_id="T3", fact_bindings={}, verdict="match", provenance=prov)
+        d = step.to_dict()
+        assert d["provenance"]["tags"] == ["T3", "safety"]
+
 
 # ── 测试 ProofTrace ──────────────────────────────────────────────────────
 
@@ -120,6 +149,51 @@ class TestProofTrace:
         assert trace.final_verdict == "allow"
         d = trace.to_dict()
         assert d["steps"] == []
+
+    # ── M2.P1 provenance roundtrip ────────────────────────────────────────
+
+    def test_from_dict_roundtrip_with_provenance(self):
+        prov = {"engine": "cozo", "version": "0.7.5"}
+        original = ProofTrace(
+            steps=[
+                ProofStep("r1", {"a": 1}, "match", 1.0, provenance=prov),
+                ProofStep("r2", {}, "no-match", 2.0),
+            ],
+            final_verdict="block",
+            total_ms=0.5,
+        )
+        reconstructed = ProofTrace.from_dict(original.to_dict())
+        assert reconstructed.steps[0].provenance == prov
+        assert reconstructed.steps[1].provenance is None
+
+    def test_provenance_survives_db_roundtrip(self, db):
+        from nous.observability import SamplingPolicy, log_decision
+        prov = {"engine": "cozo", "version": "test"}
+        trace = ProofTrace(
+            steps=[ProofStep("T3", {"action_type": "delete_file"}, "match",
+                             provenance=prov)],
+            final_verdict="block",
+            total_ms=0.3,
+        )
+        policy = SamplingPolicy(block_rate=1.0)
+        log_decision(
+            verdict="block",
+            proof_trace=trace,
+            sampling_policy=policy,
+            db=db,
+            session_key="prov-roundtrip",
+            tool_name="exec",
+        )
+        rows = db._query_with_params(
+            "?[proof_trace] := *decision_log{session_key, proof_trace}, "
+            "session_key = $sk",
+            {"sk": "prov-roundtrip"},
+        )
+        assert len(rows) == 1
+        pt = rows[0]["proof_trace"]
+        step_dicts = pt.get("steps", [])
+        assert len(step_dicts) == 1
+        assert step_dicts[0].get("provenance") == prov
 
 
 # ── 测试 _match_constraint ────────────────────────────────────────────────

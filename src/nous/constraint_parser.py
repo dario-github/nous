@@ -67,6 +67,8 @@ def parse_constraint_file(path: Path) -> Constraint:
         reason=raw.get("reason", ""),
         rewrite_params=raw.get("rewrite_params", None),
         metadata=raw.get("metadata", {}),
+        dialect=raw.get("dialect", "cozo"),      # M2.P4: 默认 cozo
+        semantics=raw.get("semantics", None),    # M2.P4: 可选，M5+ 使用
         created_at=time.time(),
     )
 

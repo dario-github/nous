@@ -1,0 +1,6 @@
+gate_budgets:
+  max_query_depth: 5
+  max_entities_scanned: 50
+  delegate_token_budget: 512
+  timeout_us: 5000
+enforcement: warn  # warn | enforce (M5+ 切 enforce)
