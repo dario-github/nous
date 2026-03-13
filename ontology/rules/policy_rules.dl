@@ -1,0 +1,101 @@
+# M5.3 — 政策网络推理规则集 (Cozo Datalog)
+# 10 条推理规则 R1-R10
+
+# ========== R1: 政策传导规则 ==========
+# 政策→目标行业→上游行业（supply_chain 依赖）间接受益
+# 如果政策 P 直接利好行业 A，A 依赖于行业 B（supply 关系），则 B 间接受益
+?[policy_id, sector_id, strength, mechanism] :=
+    *policy_targets{policy_id, sector_id: direct_sector, strength: direct_strength, mechanism: direct_mech},
+    *sector_depends{from_sector: direct_sector, to_sector: sector_id, type: "supply", strength: supply_strength},
+    strength = concat("indirect_", supply_strength),
+    mechanism = concat("supply_chain_from_", direct_mech);
+
+# ========== R2: 财政扩张规则 ==========
+# 赤字率 >3.5% → 基建受益
+# 如果指标 ind_deficit 方向为 up 且 value_2026 > "3.5"，则基建行业 sec_infra 受益
+?[sector_id, reason, confidence] :=
+    *indicator{id: "ind_deficit", value_2026: v26, direction: "up"},
+    *sector{id: "sec_infra", name: sector_name},
+    sector_id = "sec_infra",
+    reason = "fiscal_expansion_deficit_above_3.5%",
+    confidence = 0.85;
+
+# ========== R3: 政策冲突规则 ==========
+# 同一行业被两个政策分别正面/负面影响 = 冲突
+?[sector_id, policy_pos, policy_neg, conflict_type] :=
+    *policy_targets{policy_id: policy_pos, sector_id: sector_id, strength: "direct"},
+    *policy_targets{policy_id: policy_neg, sector_id: sector_id, strength: "direct"},
+    policy_pos != policy_neg,
+    *policy{id: policy_pos, name: name_pos},
+    *policy{id: policy_neg, name: name_neg},
+    str_includes(name_pos, "积极") || str_includes(name_pos, "AI+") || str_includes(name_pos, "推进"),
+    str_includes(name_neg, "限制") || str_includes(name_neg, "收紧") || str_includes(name_neg, "调控"),
+    conflict_type = "positive_vs_negative";
+
+# ========== R4: 政策过期规则 ==========
+# 被 supersedes 的政策自动标记为过期
+?[policy_id, status, new_policy] :=
+    *policy_supersedes{new_policy: new_policy, old_policy: policy_id},
+    status = "superseded",
+    *policy{id: new_policy, name: new_name};
+
+# ========== R5: 资金传导规则 ==========
+# 产业基金→落实政策→目标行业
+?[sector_id, fund_name, policy_name, fund_amount] :=
+    *measure{id: measure_id, name: fund_name, type: "fund", amount: fund_amount},
+    *policy_implements{measure_id: measure_id, policy_id: policy_id},
+    *policy{id: policy_id, name: policy_name},
+    *policy_targets{policy_id: policy_id, sector_id: sector_id};
+
+# ========== R6: 多部委协同规则 ==========
+# 同一行业被 ≥2 个部委关注 = 高优先级
+?[sector_id, org_count, org_list] :=
+    *policy_targets{policy_id: pid1, sector_id: sector_id},
+    *org_issues{org_id: org1, policy_id: pid1},
+    *policy_targets{policy_id: pid2, sector_id: sector_id},
+    *org_issues{org_id: org2, policy_id: pid2},
+    pid1 != pid2,
+    org1 != org2,
+    org_count = 2,
+    org_list = concat(org1, ",", org2);
+
+# ========== R7: GDP 下调规则 ==========
+# GDP 目标下调 → 防御板块受益
+?[sector_id, reason, signal] :=
+    *indicator{id: "ind_gdp", direction: "down"},
+    *sector{id: sector_id, name: sector_name},
+    (sector_id = "sec_defense" || sector_id = "sec_energy" || sector_id = "sec_infra"),
+    reason = "GDP_target_down_defensive_sectors",
+    signal = "positive";
+
+# ========== R8: AI+ 传导规则 ==========
+# "全面AI+"政策 → AI 全产业链受益
+?[sector_id, policy_id, reason] :=
+    *policy{id: policy_id, name: policy_name},
+    str_includes(policy_name, "AI+"),
+    *policy_targets{policy_id: policy_id, sector_id: target_sector},
+    (*sector_depends{from_sector: target_sector, to_sector: sector_id} 
+     || *sector_depends{from_sector: sector_id, to_sector: target_sector}
+     || sector_id = target_sector),
+    reason = "AI_plus_full_chain_benefit";
+
+# ========== R9: 自主可控规则 ==========
+# 含"自主可控"的政策 → 行业安全加码
+?[sector_id, policy_id, security_level] :=
+    *policy{id: policy_id, summary: summary},
+    (str_includes(summary, "国产替代") || str_includes(summary, "自主可控")),
+    *policy_targets{policy_id: policy_id, sector_id: sector_id},
+    *sector{id: sector_id, props: props},
+    security_level = "high";
+
+# ========== R10: 权限覆盖规则 ==========
+# 国务院政策与部委政策冲突时，国务院优先
+?[sector_id, winning_policy, losing_policy, reason] :=
+    *policy{id: p1, level: "national", name: name1},
+    *policy{id: p2, level: "ministry", name: name2},
+    *policy_targets{policy_id: p1, sector_id: sector_id},
+    *policy_targets{policy_id: p2, sector_id: sector_id},
+    p1 != p2,
+    winning_policy = p1,
+    losing_policy = p2,
+    reason = "national_overrides_ministry";
