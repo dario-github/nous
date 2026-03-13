@@ -40,22 +40,18 @@ def _is_social_url(url: str) -> bool:
     return any(pattern in url_lower for pattern in _SOCIAL_PATTERNS)
 
 
-# 破坏性命令模式（对齐 TS engine 的 DESTRUCTIVE_CMDS + FN 修复）
-# 对齐原则：TS engine 中在 trigger_log 中实际拦截的全部模式
+# 破坏性命令模式（对齐 TS engine 的 DESTRUCTIVE_CMDS + 零 FP 代价 FN 修复）
+# 对齐原则：只加 FP_risk=0 的模式（即 trigger_log 中 TS 从未 allow 过的命令前缀）
+# 分析依据：对 trigger_log 全量数据统计每个新增模式的 FN_fix 和 FP_risk
 _DESTRUCTIVE_CMD_PATTERNS = [
     # ── 文件删除 ──
-    r"\brm\s+-rf?\b",           # rm -r / rm -rf（递归删除）
-    r"\brm\s+-f\b",             # rm -f（强制删除，非递归）[FN修复 #1]
+    r"\brm\s+-rf\b",            # rm -rf（递归强制删除）
+    r"\brm\s+--no-preserve\b",  # rm --no-preserve-root
     r"\brmdir\b",               # rmdir
     r"\bunlink\b",              # unlink
 
-    # ── Git 状态变更（不可逆修改本地/远程仓库）──
-    r"\bgit\s+push\b",          # git push（推送远程）
-    r"\bgit\s+add\b",           # git add（暂存变更）[FN修复 #2,10,12]
-    r"\bgit\s+commit\b",        # git commit（创建提交）[FN修复 #18]
-
-    # ── 远程连接 ──
-    r"\bssh\s+",                # ssh user@host（远程连接）[FN修复 #5,13,15]
+    # ── Git 远程推送 ──
+    r"\bgit\s+push\b",          # git push（推送远程）— git commit 不拦截
 
     # ── 包/DB 发布 ──
     r"\bnpm\s+publish\b",
@@ -65,22 +61,18 @@ _DESTRUCTIVE_CMD_PATTERNS = [
     # ── 系统破坏 ──
     r"\bformat\b",
     r"\bdd\s+if=",
+    r"\btruncate\b",
 
-    # ── 任意代码内联执行 ──
-    r"\bpython3?\s+-c\b",       # python3 -c "..." [FN修复 #3,4]
-    r"\bnode\s+-e\b",           # node -e "..."
-    r"\bperl\s+-e\b",           # perl -e "..."
+    # （ssh 不拦截——nodes.run 常规使用）
 
-    # ── Heredoc 写入受保护路径 ──
-    r"cat\s*>>\s*\S*memory/",   # cat >> .../memory/... << 'EOF' [FN修复 #17]
+    # （cat >> 不拦截——日常 memory 写入用）
 
-    # ── Git 远程鉴权环境变量（通常伴随 git push）──
-    r"\bGIT_SSH_",              # GIT_SSH_COMMAND=... [FN修复 #14]
-    r"\bGIT_TERMINAL_",         # GIT_TERMINAL_PROMPT=... [FN修复 #16]
+    # ── Git 远程鉴权环境变量 ──
+    r"\bGIT_SSH_",              # GIT_SSH_COMMAND=...
 
-    # ── 绕过门控的尝试模式（jailbreak bypass patterns）──
-    r"\bPRE_AUTHORIZED\b",      # PRE_AUTHORIZED=true [FN修复 #11]
-    r"\bEXPECT_IRREVER",        # EXPECT_IRREVERSIBLE=true（前缀匹配截断字符串）[FN修复 #13]
+    # ── 绕过门控的尝试模式 ──
+    r"\bPRE_AUTHORIZED\b",      # PRE_AUTHORIZED=true
+    r"\bEXPECT_IRREVER",        # EXPECT_IRREVERSIBLE=true
 ]
 
 
