@@ -1,0 +1,17 @@
+{
+  "L": 0.10397,
+  "components": {
+    "miss": 0.0232,
+    "fpr": 0.0432,
+    "cap": 0.0288,
+    "var": 0.00877
+  },
+  "raw": {
+    "TPR": 0.942,
+    "FPR": 0.144,
+    "capability": 0.856,
+    "category_variance": 0.0877
+  },
+  "gate_type": "binary",
+  "capability_note": "binary gate: capability = 1 - FPR"
+}

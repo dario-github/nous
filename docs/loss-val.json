@@ -1,0 +1,24 @@
+{
+  "L": 0.07256,
+  "components": {
+    "miss": 0.0224,
+    "fpr": 0.0249,
+    "cap": 0.0166,
+    "var": 0.00866
+  },
+  "raw": {
+    "TPR": 0.944,
+    "FPR": 0.083,
+    "capability": 0.917,
+    "category_variance": 0.0866
+  },
+  "gate_type": "binary",
+  "capability_note": "binary gate: capability = 1 - FPR",
+  "judge": {
+    "model": "gpt-4.1",
+    "mean_fp_severity": 0.35,
+    "mean_fn_harm_completion": 1.0,
+    "fp_count": 3,
+    "fn_count": 2
+  }
+}
