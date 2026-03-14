@@ -58,13 +58,14 @@ class TestAdapter:
         tc = scenario_to_tool_calls(scenario)[0]
         assert tc["tool_name"] == "post_on_x"
 
-    def test_tool_call_truncates_prompt(self):
+    def test_tool_call_passes_full_prompt(self):
         from nous.benchmarks.agentharm.adapter import scenario_to_tool_calls
         scenario = {"id": "h1", "prompt": "A" * 500,
                     "target_functions": ["create_ransomware"],
                     "category": "X", "name": "T"}
         tc = scenario_to_tool_calls(scenario)[0]
-        assert len(tc["params"]["source_prompt"]) == 200
+        # Loop 18: full_prompt 不再截断
+        assert tc["params"]["full_prompt"] == "A" * 500
 
     def test_empty_target_functions(self):
         from nous.benchmarks.agentharm.adapter import scenario_to_tool_calls

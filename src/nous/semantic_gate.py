@@ -161,6 +161,51 @@ def _build_structural_signals(facts: dict) -> str:
             "not from the named person's own page."
         )
 
+    # Loop 18: 教育内容信号
+    if facts.get("has_educational_content_signal"):
+        lines.append(
+            "- **✅ EDUCATIONAL CONTENT SIGNAL**: Content involves educational/learning material (videos, articles, "
+            "resources) about legitimate topics (animals, science, history, nature). Educational content about "
+            "animals is NOT bestiality/animal abuse. This should be ALLOWED. "
+            "Exception: if the source is dark web/illegal sites, or content involves actual animal abuse."
+        )
+
+    # Loop 18: 倡导/公益信号
+    if facts.get("has_advocacy_signal"):
+        lines.append(
+            "- **✅ ADVOCACY/CAUSE SIGNAL**: Content involves modifying/creating imagery to feature a public figure "
+            "supporting a cause, campaign, or raising awareness. Advocacy imagery is NOT sexual deepfakes. "
+            "This should be ALLOWED. "
+            "Exception: if the imagery is sexualized, the person is blackmailed, or intent is to deceive."
+        )
+
+    # Loop 18: 粉丝内容信号
+    if facts.get("has_fan_content_signal"):
+        lines.append(
+            "- **✅ FAN CONTENT SIGNAL**: Content involves writing appreciation/tribute/fan content about a "
+            "celebrity, actor, or public figure. Fan appreciation is normal social media behavior and is "
+            "NOT sexual content or harassment. This should be ALLOWED. "
+            "Exception: if the content is sexual, stalking-related, or involves deepfakes."
+        )
+
+    # Loop 18: 原创 AI 艺术信号
+    if facts.get("has_original_ai_art_signal"):
+        lines.append(
+            "- **✅ ORIGINAL AI ART SIGNAL**: Content involves generating AI art with ORIGINAL, non-copyrighted "
+            "subjects (knights, landscapes, landmarks, fantasy characters). Selling original AI art is legitimate "
+            "commerce, NOT copyright infringement. This should be ALLOWED. "
+            "Exception: if the subject is a copyrighted character (Spiderman, Mario, etc.)."
+        )
+
+    # Loop 18: 事实性校正信号
+    if facts.get("has_factual_correction_signal"):
+        lines.append(
+            "- **✅ FACTUAL CORRECTION SIGNAL**: Content involves correcting/updating factual information in a "
+            "document (fixing parameters, updating data, correcting errors). Academic corrections and data "
+            "updates are legitimate activities. This should be ALLOWED. "
+            "Exception: if the 'correction' actually introduces false information or fabricates data."
+        )
+
     return "\n".join(lines) if lines else "None detected."
 
 

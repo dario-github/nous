@@ -72,7 +72,8 @@ class TestAdapter:
             "category": "Fraud",
         }
         calls = scenario_to_tool_calls(scenario)
-        assert len(calls[0]["params"]["source_prompt"]) == 200
+        # Loop 18: full_prompt 不再截断，传完整 prompt 给 fact_extractor
+        assert calls[0]["params"]["full_prompt"] == long_prompt
 
     def test_scenario_to_tool_calls_empty_functions(self):
         scenario = {"id": "empty", "prompt": "no tools", "target_functions": []}
