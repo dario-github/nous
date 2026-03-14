@@ -89,6 +89,14 @@ def analyze(harmful_results, benign_results):
     tpr = h_blocked / h_total * 100 if h_total else 0
     fpr = b_blocked / b_total * 100 if b_total else 0
 
+    # Hard metrics: only count "block" verdicts (not "confirm")
+    h_hard_blocked = sum(1 for r in harmful_results if any(
+        tc["verdict"] == "block" for tc in r["tool_results"]))
+    b_hard_blocked = sum(1 for r in benign_results if any(
+        tc["verdict"] == "block" for tc in r["tool_results"]))
+    hard_tpr = h_hard_blocked / h_total * 100 if h_total else 0
+    hard_fpr = b_hard_blocked / b_total * 100 if b_total else 0
+
     # Layer funnel
     funnel = defaultdict(int)
     action_stats = defaultdict(lambda: {
@@ -125,8 +133,10 @@ def analyze(harmful_results, benign_results):
     return {
         "overall": {
             "tpr": round(tpr, 1), "fpr": round(fpr, 1),
+            "hard_tpr": round(hard_tpr, 1), "hard_fpr": round(hard_fpr, 1),
             "h_blocked": h_blocked, "h_total": h_total,
             "b_blocked": b_blocked, "b_total": b_total,
+            "h_hard_blocked": h_hard_blocked, "b_hard_blocked": b_hard_blocked,
         },
         "funnel": dict(funnel),
         "semantic_actions": dict(sem_actions),
@@ -159,11 +169,12 @@ def print_comparison(label, m1, m2, m1_name="L1", m2_name="L1+L2+L3"):
     print(f"{'='*60}")
     print(f"  {'Metric':<15} {m1_name:>12} {m2_name:>12} {'Delta':>10}")
     print(f"  {'-'*49}")
-    for key in ["tpr", "fpr"]:
-        v1 = m1["overall"][key]
-        v2 = m2["overall"][key]
+    for key in ["tpr", "fpr", "hard_tpr", "hard_fpr"]:
+        v1 = m1["overall"].get(key, 0)
+        v2 = m2["overall"].get(key, 0)
         d = v2 - v1
-        print(f"  {key.upper():<15} {v1:>11.1f}% {v2:>11.1f}% {d:>+9.1f}%")
+        label = key.upper().replace("_", " ")
+        print(f"  {label:<15} {v1:>11.1f}% {v2:>11.1f}% {d:>+9.1f}%")
 
     print(f"\n  Layer Funnel ({m2_name}):")
     for path, count in sorted(m2.get("funnel", {}).items()):
@@ -234,7 +245,9 @@ def main():
                         semantic_config=sem_config, enhanced=True)
         elapsed = time.perf_counter() - t0
         m3 = analyze(h3, b3)
-        print(f"  TPR={m3['overall']['tpr']}% FPR={m3['overall']['fpr']}% ({elapsed:.1f}s)")
+        print(f"  TPR={m3['overall']['tpr']}% FPR={m3['overall']['fpr']}% "
+              f"hard_TPR={m3['overall'].get('hard_tpr',0)}% "
+              f"hard_FPR={m3['overall'].get('hard_fpr',0)}% ({elapsed:.1f}s)")
 
     # === Comparison ===
     print_comparison("L1 → L1+L2", m1, m2, "L1", "L1+L2")
@@ -251,6 +264,17 @@ def main():
     out_path = Path(__file__).parent.parent / "docs" / "agentharm-threelayer-v2.json"
     out_path.write_text(json.dumps(output, indent=2, ensure_ascii=False))
     print(f"\nResults saved to {out_path}")
+
+    # Also save raw scenarios for FP analysis
+    if m3:
+        raw_path = Path(__file__).parent.parent / "docs" / "agentharm-raw-scenarios.json"
+        raw_output = {
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "harmful_scenarios": h3,
+            "benign_scenarios": b3,
+        }
+        raw_path.write_text(json.dumps(raw_output, indent=2, ensure_ascii=False))
+        print(f"Raw scenarios saved to {raw_path}")
 
 
 if __name__ == "__main__":

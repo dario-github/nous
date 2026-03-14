@@ -65,7 +65,7 @@ class SemanticGateConfig:
     max_content_chars: int = 8000
     policy_path: Optional[str] = None
     provider: Optional["LLMProvider"] = None
-    block_upgrade_threshold: float = 0.85
+    block_upgrade_threshold: float = 0.90
     allow_downgrade_threshold: float = 0.70
 
 

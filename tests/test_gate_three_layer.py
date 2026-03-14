@@ -164,13 +164,13 @@ class TestActiveMode:
             assert "semantic" in result.verdict.rule_id
 
     def test_confirm_semantic_block_upgrades(self):
-        """Datalog confirm + semantic block → final block。"""
+        """Datalog allow + semantic block (conf 0.92 >= 0.90) → final block。"""
         result = gate(constraints_dir=_CONSTRAINTS_DIR, 
             tool_call={"action_type": "send_message"},
             triviality_config=TrivialityConfig(),
             semantic_config=SemanticGateConfig(
                 mode="active",
-                provider=make_mock_provider('{"action":"block","reason":"scam detected","confidence":0.88}'),
+                provider=make_mock_provider('{"action":"block","reason":"scam detected","confidence":0.92}'),
             ),
         )
         # send_message doesn't trigger any constraint → allow
@@ -265,7 +265,7 @@ class TestConfidenceCalibratedFusion:
         assert result.semantic_verdict["action"] == "block"
 
     def test_allow_block_above_threshold_upgrades(self):
-        """Datalog allow + semantic block (conf 0.9 >= 0.85) → upgrades to block."""
+        """Datalog allow + semantic block (conf 0.9 >= 0.90) → upgrades to block."""
         result = gate(constraints_dir=_CONSTRAINTS_DIR,
             tool_call={"action_type": "send_message", "params": {"content": "hack systems"}},
             triviality_config=TrivialityConfig(),
@@ -279,13 +279,13 @@ class TestConfidenceCalibratedFusion:
         assert "0.90" in result.verdict.reason
 
     def test_allow_block_at_exact_threshold(self):
-        """Datalog allow + semantic block (conf exactly 0.85) → upgrades (>=)."""
+        """Datalog allow + semantic block (conf exactly 0.90) → upgrades (>=)."""
         result = gate(constraints_dir=_CONSTRAINTS_DIR,
             tool_call={"action_type": "send_message", "params": {"content": "test"}},
             triviality_config=TrivialityConfig(),
             semantic_config=SemanticGateConfig(
                 mode="active",
-                provider=make_mock_provider('{"action":"block","reason":"harmful","confidence":0.85}'),
+                provider=make_mock_provider('{"action":"block","reason":"harmful","confidence":0.90}'),
             ),
         )
         assert result.verdict.action == "block"
@@ -364,7 +364,7 @@ class TestConfidenceCalibratedFusion:
             assert "0.80" in result.verdict.reason
 
     def test_confirm_block_always_upgrades(self):
-        """Datalog confirm + semantic block → always upgrades (no threshold)."""
+        """Datalog confirm + semantic block (conf >= 0.90) → upgrades to block."""
         import tempfile
         with tempfile.TemporaryDirectory() as tmpdir:
             confirm_rule = Path(tmpdir) / "TC1.yaml"
@@ -373,7 +373,7 @@ class TestConfidenceCalibratedFusion:
                 "trigger:\n  action_type: test_confirm_action\n"
                 "verdict: confirm\nreason: test\n"
             )
-            for conf in [0.3, 0.5, 0.7, 0.9]:
+            for conf in [0.90, 0.92, 0.95]:
                 result = gate(
                     constraints_dir=Path(tmpdir),
                     tool_call={"action_type": "test_confirm_action"},
@@ -425,3 +425,140 @@ class TestConfidenceCalibratedFusion:
         )
         assert result.verdict.action == "block"
         assert "@0.93" in result.verdict.reason
+
+
+# ── Loop 8: Unified confidence threshold for confirm→block path ─────────────
+
+
+class TestLoop8ConfidenceThreshold:
+    """Loop 8: confirm + sem block 路径的置信度阈值统一化。
+
+    Bug fixed: confirm + semantic block was upgrading without threshold check,
+    causing low-confidence (0.78-0.87) semantic blocks to produce false positives.
+
+    New behavior: confirm + sem block only upgrades if conf >= block_upgrade_threshold (0.90).
+    """
+
+    def _make_confirm_dir(self, tmpdir: str) -> Path:
+        """创建包含一条 confirm 规则的临时约束目录。"""
+        confirm_rule = Path(tmpdir) / "TC_loop8.yaml"
+        confirm_rule.write_text(
+            "id: TC_loop8\n"
+            "name: loop8 confirm rule\n"
+            "priority: 50\n"
+            "enabled: true\n"
+            "trigger:\n"
+            "  action_type: loop8_action\n"
+            "verdict: confirm\n"
+            "reason: loop8 confirm\n"
+        )
+        return Path(tmpdir)
+
+    def test_a_confirm_block_high_conf_upgrades(self):
+        """(a) confirm + sem block (high conf 0.92) → block。现有行为，确认不变。"""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cdir = self._make_confirm_dir(tmpdir)
+            result = gate(
+                constraints_dir=cdir,
+                tool_call={"action_type": "loop8_action"},
+                triviality_config=TrivialityConfig(),
+                semantic_config=SemanticGateConfig(
+                    mode="active",
+                    provider=make_mock_provider(
+                        '{"action":"block","reason":"clear harm","confidence":0.92}'
+                    ),
+                ),
+            )
+            assert result.datalog_verdict == "confirm"
+            assert result.verdict.action == "block"
+            assert "@0.92" in result.verdict.reason
+
+    def test_b_confirm_block_low_conf_stays_confirm(self):
+        """(b) confirm + sem block (low conf 0.80) → confirm。新行为：低置信度不升级。"""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cdir = self._make_confirm_dir(tmpdir)
+            result = gate(
+                constraints_dir=cdir,
+                tool_call={"action_type": "loop8_action"},
+                triviality_config=TrivialityConfig(),
+                semantic_config=SemanticGateConfig(
+                    mode="active",
+                    provider=make_mock_provider(
+                        '{"action":"block","reason":"maybe harmful","confidence":0.80}'
+                    ),
+                ),
+            )
+            assert result.datalog_verdict == "confirm"
+            assert result.verdict.action == "confirm"  # NOT upgraded — insufficient evidence
+
+    def test_c_confirm_block_exactly_threshold_upgrades(self):
+        """(c) confirm + sem block (exactly 0.90) → block。边界：恰好等于阈值时升级。"""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cdir = self._make_confirm_dir(tmpdir)
+            result = gate(
+                constraints_dir=cdir,
+                tool_call={"action_type": "loop8_action"},
+                triviality_config=TrivialityConfig(),
+                semantic_config=SemanticGateConfig(
+                    mode="active",
+                    provider=make_mock_provider(
+                        '{"action":"block","reason":"exactly at threshold","confidence":0.90}'
+                    ),
+                ),
+            )
+            assert result.datalog_verdict == "confirm"
+            assert result.verdict.action == "block"
+
+    def test_d_confirm_block_just_below_threshold_stays_confirm(self):
+        """(d) confirm + sem block (0.89) → confirm。边界：阈值下方不升级。"""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cdir = self._make_confirm_dir(tmpdir)
+            result = gate(
+                constraints_dir=cdir,
+                tool_call={"action_type": "loop8_action"},
+                triviality_config=TrivialityConfig(),
+                semantic_config=SemanticGateConfig(
+                    mode="active",
+                    provider=make_mock_provider(
+                        '{"action":"block","reason":"just below threshold","confidence":0.89}'
+                    ),
+                ),
+            )
+            assert result.datalog_verdict == "confirm"
+            assert result.verdict.action == "confirm"
+
+    def test_e_allow_block_at_threshold_upgrades(self):
+        """(e) allow + sem block (0.90) → block。确认 allow 路径现有行为不变。"""
+        result = gate(
+            constraints_dir=_CONSTRAINTS_DIR,
+            tool_call={"action_type": "send_message", "params": {"content": "test"}},
+            triviality_config=TrivialityConfig(),
+            semantic_config=SemanticGateConfig(
+                mode="active",
+                provider=make_mock_provider(
+                    '{"action":"block","reason":"harmful","confidence":0.90}'
+                ),
+            ),
+        )
+        assert result.datalog_verdict == "allow"
+        assert result.verdict.action == "block"
+
+    def test_f_allow_block_below_new_default_threshold_stays_allow(self):
+        """(f) allow + sem block (0.89) → allow。新默认阈值 0.90 的效果：0.89 不再触发升级。"""
+        result = gate(
+            constraints_dir=_CONSTRAINTS_DIR,
+            tool_call={"action_type": "send_message", "params": {"content": "test"}},
+            triviality_config=TrivialityConfig(),
+            semantic_config=SemanticGateConfig(
+                mode="active",
+                provider=make_mock_provider(
+                    '{"action":"block","reason":"maybe harmful","confidence":0.89}'
+                ),
+            ),
+        )
+        assert result.datalog_verdict == "allow"
+        assert result.verdict.action == "allow"  # 0.89 < 0.90 → no upgrade

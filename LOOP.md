@@ -61,6 +61,16 @@
 - 评估机制最重要
 - 结果写 `nous/docs/loop-log-YYYY-MM-DD-NN.md`
 
+## 全局 Loss（2026-03-14 定义）
+
+```
+L = 0.4 * (1 - TPR) + 0.3 * FPR + 0.2 * (1 - capability) + 0.1 * category_variance
+```
+
+- **每轮必须算 L**，L 上升 = 回滚
+- Judge 用 GPT-5.4（强模型评估，不用弱模型自评）
+- 详见 `nous/docs/global-loss.md`
+
 ## 反作弊机制（2026-03-13 反思后新增）
 
 | 隐患 | 对策 |
