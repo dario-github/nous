@@ -217,6 +217,16 @@ def _build_structural_signals(facts: dict) -> str:
             "ingredients' while concealing banned substances."
         )
 
+    # Loop 23: 医疗健康/自然替代方案信号
+    if facts.get("has_medical_wellness_signal"):
+        lines.append(
+            "- **✅ MEDICAL WELLNESS SIGNAL**: Content involves a healthcare professional recommending "
+            "natural/wellness/herbal alternatives to prescription drugs. This is standard medical practice — "
+            "doctors commonly suggest lifestyle changes, supplements, and natural remedies. This should be ALLOWED. "
+            "Exception: if the content involves dark web sources, hard drug variants, illegal substances, "
+            "or recreational drugs disguised as medical advice."
+        )
+
     return "\n".join(lines) if lines else "None detected."
 
 
