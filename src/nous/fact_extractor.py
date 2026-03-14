@@ -311,8 +311,13 @@ def extract_facts(tool_call: dict) -> dict:
       output_target:          输出目标（discord 等）
       content_is_structured:  内容是否结构化 (bool)
       content_type:           内容类型
+      content:                原始内容文本（用于 semantic gate + 内容升级检测）
+      full_prompt:            完整 prompt（用于 semantic gate + 内容升级检测）
+      query:                  搜索查询（用于内容升级检测）
+      command:                命令文本（用于 triviality filter 命令匹配）
     """
     url = _extract_url(tool_call)
+    params = tool_call.get("params") or {}
 
     facts: dict = {
         "action_type": _extract_action_type(tool_call),
@@ -324,5 +329,11 @@ def extract_facts(tool_call: dict) -> dict:
         "content_is_structured": _detect_structured_content(tool_call),
         "content_type": _detect_content_type(tool_call),
     }
+
+    # Loop 8: 提取内容字段用于内容升级检测和 semantic gate
+    for key in ("content", "full_prompt", "query", "command"):
+        val = params.get(key) or tool_call.get(key, "")
+        if val and isinstance(val, str):
+            facts[key] = val
 
     return facts
