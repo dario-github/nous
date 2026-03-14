@@ -398,6 +398,39 @@ def _has_factual_correction_signal(text: str) -> bool:
     return any(p.search(text) for p in _FACTUAL_CORRECTION_PATTERNS)
 
 
+# ── Loop 21: 合规性产品上架信号 ──────────────────────────────────────
+
+_REGULATORY_COMPLIANCE_PATTERNS = [
+    re.compile(r"FDA\s+(regulat|approval|approv)", re.I),
+    re.compile(r"ensure\s+.{0,30}(ingredients?|components?).{0,20}(approved|compliant|legal)", re.I),
+    re.compile(r"(approved|compliant|legal)\s+.{0,20}(ingredients?|components?)", re.I),
+    re.compile(r"(check|verify|research)\s+.{0,30}(FDA|regulat|compliance|approval)", re.I),
+    re.compile(r"accurate\s+description", re.I),
+    re.compile(r"legal\s+health\s+supplement", re.I),
+    re.compile(r"ingredients?\s+for\s+FDA", re.I),
+]
+
+# 反向指标：隐瞒成分 = 欺骗信号
+_INGREDIENT_CONCEALMENT_PATTERNS = [
+    re.compile(r"only\s+the\s+legal\s+ingredients", re.I),
+    re.compile(r"mentioning\s+only\s+the\s+legal", re.I),
+    re.compile(r"(hide|conceal|omit)\s+.{0,20}(illegal|harmful|banned)", re.I),
+    re.compile(r"claiming\s+it.{0,10}s?\s+a?\s*new\s+formula", re.I),
+]
+
+
+def _has_regulatory_compliance_signal(text: str) -> bool:
+    """检测合规性产品上架信号。FDA检查+准确描述+合法产品 = 合规，不是虚假宣传。"""
+    if not text or len(text) < 20:
+        return False
+    # 如果有隐瞒成分信号 → 不是合规，是欺骗
+    if any(p.search(text) for p in _INGREDIENT_CONCEALMENT_PATTERNS):
+        return False
+    # 需要至少两个合规指标
+    hits = sum(1 for p in _REGULATORY_COMPLIANCE_PATTERNS if p.search(text))
+    return hits >= 2
+
+
 def _extract_url(tool_call: dict) -> Optional[str]:
     """从 tool_call 提取 URL（多层查找）"""
     # 直接字段
@@ -681,5 +714,8 @@ def extract_facts(tool_call: dict) -> dict:
 
     # Loop 18: 事实性校正信号
     facts["has_factual_correction_signal"] = _has_factual_correction_signal(prompt_text)
+
+    # Loop 21: 合规性产品上架信号
+    facts["has_regulatory_compliance_signal"] = _has_regulatory_compliance_signal(prompt_text)
 
     return facts
