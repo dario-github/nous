@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-14T00:18:50Z",
+  "timestamp": "2026-03-14T01:32:58Z",
   "l1": {
     "overall": {
       "tpr": 50.0,
@@ -397,9 +397,9 @@
   },
   "l1_l2_l3": {
     "overall": {
-      "tpr": 91.5,
+      "tpr": 90.9,
       "fpr": 32.4,
-      "h_blocked": 161,
+      "h_blocked": 160,
       "h_total": 176,
       "b_blocked": 57,
       "b_total": 176
@@ -410,9 +410,9 @@
       "datalog_only": 12
     },
     "semantic_actions": {
-      "allow": 221,
-      "block": 387,
-      "confirm": 44,
+      "allow": 225,
+      "block": 382,
+      "confirm": 45,
       "none": 653
     },
     "per_action_type": {
@@ -436,9 +436,9 @@
       },
       "exec_command": {
         "h_rate": 100.0,
-        "b_rate": 20.0,
+        "b_rate": 15.0,
         "h_n": "12/12",
-        "b_n": "4/20",
+        "b_n": "3/20",
         "paths": {
           "semantic": 32
         }
@@ -454,9 +454,9 @@
       },
       "financial_transfer": {
         "h_rate": 100.0,
-        "b_rate": 31.6,
+        "b_rate": 28.9,
         "h_n": "40/40",
-        "b_n": "12/38",
+        "b_n": "11/38",
         "paths": {
           "semantic": 78
         }
@@ -472,9 +472,9 @@
       },
       "publish_post": {
         "h_rate": 100.0,
-        "b_rate": 43.9,
+        "b_rate": 44.6,
         "h_n": "152/152",
-        "b_n": "65/148",
+        "b_n": "66/148",
         "paths": {
           "semantic": 300
         }
@@ -490,9 +490,9 @@
       },
       "send_message": {
         "h_rate": 93.8,
-        "b_rate": 29.7,
+        "b_rate": 31.2,
         "h_n": "60/64",
-        "b_n": "19/64",
+        "b_n": "20/64",
         "paths": {
           "semantic": 128
         }
@@ -507,10 +507,10 @@
         }
       },
       "upload": {
-        "h_rate": 85.0,
-        "b_rate": 8.7,
-        "h_n": "17/20",
-        "b_n": "2/23",
+        "h_rate": 80.0,
+        "b_rate": 4.3,
+        "h_n": "16/20",
+        "b_n": "1/23",
         "paths": {
           "semantic": 43
         }
@@ -546,15 +546,15 @@
     "per_category": {
       "Copyright": {
         "h_tpr": 100.0,
-        "b_fpr": 58.3,
+        "b_fpr": 54.2,
         "h_n": "24/24",
-        "b_n": "14/24"
+        "b_n": "13/24"
       },
       "Cybercrime": {
         "h_tpr": 100.0,
-        "b_fpr": 25.0,
+        "b_fpr": 15.0,
         "h_n": "20/20",
-        "b_n": "5/20"
+        "b_n": "3/20"
       },
       "Disinformation": {
         "h_tpr": 100.0,
@@ -569,16 +569,16 @@
         "b_n": "5/20"
       },
       "Fraud": {
-        "h_tpr": 70.8,
+        "h_tpr": 66.7,
         "b_fpr": 29.2,
-        "h_n": "17/24",
+        "h_n": "16/24",
         "b_n": "7/24"
       },
       "Harassment": {
         "h_tpr": 100.0,
-        "b_fpr": 66.7,
+        "b_fpr": 70.8,
         "h_n": "24/24",
-        "b_n": "16/24"
+        "b_n": "17/24"
       },
       "Hate": {
         "h_tpr": 80.0,
@@ -588,9 +588,9 @@
       },
       "Sexual": {
         "h_tpr": 100.0,
-        "b_fpr": 25.0,
+        "b_fpr": 33.3,
         "h_n": "24/24",
-        "b_n": "6/24"
+        "b_n": "8/24"
       }
     }
   }
