@@ -53,36 +53,67 @@ def enhanced_tool_calls(scenario: dict) -> list[dict]:
     return base_calls
 
 
-def run_scenarios(scenarios, is_harmful, triv_config, sem_config):
-    """Run gate on scenarios, return per-scenario results."""
+def _run_scenario_once(scenario, triv_config, sem_config):
+    """Run gate on a single scenario once, return (any_blocked, tc_results)."""
+    tool_calls = enhanced_tool_calls(scenario) if sem_config else scenario_to_tool_calls(scenario)
+    tc_results = []
+    for tc in tool_calls:
+        gr = gate(
+            tc, db=None,
+            constraints_dir=CONSTRAINTS_DIR,
+            triviality_config=triv_config,
+            semantic_config=sem_config,
+        )
+        tc_results.append({
+            "func_name": tc.get("tool_name", "unknown"),
+            "action_type": tc.get("action_type", "unknown"),
+            "verdict": gr.verdict.action,
+            "layer_path": gr.layer_path,
+            "rule_id": gr.verdict.rule_id,
+            "reason": (gr.verdict.reason or "")[:120],
+            "semantic_verdict": gr.semantic_verdict,
+        })
+    any_blocked = any(r["verdict"] in ("block", "confirm") for r in tc_results)
+    return any_blocked, tc_results
+
+
+def run_scenarios(scenarios, is_harmful, triv_config, sem_config, repeat=1):
+    """Run gate on scenarios with optional repeat + majority vote.
+
+    When repeat > 1, each scenario is evaluated N times and the final
+    verdict uses majority vote (blocked if ≥ceil(N/2) runs blocked).
+    """
     results = []
     for scenario in scenarios:
-        tool_calls = enhanced_tool_calls(scenario) if sem_config else scenario_to_tool_calls(scenario)
-        tc_results = []
-        for tc in tool_calls:
-            gr = gate(
-                tc, db=None,
-                constraints_dir=CONSTRAINTS_DIR,
-                triviality_config=triv_config,
-                semantic_config=sem_config,
-            )
-            tc_results.append({
-                "func_name": tc.get("tool_name", "unknown"),
-                "action_type": tc.get("action_type", "unknown"),
-                "verdict": gr.verdict.action,
-                "layer_path": gr.layer_path,
-                "rule_id": gr.verdict.rule_id,
-                "reason": (gr.verdict.reason or "")[:120],
-                "semantic_verdict": gr.semantic_verdict,
-            })
-        any_blocked = any(r["verdict"] in ("block", "confirm") for r in tc_results)
-        results.append({
+        if repeat <= 1:
+            any_blocked, tc_results = _run_scenario_once(scenario, triv_config, sem_config)
+            consensus = 1.0
+        else:
+            votes = []
+            all_tc_results = []
+            for _ in range(repeat):
+                blocked, tc_res = _run_scenario_once(scenario, triv_config, sem_config)
+                votes.append(blocked)
+                all_tc_results.append(tc_res)
+            block_count = sum(votes)
+            threshold = math.ceil(repeat / 2)
+            any_blocked = block_count >= threshold
+            consensus = max(block_count, repeat - block_count) / repeat
+            # Use tc_results from the majority-matching run
+            majority_idx = next(i for i, v in enumerate(votes) if v == any_blocked)
+            tc_results = all_tc_results[majority_idx]
+
+        result = {
             "scenario_id": scenario.get("id", ""),
             "category": scenario.get("category", "unknown"),
             "is_harmful": is_harmful,
             "any_blocked": any_blocked,
             "tool_results": tc_results,
-        })
+        }
+        if repeat > 1:
+            result["repeat_votes"] = f"{sum(1 for v in votes if v)}/{repeat} blocked"
+            result["consensus"] = round(consensus, 2)
+        results.append(result)
     return results
 
 
@@ -168,26 +199,30 @@ def compute_metrics(harmful_results, benign_results):
             for r in missed
         ],
         "false_positives": [
-            {"id": r["scenario_id"], "category": r["category"]}
+            {"id": r["scenario_id"], "category": r["category"],
+             **({"votes": r["repeat_votes"], "consensus": r["consensus"]} if "repeat_votes" in r else {})}
             for r in false_pos
         ],
     }
 
 
-def run_split(split_name: str, triv_config, sem_config) -> dict:
+def run_split(split_name: str, triv_config, sem_config, repeat: int = 1) -> dict:
     """Run benchmark on one split."""
     harmful, benign = load_split(split_name)
     print(f"\n{'='*50}")
     print(f"  Split: {split_name} ({len(harmful)}h + {len(benign)}b)")
+    if repeat > 1:
+        print(f"  Repeat: {repeat}x (majority vote)")
     print(f"{'='*50}")
 
     t0 = time.perf_counter()
-    h_results = run_scenarios(harmful, True, triv_config, sem_config)
-    b_results = run_scenarios(benign, False, triv_config, sem_config)
+    h_results = run_scenarios(harmful, True, triv_config, sem_config, repeat=repeat)
+    b_results = run_scenarios(benign, False, triv_config, sem_config, repeat=repeat)
     elapsed = time.perf_counter() - t0
 
     metrics = compute_metrics(h_results, b_results)
     metrics["split"] = split_name
+    metrics["repeat"] = repeat
     metrics["elapsed_s"] = round(elapsed, 1)
     metrics["timestamp"] = time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -225,11 +260,20 @@ def run_split(split_name: str, triv_config, sem_config) -> dict:
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: run_split_benchmark.py <train|val|test|all>")
+        print("Usage: run_split_benchmark.py <train|val|test|all> [--repeat N]")
         sys.exit(1)
 
     target = sys.argv[1]
     splits_to_run = ["train", "val", "test"] if target == "all" else [target]
+
+    # Parse --repeat N
+    repeat = 1
+    if "--repeat" in sys.argv:
+        idx = sys.argv.index("--repeat")
+        if idx + 1 < len(sys.argv):
+            repeat = int(sys.argv[idx + 1])
+    if repeat > 1:
+        print(f"🔁 Repeat mode: {repeat}x per scenario (majority vote)")
 
     if "test" in splits_to_run and target != "all":
         print("⚠️  Running test split — this should only be done at milestones!")
@@ -257,7 +301,7 @@ def main():
 
     all_metrics = {}
     for split in splits_to_run:
-        all_metrics[split] = run_split(split, triv_config, sem_config)
+        all_metrics[split] = run_split(split, triv_config, sem_config, repeat=repeat)
 
     # Print comparison if multiple splits
     if len(all_metrics) > 1:
