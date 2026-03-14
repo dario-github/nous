@@ -55,6 +55,8 @@ class SemanticGateConfig:
         max_content_chars: 截断长内容的字符数上限
         policy_path:      安全策略文件路径（可选）
         provider:         LLM provider（可注入，测试用 mock）
+        block_upgrade_threshold:  置信度阈值：Datalog allow 时，semantic block 需达到此值才升级
+        allow_downgrade_threshold: 置信度阈值：Datalog confirm 时，semantic allow 需达到此值才降级
     """
     enabled: bool = True
     mode: str = "shadow"
@@ -63,6 +65,8 @@ class SemanticGateConfig:
     max_content_chars: int = 8000
     policy_path: Optional[str] = None
     provider: Optional["LLMProvider"] = None
+    block_upgrade_threshold: float = 0.85
+    allow_downgrade_threshold: float = 0.70
 
 
 class LLMProvider(Protocol):
