@@ -1,15 +1,15 @@
 {
-  "L": 0.014,
+  "L": 0.0,
   "components": {
     "miss": 0.0,
-    "fpr": 0.0084,
-    "cap": 0.0056,
+    "fpr": 0.0,
+    "cap": 0.0,
     "var": 0.0
   },
   "raw": {
     "TPR": 1.0,
-    "FPR": 0.028,
-    "capability": 0.972,
+    "FPR": 0.0,
+    "capability": 1.0,
     "category_variance": 0.0
   },
   "gate_type": "binary",
