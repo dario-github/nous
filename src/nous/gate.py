@@ -328,16 +328,23 @@ def _apply_semantic_verdict(
     sem_verdict: Optional[dict],
     config: SemanticGateConfig,
 ) -> Verdict:
-    """根据 Semantic Gate 结果修改 verdict。
+    """Confidence-Calibrated Verdict Fusion (Loop 4).
+
+    设计原则：Datalog 是强先验，LLM 需要提供高置信度证据才能推翻。
 
     规则：
     - shadow 模式 → 不改变（只记录）
     - active 模式：
-      - datalog allow + semantic block → 升级为 block
-      - datalog allow + semantic confirm → 升级为 confirm
-      - datalog confirm + semantic allow → 降级为 allow
-      - datalog confirm + semantic block → 升级为 block
-      - 其他 → 维持原 verdict
+      Datalog "allow":
+        - semantic block (conf >= block_upgrade_threshold) → 升级为 block
+        - semantic block (conf < threshold) → 保持 allow（证据不足）
+        - semantic confirm → 保持 allow（LLM 犹豫不推翻规则许可）
+        - semantic allow → 保持 allow
+      Datalog "confirm"/"delegate":
+        - semantic allow (conf >= allow_downgrade_threshold) → 降级为 allow
+        - semantic allow (conf < threshold) → 保持 confirm
+        - semantic block → 升级为 block（无阈值，confirm 本身就是模糊地带）
+        - semantic confirm → 保持 confirm
     """
     if config.mode != "active":
         return current_verdict
@@ -347,41 +354,36 @@ def _apply_semantic_verdict(
 
     sem_action = sem_verdict.get("action", "")
     sem_reason = sem_verdict.get("reason", "")
+    sem_confidence = float(sem_verdict.get("confidence", 0.5))
 
     if datalog_verdict == "allow":
-        if sem_action == "block":
+        if sem_action == "block" and sem_confidence >= config.block_upgrade_threshold:
             return Verdict(
                 action="block",
                 rule_id="semantic-gate",
-                reason=f"[semantic] {sem_reason}",
+                reason=f"[semantic block@{sem_confidence:.2f}] {sem_reason}",
                 all_matched=current_verdict.all_matched,
             )
-        elif sem_action == "confirm":
-            return Verdict(
-                action="confirm",
-                rule_id="semantic-gate",
-                reason=f"[semantic] {sem_reason}",
-                all_matched=current_verdict.all_matched,
-            )
-        # sem allow → keep allow
+        # semantic block below threshold / confirm / allow → keep allow
+        # Key insight: LLM "confirm" (hesitation) should NOT override Datalog's allow
         return current_verdict
 
     elif datalog_verdict in ("confirm", "delegate"):
-        if sem_action == "allow":
+        if sem_action == "allow" and sem_confidence >= config.allow_downgrade_threshold:
             return Verdict(
                 action="allow",
                 rule_id=f"{current_verdict.rule_id}+semantic-override",
-                reason=f"[semantic downgrade] {sem_reason}",
+                reason=f"[semantic allow@{sem_confidence:.2f}] {sem_reason}",
                 all_matched=current_verdict.all_matched,
             )
         elif sem_action == "block":
             return Verdict(
                 action="block",
                 rule_id=f"{current_verdict.rule_id}+semantic-upgrade",
-                reason=f"[semantic upgrade] {sem_reason}",
+                reason=f"[semantic block@{sem_confidence:.2f}] {sem_reason}",
                 all_matched=current_verdict.all_matched,
             )
-        # sem confirm → keep confirm
+        # sem confirm or low-confidence allow → keep confirm
         return current_verdict
 
     return current_verdict

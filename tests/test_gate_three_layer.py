@@ -113,8 +113,12 @@ class TestActiveMode:
         assert result.datalog_verdict == "allow"
         assert result.layer_path == "semantic"
 
-    def test_allow_semantic_confirm_upgrades(self):
-        """Datalog allow + semantic confirm → final confirm。"""
+    def test_allow_semantic_confirm_stays_allow(self):
+        """Datalog allow + semantic confirm → stays allow (Loop 4 FPR fix).
+        
+        Key insight: LLM's "confirm" (hesitation) should NOT override Datalog's allow.
+        This is the core fix for 77% FPR from Loop 3.
+        """
         result = gate(constraints_dir=_CONSTRAINTS_DIR, 
             tool_call={"action_type": "send_message"},
             triviality_config=TrivialityConfig(),
@@ -123,7 +127,7 @@ class TestActiveMode:
                 provider=make_mock_provider('{"action":"confirm","reason":"needs review","confidence":0.7}'),
             ),
         )
-        assert result.verdict.action == "confirm"
+        assert result.verdict.action == "allow"
         assert result.datalog_verdict == "allow"
 
     def test_confirm_semantic_allow_downgrades(self):
@@ -231,3 +235,193 @@ class TestBackwardCompatibility:
         assert result.verdict.action == "allow"
         assert result.layer_path == "datalog_only"
         assert result.semantic_verdict is None
+
+
+# ── Confidence-Calibrated Fusion (Loop 4) ─────────────────────────────────
+
+
+class TestConfidenceCalibratedFusion:
+    """Loop 4: Confidence-calibrated verdict fusion tests.
+    
+    Validates that:
+    - Datalog "allow" + semantic "confirm" → stays allow (FPR fix)
+    - Datalog "allow" + semantic "block" respects block_upgrade_threshold
+    - Datalog "confirm" + semantic "allow" respects allow_downgrade_threshold
+    - Custom thresholds work correctly
+    """
+
+    def test_allow_block_below_threshold_stays_allow(self):
+        """Datalog allow + semantic block (conf 0.7 < 0.85) → stays allow."""
+        result = gate(constraints_dir=_CONSTRAINTS_DIR,
+            tool_call={"action_type": "send_message", "params": {"content": "test"}},
+            triviality_config=TrivialityConfig(),
+            semantic_config=SemanticGateConfig(
+                mode="active",
+                provider=make_mock_provider('{"action":"block","reason":"maybe harmful","confidence":0.7}'),
+            ),
+        )
+        assert result.verdict.action == "allow"
+        assert result.datalog_verdict == "allow"
+        assert result.semantic_verdict["action"] == "block"
+
+    def test_allow_block_above_threshold_upgrades(self):
+        """Datalog allow + semantic block (conf 0.9 >= 0.85) → upgrades to block."""
+        result = gate(constraints_dir=_CONSTRAINTS_DIR,
+            tool_call={"action_type": "send_message", "params": {"content": "hack systems"}},
+            triviality_config=TrivialityConfig(),
+            semantic_config=SemanticGateConfig(
+                mode="active",
+                provider=make_mock_provider('{"action":"block","reason":"harmful intent","confidence":0.9}'),
+            ),
+        )
+        assert result.verdict.action == "block"
+        assert result.datalog_verdict == "allow"
+        assert "0.90" in result.verdict.reason
+
+    def test_allow_block_at_exact_threshold(self):
+        """Datalog allow + semantic block (conf exactly 0.85) → upgrades (>=)."""
+        result = gate(constraints_dir=_CONSTRAINTS_DIR,
+            tool_call={"action_type": "send_message", "params": {"content": "test"}},
+            triviality_config=TrivialityConfig(),
+            semantic_config=SemanticGateConfig(
+                mode="active",
+                provider=make_mock_provider('{"action":"block","reason":"harmful","confidence":0.85}'),
+            ),
+        )
+        assert result.verdict.action == "block"
+
+    def test_allow_confirm_always_stays_allow(self):
+        """Datalog allow + semantic confirm (any conf) → stays allow.
+        
+        This is the KEY FPR fix. LLM hesitation should not override rules.
+        """
+        for conf in [0.5, 0.75, 0.9, 0.99]:
+            result = gate(constraints_dir=_CONSTRAINTS_DIR,
+                tool_call={"action_type": "send_message"},
+                triviality_config=TrivialityConfig(),
+                semantic_config=SemanticGateConfig(
+                    mode="active",
+                    provider=make_mock_provider(
+                        f'{{"action":"confirm","reason":"unsure","confidence":{conf}}}'
+                    ),
+                ),
+            )
+            assert result.verdict.action == "allow", f"Failed at conf={conf}"
+
+    def test_confirm_allow_below_threshold_stays_confirm(self):
+        """Datalog confirm + semantic allow (conf 0.5 < 0.7) → stays confirm."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            confirm_rule = Path(tmpdir) / "TC1.yaml"
+            confirm_rule.write_text(
+                "id: TC1\n"
+                "name: test confirm rule\n"
+                "priority: 50\n"
+                "enabled: true\n"
+                "trigger:\n"
+                "  action_type: test_confirm_action\n"
+                "verdict: confirm\n"
+                "reason: test confirm\n"
+            )
+            result = gate(
+                constraints_dir=Path(tmpdir),
+                tool_call={"action_type": "test_confirm_action", "params": {"content": "benign"}},
+                triviality_config=TrivialityConfig(),
+                semantic_config=SemanticGateConfig(
+                    mode="active",
+                    provider=make_mock_provider('{"action":"allow","reason":"seems ok","confidence":0.5}'),
+                ),
+            )
+            assert result.datalog_verdict == "confirm"
+            assert result.verdict.action == "confirm"  # NOT downgraded
+
+    def test_confirm_allow_above_threshold_downgrades(self):
+        """Datalog confirm + semantic allow (conf 0.8 >= 0.7) → downgrades to allow."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            confirm_rule = Path(tmpdir) / "TC1.yaml"
+            confirm_rule.write_text(
+                "id: TC1\n"
+                "name: test confirm rule\n"
+                "priority: 50\n"
+                "enabled: true\n"
+                "trigger:\n"
+                "  action_type: test_confirm_action\n"
+                "verdict: confirm\n"
+                "reason: test confirm\n"
+            )
+            result = gate(
+                constraints_dir=Path(tmpdir),
+                tool_call={"action_type": "test_confirm_action", "params": {"content": "benign post"}},
+                triviality_config=TrivialityConfig(),
+                semantic_config=SemanticGateConfig(
+                    mode="active",
+                    provider=make_mock_provider('{"action":"allow","reason":"benign post","confidence":0.8}'),
+                ),
+            )
+            assert result.datalog_verdict == "confirm"
+            assert result.verdict.action == "allow"
+            assert "0.80" in result.verdict.reason
+
+    def test_confirm_block_always_upgrades(self):
+        """Datalog confirm + semantic block → always upgrades (no threshold)."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            confirm_rule = Path(tmpdir) / "TC1.yaml"
+            confirm_rule.write_text(
+                "id: TC1\nname: test\npriority: 50\nenabled: true\n"
+                "trigger:\n  action_type: test_confirm_action\n"
+                "verdict: confirm\nreason: test\n"
+            )
+            for conf in [0.3, 0.5, 0.7, 0.9]:
+                result = gate(
+                    constraints_dir=Path(tmpdir),
+                    tool_call={"action_type": "test_confirm_action"},
+                    triviality_config=TrivialityConfig(),
+                    semantic_config=SemanticGateConfig(
+                        mode="active",
+                        provider=make_mock_provider(
+                            f'{{"action":"block","reason":"harmful","confidence":{conf}}}'
+                        ),
+                    ),
+                )
+                assert result.verdict.action == "block", f"Failed at conf={conf}"
+
+    def test_custom_thresholds(self):
+        """Custom block_upgrade_threshold and allow_downgrade_threshold."""
+        # Stricter block threshold (0.95) — block at 0.9 should NOT upgrade
+        result = gate(constraints_dir=_CONSTRAINTS_DIR,
+            tool_call={"action_type": "send_message"},
+            triviality_config=TrivialityConfig(),
+            semantic_config=SemanticGateConfig(
+                mode="active",
+                block_upgrade_threshold=0.95,
+                provider=make_mock_provider('{"action":"block","reason":"test","confidence":0.9}'),
+            ),
+        )
+        assert result.verdict.action == "allow"  # 0.9 < 0.95
+
+        # Looser block threshold (0.6) — block at 0.7 should upgrade
+        result = gate(constraints_dir=_CONSTRAINTS_DIR,
+            tool_call={"action_type": "send_message"},
+            triviality_config=TrivialityConfig(),
+            semantic_config=SemanticGateConfig(
+                mode="active",
+                block_upgrade_threshold=0.6,
+                provider=make_mock_provider('{"action":"block","reason":"test","confidence":0.7}'),
+            ),
+        )
+        assert result.verdict.action == "block"  # 0.7 >= 0.6
+
+    def test_reason_includes_confidence(self):
+        """Verify that the verdict reason includes the confidence score."""
+        result = gate(constraints_dir=_CONSTRAINTS_DIR,
+            tool_call={"action_type": "send_message", "params": {"content": "hack"}},
+            triviality_config=TrivialityConfig(),
+            semantic_config=SemanticGateConfig(
+                mode="active",
+                provider=make_mock_provider('{"action":"block","reason":"malicious","confidence":0.93}'),
+            ),
+        )
+        assert result.verdict.action == "block"
+        assert "@0.93" in result.verdict.reason
