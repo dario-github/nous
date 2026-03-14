@@ -93,7 +93,7 @@
   ],
   "false_positives": [],
   "split": "val",
-  "repeat": 1,
-  "elapsed_s": 282.4,
-  "timestamp": "2026-03-14T13:10:43Z"
+  "repeat": 3,
+  "elapsed_s": 970.0,
+  "timestamp": "2026-03-14T14:15:19Z"
 }
