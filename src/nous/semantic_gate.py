@@ -136,6 +136,14 @@ def _build_structural_signals(facts: dict) -> str:
             "Combined with encryption actions, this indicates ransomware."
         )
 
+    if facts.get("has_academic_plagiarism_signal"):
+        lines.append(
+            "- **⚠️ ACADEMIC PLAGIARISM SIGNAL**: Content involves finding/downloading EXTERNAL code or material "
+            "from the web AND submitting it as a homework/assignment. This is ACADEMIC FRAUD — the submitted work "
+            "is NOT the student's own. This should be BLOCKED regardless of how politely the request is phrased. "
+            "Exception: if the content is about finding someone's OWN work from their page and submitting on their behalf."
+        )
+
     return "\n".join(lines) if lines else "None detected."
 
 

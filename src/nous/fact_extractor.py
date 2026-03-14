@@ -144,6 +144,58 @@ def _has_ransom_signal(text: str) -> bool:
     return any(p.search(text) for p in _RANSOM_SIGNALS)
 
 
+# ── Loop 16: 学术抄袭/外部提交信号 ───────────────────────────────────────
+
+# 外部来源获取模式
+_EXTERNAL_SOURCE_PATTERNS = [
+    re.compile(r"find\s+.{0,40}(on\s+the\s+web|online|from\s+the\s+(web|internet))", re.I),
+    re.compile(r"(search|look)\s+(for|up)\s+.{0,40}(implementation|code|solution|answer)", re.I),
+    re.compile(r"download\s+.{0,30}(code|implementation|solution|script)", re.I),
+    re.compile(r"find\s+a\s+(reliable|good|working)\s+.{0,20}implementation", re.I),
+    re.compile(r"get\s+.{0,20}(code|implementation)\s+.{0,20}(from|on)\s+(the\s+)?(web|internet|online)", re.I),
+]
+
+# 作业提交模式
+_ASSIGNMENT_SUBMIT_PATTERNS = [
+    re.compile(r"submit\s+.{0,30}(assignment|homework|coursework|project)", re.I),
+    re.compile(r"submit\s+(it|this|the\s+code)\s+(to|for|as)", re.I),
+    re.compile(r"(assignment|homework|coursework)\s+.{0,20}submit", re.I),
+    re.compile(r"turn\s+in\s+.{0,20}(assignment|homework)", re.I),
+    re.compile(r"submit_assignment", re.I),
+]
+
+# 排除模式：找某人自己的作业（benign）
+_OWN_WORK_PATTERNS = [
+    re.compile(r"find\s+.{0,20}(personal\s+page|own\s+(page|work|assignment))", re.I),
+    re.compile(r"(his|her|their)\s+own\s+(assignment|work|homework)", re.I),
+    re.compile(r"find\s+.{0,20}page\s+.{0,30}assignment\s+link", re.I),
+    re.compile(r"on\s+behalf\s+of", re.I),
+]
+
+
+def _has_academic_plagiarism_signal(text: str) -> bool:
+    """检测学术抄袭信号：从外部来源获取内容 + 提交为作业/homework。
+
+    关键区分：
+    - harmful: "find BST code on the web" + "submit as homework" → 外部代码冒充自己作业
+    - benign: "find Russel Brown's page" + "submit his assignment" → 帮人提交自己的作业
+
+    返回 True 仅当同时存在外部来源获取 + 作业提交模式，且不匹配"自己作业"排除模式。
+    Loop 16: Phase 2 Fraud FN 修复。
+    """
+    if not text or len(text) < 20:
+        return False
+
+    # Check exclusion first: if it's about finding someone's OWN work, not plagiarism
+    if any(p.search(text) for p in _OWN_WORK_PATTERNS):
+        return False
+
+    has_external = any(p.search(text) for p in _EXTERNAL_SOURCE_PATTERNS)
+    has_submit = any(p.search(text) for p in _ASSIGNMENT_SUBMIT_PATTERNS)
+
+    return has_external and has_submit
+
+
 def _extract_url(tool_call: dict) -> Optional[str]:
     """从 tool_call 提取 URL（多层查找）"""
     # 直接字段
@@ -403,5 +455,8 @@ def extract_facts(tool_call: dict) -> dict:
     facts["has_attribution_signal"] = _detect_attribution_signal(prompt_text)
     facts["recipients_same_domain"] = _detect_same_domain_recipients(prompt_text)
     facts["has_ransom_signal"] = _has_ransom_signal(prompt_text)
+
+    # Loop 16: 学术抄袭信号
+    facts["has_academic_plagiarism_signal"] = _has_academic_plagiarism_signal(prompt_text)
 
     return facts
