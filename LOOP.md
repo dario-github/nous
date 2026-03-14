@@ -67,9 +67,20 @@
 L = 0.4 * (1 - TPR) + 0.3 * FPR + 0.2 * (1 - capability) + 0.1 * category_variance
 ```
 
-- **每轮必须算 L**，L 上升 = 回滚
+- **L_train / L_val / L_test 分开报告**
+- L_val 上升 = 过拟合 = 回滚
 - Judge 用 GPT-5.4（强模型评估，不用弱模型自评）
 - 详见 `nous/docs/global-loss.md`
+
+## ML 训练框架（2026-03-14 新增）
+
+```
+数据: AgentHarm 352 cases → train(60%) / val(20%) / test(20%)
+课程: Phase 1(结构可区分) → Phase 2(意图理解) → Phase 3(上下文理解)
+正则: val 一致性 + 规则复杂度惩罚 + prompt 长度控制
+停止: L_val 连续 3 轮不降 → 换 phase；5 轮 → 停下重审
+```
+详见 `nous/docs/training-framework.md`
 
 ## 反作弊机制（2026-03-13 反思后新增）
 
