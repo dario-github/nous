@@ -83,6 +83,67 @@ def _is_destructive_command(cmd: str) -> bool:
     return any(re.search(p, cmd, re.IGNORECASE) for p in _DESTRUCTIVE_CMD_PATTERNS)
 
 
+# ── 结构化良性信号提取（Loop 12: Phase 1 FPR 修复） ──────────────────
+
+# 归属/引用短语：表示内容分享带有来源标注
+_ATTRIBUTION_PATTERNS = [
+    re.compile(r"with\s+(the\s+)?link\s+(in|to)", re.I),
+    re.compile(r"with\s+(proper\s+)?credit", re.I),
+    re.compile(r"with\s+(the\s+)?attribution", re.I),
+    re.compile(r"(in|add)\s+(the\s+)?description[/,]?\s*(title)?", re.I),
+    re.compile(r"give\s+credit", re.I),
+    re.compile(r"cite\s+(the\s+)?source", re.I),
+    re.compile(r"link\s+(back\s+)?to\s+(the\s+)?original", re.I),
+    re.compile(r"include\s+(a\s+)?link", re.I),
+    re.compile(r"reference\s+(the\s+)?original", re.I),
+]
+
+# 勒索信号：加密 + 这些 = ransomware
+_RANSOM_SIGNALS = [
+    re.compile(r"\bransom\b", re.I),
+    re.compile(r"\bdemand\s+(a\s+)?payment\b", re.I),
+    re.compile(r"\bpay\s+\S+\s+\$", re.I),
+    re.compile(r"\bbitcoin\s+wallet\b", re.I),
+    re.compile(r"\bbtc\b", re.I),
+    re.compile(r"\bvictim\b", re.I),
+    re.compile(r"\bdecrypt\b.*\bfor\s+(a\s+)?ransom\b", re.I),
+]
+
+
+def _detect_attribution_signal(text: str) -> bool:
+    """检测文本中是否包含归属/引用信号（link to original, give credit 等）。
+
+    用于区分 "盗用发布"（无归属→harmful）和 "带来源分享"（有归属→benign）。
+    """
+    if not text or len(text) < 10:
+        return False
+    return any(p.search(text) for p in _ATTRIBUTION_PATTERNS)
+
+
+def _detect_same_domain_recipients(text: str) -> Optional[str]:
+    """检测文本中所有 email 地址是否属于同一域名。
+
+    多个 email 同一域名 → 组织内部通信（同事/团队），非攻击目标。
+    返回共同域名字符串或 None。
+    """
+    if not text:
+        return None
+    emails = re.findall(r'[\w.+-]+@([\w.-]+\.[\w]+)', text)
+    if len(emails) < 2:
+        return None
+    domains = set(d.lower() for d in emails)
+    if len(domains) == 1:
+        return domains.pop()
+    return None
+
+
+def _has_ransom_signal(text: str) -> bool:
+    """检测文本中是否包含勒索信号（ransom, demand payment, Bitcoin wallet 等）。"""
+    if not text or len(text) < 10:
+        return False
+    return any(p.search(text) for p in _RANSOM_SIGNALS)
+
+
 def _extract_url(tool_call: dict) -> Optional[str]:
     """从 tool_call 提取 URL（多层查找）"""
     # 直接字段
@@ -335,5 +396,12 @@ def extract_facts(tool_call: dict) -> dict:
         val = params.get(key) or tool_call.get(key, "")
         if val and isinstance(val, str):
             facts[key] = val
+
+    # Loop 12: 结构化良性信号（Phase 1 FPR 修复）
+    # 从 full_prompt/content 提取，用于 Datalog 路由 + triviality filter
+    prompt_text = facts.get("full_prompt", "") or facts.get("content", "")
+    facts["has_attribution_signal"] = _detect_attribution_signal(prompt_text)
+    facts["recipients_same_domain"] = _detect_same_domain_recipients(prompt_text)
+    facts["has_ransom_signal"] = _has_ransom_signal(prompt_text)
 
     return facts

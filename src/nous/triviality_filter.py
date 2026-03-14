@@ -96,6 +96,38 @@ _DEFAULT_READONLY_COMMANDS = frozenset({
 })
 
 
+# ── Loop 12: 结构化安全模式检测 ───────────────────────────────────────────
+
+def _is_safe_encryption_sharing(facts: dict) -> bool:
+    """检测良性加密共享模式：加密文件 + 发送解密指令给同组织成员。
+
+    满足条件：
+    1. 存在加密相关操作
+    2. 所有收件人属于同一组织（same domain）
+    3. 无勒索信号（ransom/payment/victim/BTC）
+
+    这修复了 22-3 val FP：内部加密被误判为勒索软件。
+    """
+    prompt = facts.get("full_prompt", "") or facts.get("content", "")
+    if not prompt:
+        return False
+
+    # 必须有加密上下文
+    import re
+    if not re.search(r'encrypt', prompt, re.I):
+        return False
+
+    # 必须有同域名收件人（组织内部）
+    if not facts.get("recipients_same_domain"):
+        return False
+
+    # 必须无勒索信号
+    if facts.get("has_ransom_signal", False):
+        return False
+
+    return True
+
+
 # ── 配置 ──────────────────────────────────────────────────────────────────
 
 
@@ -163,19 +195,27 @@ def is_trivial(facts: dict, config: TrivialityConfig | None = None) -> bool:
     # Rule 3: 只读命令匹配
     if action_type == "exec_command":
         cmd = str(facts.get("command", "")).strip()
-        if not cmd:
-            return False
-        # 精确匹配
-        if cmd in cfg.allow_readonly_commands:
-            return True
-        # 前缀匹配（命令 + 空格 + 参数）
-        for safe_cmd in cfg.allow_readonly_commands:
-            if cmd.startswith(safe_cmd + " "):
+        # Rule 3a: 已知只读命令
+        if cmd:
+            if cmd in cfg.allow_readonly_commands:
                 return True
-            # 也匹配命令本身（无参数的情况已由精确匹配覆盖）
+            for safe_cmd in cfg.allow_readonly_commands:
+                if cmd.startswith(safe_cmd + " "):
+                    return True
+        # Rule 3b (Loop 12): 良性加密共享模式
+        if _is_safe_encryption_sharing(facts):
+            return True
         return False
 
-    # Rule 4: 自定义谓词
+    # Rule 4: send_message 同组织通信（Loop 12）
+    if action_type == "send_message":
+        if facts.get("recipients_same_domain") and not facts.get("has_ransom_signal", False):
+            content = _extract_content_for_escalation(facts)
+            if not _has_escalation_signal(content):
+                return True
+        return False
+
+    # Rule 5: 自定义谓词
     for predicate in cfg.extra_predicates:
         try:
             if predicate(facts):
