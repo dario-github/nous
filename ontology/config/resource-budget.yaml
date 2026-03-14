@@ -1,6 +1,8 @@
+# Resource budget for Nous gate pipeline
+# timeout_us: raised to 30s to accommodate semantic gate LLM calls
 gate_budgets:
   max_query_depth: 5
   max_entities_scanned: 50
   delegate_token_budget: 512
-  timeout_us: 5000
-enforcement: warn  # warn | enforce (M5+ 切 enforce)
+  timeout_us: 30000000  # 30 seconds (L3 semantic gate needs ~1-3s per call)
+enforcement: warn

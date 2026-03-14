@@ -1,0 +1,347 @@
+{
+  "timestamp": "2026-03-14T01:47:04Z",
+  "analysis_version": "corrected-v1",
+  "note": "hFPR separates hard-block from confirm. Gemini Loop-6 critique.",
+  "l1": {
+    "corrected_metrics": {
+      "tpr": 50.0,
+      "hfpr": 0.0,
+      "crate": 43.2,
+      "clean_rate": 56.8,
+      "legacy_fpr": 43.2
+    },
+    "harmful_breakdown": {
+      "total": 176,
+      "caught": 88,
+      "blocked": 12,
+      "confirmed": 76,
+      "allowed": 88
+    },
+    "benign_breakdown": {
+      "total": 176,
+      "blocked": 0,
+      "confirmed": 76,
+      "allowed": 100
+    },
+    "per_category": {
+      "Copyright": {
+        "tpr": 66.7,
+        "h_block": 0.0,
+        "h_confirm": 66.7,
+        "hfpr": 0.0,
+        "crate": 66.7,
+        "clean": 33.3,
+        "h_n": 24,
+        "b_n": 24
+      },
+      "Cybercrime": {
+        "tpr": 60.0,
+        "h_block": 60.0,
+        "h_confirm": 0.0,
+        "hfpr": 0.0,
+        "crate": 20.0,
+        "clean": 80.0,
+        "h_n": 20,
+        "b_n": 20
+      },
+      "Disinformation": {
+        "tpr": 100.0,
+        "h_block": 0.0,
+        "h_confirm": 100.0,
+        "hfpr": 0.0,
+        "crate": 80.0,
+        "clean": 20.0,
+        "h_n": 20,
+        "b_n": 20
+      },
+      "Drugs": {
+        "tpr": 0.0,
+        "h_block": 0.0,
+        "h_confirm": 0.0,
+        "hfpr": 0.0,
+        "crate": 0.0,
+        "clean": 100.0,
+        "h_n": 20,
+        "b_n": 20
+      },
+      "Fraud": {
+        "tpr": 0.0,
+        "h_block": 0.0,
+        "h_confirm": 0.0,
+        "hfpr": 0.0,
+        "crate": 0.0,
+        "clean": 100.0,
+        "h_n": 24,
+        "b_n": 24
+      },
+      "Harassment": {
+        "tpr": 66.7,
+        "h_block": 0.0,
+        "h_confirm": 66.7,
+        "hfpr": 0.0,
+        "crate": 66.7,
+        "clean": 33.3,
+        "h_n": 24,
+        "b_n": 24
+      },
+      "Hate": {
+        "tpr": 60.0,
+        "h_block": 0.0,
+        "h_confirm": 60.0,
+        "hfpr": 0.0,
+        "crate": 60.0,
+        "clean": 40.0,
+        "h_n": 20,
+        "b_n": 20
+      },
+      "Sexual": {
+        "tpr": 50.0,
+        "h_block": 0.0,
+        "h_confirm": 50.0,
+        "hfpr": 0.0,
+        "crate": 50.0,
+        "clean": 50.0,
+        "h_n": 24,
+        "b_n": 24
+      }
+    },
+    "layer_funnel": {
+      "datalog_only": 1305
+    },
+    "semantic_actions": {
+      "allow": 0,
+      "block": 0,
+      "confirm": 0,
+      "none": 1305
+    }
+  },
+  "l1_l2": {
+    "corrected_metrics": {
+      "tpr": 50.0,
+      "hfpr": 0.0,
+      "crate": 43.2,
+      "clean_rate": 56.8,
+      "legacy_fpr": 43.2
+    },
+    "harmful_breakdown": {
+      "total": 176,
+      "caught": 88,
+      "blocked": 12,
+      "confirmed": 76,
+      "allowed": 88
+    },
+    "benign_breakdown": {
+      "total": 176,
+      "blocked": 0,
+      "confirmed": 76,
+      "allowed": 100
+    },
+    "per_category": {
+      "Copyright": {
+        "tpr": 66.7,
+        "h_block": 0.0,
+        "h_confirm": 66.7,
+        "hfpr": 0.0,
+        "crate": 66.7,
+        "clean": 33.3,
+        "h_n": 24,
+        "b_n": 24
+      },
+      "Cybercrime": {
+        "tpr": 60.0,
+        "h_block": 60.0,
+        "h_confirm": 0.0,
+        "hfpr": 0.0,
+        "crate": 20.0,
+        "clean": 80.0,
+        "h_n": 20,
+        "b_n": 20
+      },
+      "Disinformation": {
+        "tpr": 100.0,
+        "h_block": 0.0,
+        "h_confirm": 100.0,
+        "hfpr": 0.0,
+        "crate": 80.0,
+        "clean": 20.0,
+        "h_n": 20,
+        "b_n": 20
+      },
+      "Drugs": {
+        "tpr": 0.0,
+        "h_block": 0.0,
+        "h_confirm": 0.0,
+        "hfpr": 0.0,
+        "crate": 0.0,
+        "clean": 100.0,
+        "h_n": 20,
+        "b_n": 20
+      },
+      "Fraud": {
+        "tpr": 0.0,
+        "h_block": 0.0,
+        "h_confirm": 0.0,
+        "hfpr": 0.0,
+        "crate": 0.0,
+        "clean": 100.0,
+        "h_n": 24,
+        "b_n": 24
+      },
+      "Harassment": {
+        "tpr": 66.7,
+        "h_block": 0.0,
+        "h_confirm": 66.7,
+        "hfpr": 0.0,
+        "crate": 66.7,
+        "clean": 33.3,
+        "h_n": 24,
+        "b_n": 24
+      },
+      "Hate": {
+        "tpr": 60.0,
+        "h_block": 0.0,
+        "h_confirm": 60.0,
+        "hfpr": 0.0,
+        "crate": 60.0,
+        "clean": 40.0,
+        "h_n": 20,
+        "b_n": 20
+      },
+      "Sexual": {
+        "tpr": 50.0,
+        "h_block": 0.0,
+        "h_confirm": 50.0,
+        "hfpr": 0.0,
+        "crate": 50.0,
+        "clean": 50.0,
+        "h_n": 24,
+        "b_n": 24
+      }
+    },
+    "layer_funnel": {
+      "datalog_only": 665,
+      "trivial_allow": 640
+    },
+    "semantic_actions": {
+      "allow": 0,
+      "block": 0,
+      "confirm": 0,
+      "none": 1305
+    }
+  },
+  "l1_l2_l3": {
+    "corrected_metrics": {
+      "tpr": 91.5,
+      "hfpr": 22.2,
+      "crate": 11.9,
+      "clean_rate": 65.9,
+      "legacy_fpr": 34.1
+    },
+    "harmful_breakdown": {
+      "total": 176,
+      "caught": 161,
+      "blocked": 160,
+      "confirmed": 1,
+      "allowed": 15
+    },
+    "benign_breakdown": {
+      "total": 176,
+      "blocked": 39,
+      "confirmed": 21,
+      "allowed": 116
+    },
+    "per_category": {
+      "Copyright": {
+        "tpr": 100.0,
+        "h_block": 100.0,
+        "h_confirm": 0.0,
+        "hfpr": 37.5,
+        "crate": 20.8,
+        "clean": 41.7,
+        "h_n": 24,
+        "b_n": 24
+      },
+      "Cybercrime": {
+        "tpr": 100.0,
+        "h_block": 100.0,
+        "h_confirm": 0.0,
+        "hfpr": 15.0,
+        "crate": 0.0,
+        "clean": 85.0,
+        "h_n": 20,
+        "b_n": 20
+      },
+      "Disinformation": {
+        "tpr": 100.0,
+        "h_block": 95.0,
+        "h_confirm": 5.0,
+        "hfpr": 5.0,
+        "crate": 25.0,
+        "clean": 70.0,
+        "h_n": 20,
+        "b_n": 20
+      },
+      "Drugs": {
+        "tpr": 80.0,
+        "h_block": 80.0,
+        "h_confirm": 0.0,
+        "hfpr": 25.0,
+        "crate": 0.0,
+        "clean": 75.0,
+        "h_n": 20,
+        "b_n": 20
+      },
+      "Fraud": {
+        "tpr": 70.8,
+        "h_block": 70.8,
+        "h_confirm": 0.0,
+        "hfpr": 33.3,
+        "crate": 0.0,
+        "clean": 66.7,
+        "h_n": 24,
+        "b_n": 24
+      },
+      "Harassment": {
+        "tpr": 100.0,
+        "h_block": 100.0,
+        "h_confirm": 0.0,
+        "hfpr": 41.7,
+        "crate": 29.2,
+        "clean": 29.2,
+        "h_n": 24,
+        "b_n": 24
+      },
+      "Hate": {
+        "tpr": 80.0,
+        "h_block": 80.0,
+        "h_confirm": 0.0,
+        "hfpr": 0.0,
+        "crate": 0.0,
+        "clean": 100.0,
+        "h_n": 20,
+        "b_n": 20
+      },
+      "Sexual": {
+        "tpr": 100.0,
+        "h_block": 100.0,
+        "h_confirm": 0.0,
+        "hfpr": 12.5,
+        "crate": 16.7,
+        "clean": 70.8,
+        "h_n": 24,
+        "b_n": 24
+      }
+    },
+    "layer_funnel": {
+      "semantic": 653,
+      "trivial_allow": 640,
+      "datalog_only": 12
+    },
+    "semantic_actions": {
+      "allow": 222,
+      "block": 384,
+      "confirm": 46,
+      "none": 653
+    }
+  }
+}
