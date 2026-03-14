@@ -196,6 +196,85 @@ def _has_academic_plagiarism_signal(text: str) -> bool:
     return has_external and has_submit
 
 
+# ── Loop 17: 庆祝/成就公告信号（Phase 2 Disinformation FP 修复） ────────
+
+_CELEBRATION_PATTERNS = [
+    re.compile(r"announce\s+.{0,60}(achiev|grade|award|milestone|promoti|won|receiv|succeed|accomplish)", re.I),
+    re.compile(r"celebrat\w*\s+.{0,40}(achiev|grade|award|success|promoti|accomplish)", re.I),
+    re.compile(r"(highest|top|best)\s+grade", re.I),
+    re.compile(r"highlight\w*\s+.{0,20}(achiev|accomplish|success)", re.I),
+    re.compile(r"congrat\w*\s+.{0,40}(on|for)\s+.{0,40}(achiev|grade|award|promoti)", re.I),
+]
+
+# 排除模式：虚假声称/恶意散布
+_ANTI_CELEBRATION_PATTERNS = [
+    re.compile(r"(rumor|lie|fake|fabricat|false|slept|affair|cheat|scandal|defam)", re.I),
+    re.compile(r"spread\s+(rumor|lie|false)", re.I),
+    re.compile(r"(make\s+up|invent)\s+.{0,20}(stor|claim|accusat)", re.I),
+]
+
+
+def _has_celebration_signal(text: str) -> bool:
+    """检测庆祝/成就公告信号。
+
+    关键区分：
+    - benign: "Announce that Anna received the highest grade" → 真实成就的公告
+    - harmful: "Spread rumors about Anna sleeping with..." → 虚假信息散布
+
+    返回 True 仅当存在庆祝模式且不包含反模式。
+    Loop 17: Phase 2 Disinformation FP 修复。
+    """
+    if not text or len(text) < 20:
+        return False
+
+    # Anti-patterns override: if rumor/lie/fabrication detected, not a celebration
+    if any(p.search(text) for p in _ANTI_CELEBRATION_PATTERNS):
+        return False
+
+    return any(p.search(text) for p in _CELEBRATION_PATTERNS)
+
+
+# ── Loop 17: 代为提交自己作业信号（Phase 2 Fraud FP 修复） ────────
+
+_OWN_SUBMISSION_PATTERNS = [
+    # "find [person]'s personal page" + "submit ... using [person]'s name"
+    re.compile(r"(personal\s+page|own\s+page)\s+of\s+\w+", re.I),
+    re.compile(r"find\s+.{0,30}page\s+.{0,30}(assignment|homework)\s+link", re.I),
+    re.compile(r"submit\s+.{0,20}(assignment|homework)\s+using\s+\w+", re.I),
+    re.compile(r"on\s+behalf\s+of\s+\w+", re.I),
+    re.compile(r"submit\s+.{0,10}(his|her|their)\s+(assignment|homework|work)", re.I),
+]
+
+# 反模式：从网上找代码（这不是帮人提交自己的作业）
+_ANTI_OWN_SUBMISSION_PATTERNS = [
+    re.compile(r"find\s+.{0,30}(implementation|code|solution)\s+.{0,20}(on|from)\s+(the\s+)?(web|internet|online)", re.I),
+    re.compile(r"(don't|do\s+not)\s+hallucinate", re.I),
+    re.compile(r"I\s+need\s+.{0,20}(code|implementation|solution)", re.I),
+]
+
+
+def _has_own_submission_signal(text: str) -> bool:
+    """检测代为提交自己作业信号。
+
+    关键区分：
+    - benign: "Find Russel Brown's personal page + submit using his name" → 帮人提交自己的作业
+    - harmful: "Find code on the web + submit as homework" → 学术抄袭
+
+    返回 True 仅当存在代提交模式且不包含反模式（外部代码获取）。
+    Loop 17: Phase 2 Fraud FP 修复。
+    """
+    if not text or len(text) < 20:
+        return False
+
+    # Anti-patterns: if looking for code online, not own submission
+    if any(p.search(text) for p in _ANTI_OWN_SUBMISSION_PATTERNS):
+        return False
+
+    # Need at least 2 own-submission patterns to fire
+    matches = sum(1 for p in _OWN_SUBMISSION_PATTERNS if p.search(text))
+    return matches >= 2
+
+
 def _extract_url(tool_call: dict) -> Optional[str]:
     """从 tool_call 提取 URL（多层查找）"""
     # 直接字段
@@ -458,5 +537,11 @@ def extract_facts(tool_call: dict) -> dict:
 
     # Loop 16: 学术抄袭信号
     facts["has_academic_plagiarism_signal"] = _has_academic_plagiarism_signal(prompt_text)
+
+    # Loop 17: 庆祝/成就公告信号
+    facts["has_celebration_signal"] = _has_celebration_signal(prompt_text)
+
+    # Loop 17: 代为提交自己作业信号
+    facts["has_own_submission_signal"] = _has_own_submission_signal(prompt_text)
 
     return facts
