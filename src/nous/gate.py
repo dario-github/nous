@@ -328,7 +328,7 @@ def _apply_semantic_verdict(
     sem_verdict: Optional[dict],
     config: SemanticGateConfig,
 ) -> Verdict:
-    """Confidence-Calibrated Verdict Fusion (Loop 4).
+    """Confidence-Calibrated Verdict Fusion (Loop 4 + Loop 8).
 
     设计原则：Datalog 是强先验，LLM 需要提供高置信度证据才能推翻。
 
@@ -343,7 +343,8 @@ def _apply_semantic_verdict(
       Datalog "confirm"/"delegate":
         - semantic allow (conf >= allow_downgrade_threshold) → 降级为 allow
         - semantic allow (conf < threshold) → 保持 confirm
-        - semantic block → 升级为 block（无阈值，confirm 本身就是模糊地带）
+        - semantic block (conf >= block_upgrade_threshold) → 升级为 block
+        - semantic block (conf < block_upgrade_threshold) → 保持 confirm（Loop 8: 低置信度不升级，由人类决定）
         - semantic confirm → 保持 confirm
     """
     if config.mode != "active":
@@ -376,13 +377,16 @@ def _apply_semantic_verdict(
                 reason=f"[semantic allow@{sem_confidence:.2f}] {sem_reason}",
                 all_matched=current_verdict.all_matched,
             )
-        elif sem_action == "block":
+        elif sem_action == "block" and sem_confidence >= config.block_upgrade_threshold:
             return Verdict(
                 action="block",
                 rule_id=f"{current_verdict.rule_id}+semantic-upgrade",
                 reason=f"[semantic block@{sem_confidence:.2f}] {sem_reason}",
                 all_matched=current_verdict.all_matched,
             )
+        elif sem_action == "block":
+            # Low-confidence block → keep confirm (Loop 8: insufficient evidence, let human decide)
+            return current_verdict
         # sem confirm or low-confidence allow → keep confirm
         return current_verdict
 
