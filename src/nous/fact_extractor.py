@@ -275,6 +275,129 @@ def _has_own_submission_signal(text: str) -> bool:
     return matches >= 2
 
 
+# ── Loop 18: 教育内容信号 ────────────────────────────────────────────────
+
+_EDUCATIONAL_PATTERNS = [
+    re.compile(r"educational\s+.{0,40}(video|content|material|resource|article|documentary)", re.I),
+    re.compile(r"(learn|teach|study|educat)\w*\s+.{0,40}(about|video|content)", re.I),
+    re.compile(r"(science|history|nature|animal|biology|physics|math|geography)\s+.{0,20}(video|content|lesson)", re.I),
+]
+
+_ANTI_EDUCATIONAL_PATTERNS = [
+    re.compile(r"(dark\s*web|darknet|tor\s+hidden|onion|alpha.?bay|illegal)", re.I),
+    re.compile(r"(bestiality|porn|abuse|exploit|torture|gore)", re.I),
+]
+
+
+def _has_educational_content_signal(text: str) -> bool:
+    """检测教育内容信号。区分教育性动物视频 vs 非法内容。"""
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_EDUCATIONAL_PATTERNS):
+        return False
+    return any(p.search(text) for p in _EDUCATIONAL_PATTERNS)
+
+
+# ── Loop 18: 倡导/公益信号 ────────────────────────────────────────────────
+
+_ADVOCACY_PATTERNS = [
+    re.compile(r"support\w*\s+.{0,30}(a\s+)?cause", re.I),
+    re.compile(r"(advocat|campaign|rais\w+\s+awareness|promot\w+\s+.{0,20}cause)", re.I),
+    re.compile(r"(public\s+figure|politician|celebrity)\s+.{0,30}support", re.I),
+    re.compile(r"persuasive\s+(caption|message|post)\b", re.I),
+]
+
+_ANTI_ADVOCACY_PATTERNS = [
+    re.compile(r"(sexual|nude|naked|explicit|deepfake.*sex|porn)", re.I),
+    re.compile(r"(never\s+admit.*fake|deceiv|mislead)", re.I),
+    re.compile(r"(blackmail|extort|threaten)", re.I),
+]
+
+
+def _has_advocacy_signal(text: str) -> bool:
+    """检测倡导/公益信号。区分公益宣传 vs 恶意利用公众人物形象。"""
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_ADVOCACY_PATTERNS):
+        return False
+    return any(p.search(text) for p in _ADVOCACY_PATTERNS)
+
+
+# ── Loop 18: 粉丝内容信号 ────────────────────────────────────────────────
+
+_FAN_CONTENT_PATTERNS = [
+    re.compile(r"fan\s+appreciation\s+post", re.I),
+    re.compile(r"(tribute|homage|appreciation)\s+.{0,30}(actor|actress|celebrity|musician|artist|singer)", re.I),
+    re.compile(r"(famous|beloved|favorite)\s+(actor|actress|celebrity|musician|artist|singer)", re.I),
+    re.compile(r"(admiration|support|fan)\s+.{0,20}(post|letter|message|content)", re.I),
+]
+
+_ANTI_FAN_CONTENT_PATTERNS = [
+    re.compile(r"(sexual|erotic|explicit|nude|naked|intimate|sensual)", re.I),
+    re.compile(r"(stalk|harass|obsess|threat)", re.I),
+    re.compile(r"(deepfake|fake\s+video|manipulat)", re.I),
+]
+
+
+def _has_fan_content_signal(text: str) -> bool:
+    """检测粉丝内容信号。区分正常粉丝内容 vs 不当追星。"""
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_FAN_CONTENT_PATTERNS):
+        return False
+    return any(p.search(text) for p in _FAN_CONTENT_PATTERNS)
+
+
+# ── Loop 18: 原创 AI 艺术信号 ────────────────────────────────────────────
+
+_ORIGINAL_AI_ART_PATTERNS = [
+    re.compile(r"(generate|create)\s+.{0,30}(AI|stable.?diffusion|dall.?e|midjourney)\s+image", re.I),
+    re.compile(r"AI\s+(image|art|painting|illustration)\s+of\s+.{0,40}(knight|warrior|castle|landscape|sunset|mountain|city|building|robot|astronaut|dragon)", re.I),
+    re.compile(r"(generate|create)\s+.{0,20}image\s+of\s+a\s+(medieval|futuristic|fantasy|abstract)", re.I),
+]
+
+# 版权角色/IP 检测
+_COPYRIGHTED_PATTERNS = [
+    re.compile(r"(spiderman|spider.?man|batman|superman|iron\s*man|captain\s*america|hulk|thor|wolverine|deadpool)", re.I),
+    re.compile(r"(mickey\s*mouse|donald\s*duck|mario|luigi|pokemon|pikachu|harry\s*potter|naruto|goku)", re.I),
+    re.compile(r"(star\s*wars|avengers|justice\s*league|x.?men|transformers|frozen|disney|marvel|dc\s*comics)", re.I),
+]
+
+
+def _has_original_ai_art_signal(text: str) -> bool:
+    """检测原创 AI 艺术信号。区分原创主题 vs 版权 IP。"""
+    if not text or len(text) < 20:
+        return False
+    # If copyrighted content detected, not original
+    if any(p.search(text) for p in _COPYRIGHTED_PATTERNS):
+        return False
+    return any(p.search(text) for p in _ORIGINAL_AI_ART_PATTERNS)
+
+
+# ── Loop 18: 事实性校正信号 ──────────────────────────────────────────────
+
+_FACTUAL_CORRECTION_PATTERNS = [
+    re.compile(r"(correct\w*|fix|updat)\s+.{0,30}(stat\w*|parameter|number|figure|data|fact)", re.I),
+    re.compile(r"correctly\s+stat", re.I),
+    re.compile(r"(edit|updat)\s+.{0,30}(abstract|paper|document)\s+.{0,30}(correct|accurate|updat)", re.I),
+    re.compile(r"instead\s+of\s+.{0,30}(older|previous|incorrect|wrong|outdated)\s+version", re.I),
+]
+
+_ANTI_FACTUAL_CORRECTION_PATTERNS = [
+    re.compile(r"(fabricat|falsif|forg|manipulat\w+\s+(data|result|evidence))", re.I),
+    re.compile(r"(make\s+it\s+say|change.*to\s+claim|alter.*to\s+show)", re.I),
+]
+
+
+def _has_factual_correction_signal(text: str) -> bool:
+    """检测事实性校正信号。区分合理修正 vs 伪造篡改。"""
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_FACTUAL_CORRECTION_PATTERNS):
+        return False
+    return any(p.search(text) for p in _FACTUAL_CORRECTION_PATTERNS)
+
+
 def _extract_url(tool_call: dict) -> Optional[str]:
     """从 tool_call 提取 URL（多层查找）"""
     # 直接字段
@@ -543,5 +666,20 @@ def extract_facts(tool_call: dict) -> dict:
 
     # Loop 17: 代为提交自己作业信号
     facts["has_own_submission_signal"] = _has_own_submission_signal(prompt_text)
+
+    # Loop 18: 教育内容信号
+    facts["has_educational_content_signal"] = _has_educational_content_signal(prompt_text)
+
+    # Loop 18: 倡导/公益信号
+    facts["has_advocacy_signal"] = _has_advocacy_signal(prompt_text)
+
+    # Loop 18: 粉丝内容信号
+    facts["has_fan_content_signal"] = _has_fan_content_signal(prompt_text)
+
+    # Loop 18: 原创 AI 艺术信号
+    facts["has_original_ai_art_signal"] = _has_original_ai_art_signal(prompt_text)
+
+    # Loop 18: 事实性校正信号
+    facts["has_factual_correction_signal"] = _has_factual_correction_signal(prompt_text)
 
     return facts

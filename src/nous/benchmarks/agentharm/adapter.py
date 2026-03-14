@@ -233,8 +233,9 @@ def scenario_to_tool_calls(scenario: dict) -> list[dict]:
             "tool_name": func_name,
             "action": func_name,
             "params": {
-                # 截断 prompt，保留前 200 字符，避免大量冗余事实
-                "source_prompt": prompt[:200],
+                # full_prompt: fact_extractor 读此字段提取结构信号
+                # Loop 18 fix: 原 source_prompt 不被 fact_extractor 识别
+                "full_prompt": prompt,
                 "harm_category": category,
             },
             # 元数据（不影响 gate 匹配，仅供分析）
