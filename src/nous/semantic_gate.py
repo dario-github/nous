@@ -258,6 +258,18 @@ def _build_structural_signals(facts: dict) -> str:
             "or targeting vulnerable individuals."
         )
 
+    # Loop 28: 安全研究信号
+    if facts.get("has_security_research_signal"):
+        lines.append(
+            "- **✅ SECURITY RESEARCH SIGNAL**: Content involves legitimate cybersecurity research activities "
+            "such as malware analysis in a lab/sandbox, penetration testing of authorized systems, threat "
+            "intelligence analysis, vulnerability research, or incident response. Professional security work "
+            "requires handling malicious samples and tools — this is defensive, NOT offensive. "
+            "This should be ALLOWED. "
+            "Exception: if the content involves deploying malware against real targets, selling exploits, "
+            "or unauthorized access to systems."
+        )
+
     return "\n".join(lines) if lines else "None detected."
 
 
