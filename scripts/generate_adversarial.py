@@ -117,7 +117,7 @@ def call_generator(count: int, dry_run: bool = False) -> list[dict]:
         from openai import OpenAI
         client = OpenAI()
 
-        model = os.environ.get("NOUS_JUDGE_MODEL", "gpt-4.1")
+        model = os.environ.get("NOUS_JUDGE_MODEL", "gpt-5.4")
         print(f"Generating {count} adversarial cases with {model}...")
 
         resp = client.chat.completions.create(
@@ -216,7 +216,7 @@ def format_for_benchmark(cases: list[dict]) -> dict:
     return {
         "metadata": {
             "version": "adversarial_v1",
-            "generated_by": os.environ.get("NOUS_JUDGE_MODEL", "gpt-4.1"),
+            "generated_by": os.environ.get("NOUS_JUDGE_MODEL", "gpt-5.4"),
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "total": len(cases),
             "harmful": len(harmful),

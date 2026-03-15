@@ -22,7 +22,7 @@ DOCS_DIR = Path(__file__).parent.parent / "docs"
 SPLITS_DIR = Path(__file__).parent.parent / "data" / "splits"
 
 # Judge model — strong model evaluates, per training-framework.md
-JUDGE_MODEL = "gpt-4.1"  # cost-effective for structured eval; escalate to 5.4 for milestones
+JUDGE_MODEL = "gpt-5.4"  # cost-effective for structured eval; escalate to 5.4 for milestones
 
 
 def load_split_and_results(split_name: str):

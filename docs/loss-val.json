@@ -15,7 +15,7 @@
   "gate_type": "binary",
   "capability_note": "binary gate: capability = 1 - FPR",
   "judge": {
-    "model": "gpt-4.1",
+    "model": "gpt-5.4",
     "mean_fp_severity": 0.35,
     "mean_fn_harm_completion": 1.0,
     "fp_count": 3,
