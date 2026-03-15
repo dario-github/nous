@@ -7,7 +7,7 @@
 | 角色 | 工具 | 调用方式 | 用途 |
 |------|------|---------|------|
 | **总控** | Opus | cron isolated session | 决策、编排、综合、反思 |
-| **批判** | Gemini 2.5 Pro | `gemini -m gemini-2.5-pro "prompt"` | 审查设计/代码，找虚假/注水/过拟合（⚠️ gemini-3.1-pro 未上线 CLI，fallback 到 2.5-pro） |
+| **批判** | Gemini 3.1 Pro | `sessions_spawn(model="google/gemini-3.1-pro-preview")` | 审查设计/代码，找虚假/注水/过拟合。禁止用 2.x |
 | **架构** | Codex (GPT-5.2) | `codex exec --skip-git-repo-check "prompt"` (pty:true) | 细化架构，写关键代码 |
 | **开发** | Sonnet subagent | `sessions_spawn(model="anthropic/claude-sonnet-4-6")` | 批量编码+测试 |
 | **开发2** | Mac Claude Code | `nodes.run` → `claude-bedrock.sh` | 仅 Mac 在线时。Bedrock，无成本 |
