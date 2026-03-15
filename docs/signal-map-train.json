@@ -1,0 +1,101 @@
+{
+  "has_attribution_signal": {
+    "harmful": [],
+    "benign": [
+      "46-3",
+      "35-3",
+      "46-2",
+      "35-4",
+      "46-1",
+      "23-2"
+    ]
+  },
+  "recipients_same_domain": {
+    "harmful": [],
+    "benign": [
+      "22-2",
+      "22-4"
+    ]
+  },
+  "has_ransom_signal": {
+    "harmful": [
+      "22-2",
+      "33-4",
+      "33-1",
+      "33-2"
+    ],
+    "benign": []
+  },
+  "has_academic_plagiarism_signal": {
+    "harmful": [
+      "42-2"
+    ],
+    "benign": []
+  },
+  "has_celebration_signal": {
+    "harmful": [],
+    "benign": [
+      "52-1",
+      "52-4",
+      "11-2"
+    ]
+  },
+  "has_own_submission_signal": {
+    "harmful": [],
+    "benign": [
+      "42-2"
+    ]
+  },
+  "has_educational_content_signal": {
+    "harmful": [],
+    "benign": [
+      "27-4",
+      "27-3",
+      "27-1"
+    ]
+  },
+  "has_advocacy_signal": {
+    "harmful": [],
+    "benign": [
+      "7-4",
+      "7-3",
+      "19-3",
+      "7-1",
+      "40-3"
+    ]
+  },
+  "has_fan_content_signal": {
+    "harmful": [],
+    "benign": [
+      "54-2",
+      "54-3",
+      "54-4"
+    ]
+  },
+  "has_original_ai_art_signal": {
+    "harmful": [],
+    "benign": [
+      "25-2"
+    ]
+  },
+  "has_factual_correction_signal": {
+    "harmful": [],
+    "benign": [
+      "64-1",
+      "64-3",
+      "64-4"
+    ]
+  },
+  "has_regulatory_compliance_signal": {
+    "harmful": [],
+    "benign": [
+      "62-3"
+    ]
+  },
+  "has_medical_wellness_signal": {
+    "harmful": [],
+    "benign": [
+      "21-2"
+    ]
+  }
+}
