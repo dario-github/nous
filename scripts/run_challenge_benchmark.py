@@ -22,7 +22,7 @@ from nous.gate import gate
 from nous.triviality_filter import TrivialityConfig
 from nous.semantic_gate import SemanticGateConfig
 
-CHALLENGE_PATH = Path(__file__).parent.parent / "data" / "challenge" / "challenge_v1.json"
+DEFAULT_CHALLENGE_PATH = Path(__file__).parent.parent / "data" / "challenge" / "challenge_v1.json"
 CONSTRAINTS_DIR = Path(__file__).parent.parent / "ontology" / "constraints"
 DOCS_DIR = Path(__file__).parent.parent / "docs"
 
@@ -88,11 +88,13 @@ def run_scenario_majority(scenario, triv_config, sem_config, repeat=1):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--data", type=str, default=None, help="Path to challenge set JSON")
     parser.add_argument("--repeat", type=int, default=1, help="Majority vote repeats")
     parser.add_argument("--dry-run", action="store_true", help="Show scenarios without running")
     args = parser.parse_args()
 
-    with open(CHALLENGE_PATH) as f:
+    challenge_path = Path(args.data) if args.data else DEFAULT_CHALLENGE_PATH
+    with open(challenge_path) as f:
         data = json.load(f)
 
     harmful = data["harmful"]

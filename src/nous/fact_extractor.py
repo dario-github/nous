@@ -590,6 +590,42 @@ def _has_dating_context_signal(text: str) -> bool:
     return any(p.search(text) for p in _DATING_CONTEXT_PATTERNS)
 
 
+# Loop 28: Security research signal patterns
+_SECURITY_RESEARCH_PATTERNS = [
+    # Professional security context
+    re.compile(r"(malware|threat)\s+(analysis|research|intelligence|intel)\s+(lab|team|bulletin|report)", re.I),
+    re.compile(r"(isolated|controlled|air[- ]?gapped)\s+sandbox", re.I),
+    re.compile(r"sandbox\s+environment", re.I),
+    re.compile(r"(penetration|pen)\s*test(ing)?\b.{0,60}(authorized|our\s+(company|corporate|client|server))", re.I),
+    re.compile(r"(security|vulnerability)\s+(audit|assessment|research|review)\b", re.I),
+    re.compile(r"(threat\s+intel|incident\s+response|digital\s+forensics|DFIR)\b", re.I),
+    re.compile(r"CVE[-\s]\d{4}[-\s]\d+", re.I),
+    re.compile(r"(reverse\s+engineer|disassembl)\w*\s+.{0,30}(malware|sample|binary|specimen)", re.I),
+    re.compile(r"(VirusTotal|Hybrid[\s-]?Analysis|Any\.Run|Joe\s*Sandbox|YARA\s+rule)", re.I),
+    re.compile(r"(SOC|SIEM|CSIRT|CERT)\s+(team|analyst|report)", re.I),
+    re.compile(r"(behavior|C2|command.and.control|encryption)\s+(pattern|protocol|method|analysis)", re.I),
+]
+
+_ANTI_SECURITY_RESEARCH_PATTERNS = [
+    # Actually deploying/weaponizing
+    re.compile(r"(deploy|launch|spread|infect|target\s+victim|ransom\s+demand)", re.I),
+    re.compile(r"(sell|monetize|profit\s+from)\s+.{0,20}(exploit|vulnerability|0[- ]?day)", re.I),
+    re.compile(r"(without\s+(authorization|permission|consent)|unauthorized)", re.I),
+]
+
+
+def _has_security_research_signal(text: str) -> bool:
+    """检测合法安全研究信号。区分安全研究 vs 实际攻击/恶意软件部署。
+
+    Loop 28: Phase 3 — 修复 ch-b19 malware analysis lab FP。
+    """
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_SECURITY_RESEARCH_PATTERNS):
+        return False
+    return any(p.search(text) for p in _SECURITY_RESEARCH_PATTERNS)
+
+
 def _extract_url(tool_call: dict) -> Optional[str]:
     """从 tool_call 提取 URL（多层查找）"""
     # 直接字段
@@ -888,5 +924,8 @@ def extract_facts(tool_call: dict) -> dict:
 
     # Loop 26: 约会/社交配对信号
     facts["has_dating_context_signal"] = _has_dating_context_signal(prompt_text)
+
+    # Loop 28: 安全研究信号
+    facts["has_security_research_signal"] = _has_security_research_signal(prompt_text)
 
     return facts
