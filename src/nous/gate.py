@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from nous.constraint_parser import load_constraints
+from nous.constraint_parser import ConstraintLoadError, load_constraints
 from nous.decision_log import CostBreakdown
 from nous.fact_extractor import extract_facts
 from nous.observability import SamplingPolicy, log_decision
@@ -259,13 +259,15 @@ def gate(
             layer_path=layer_path,
         )
 
-    except Exception as e:  # FAIL_CLOSED
+    except ConstraintLoadError as e:  # FAIL_CLOSED: 约束加载失败 → confirm
+        import logging as _logging
+        _logging.getLogger("nous.gate").error("FAIL_CLOSED: %s", e)
         latency_ms = (time.perf_counter() - t_start) * 1000
 
         fail_verdict = Verdict(
             action="confirm",
-            rule_id="nous-engine-error",
-            reason=f"nous-engine-unavailable: {type(e).__name__}: {e}",
+            rule_id="nous-constraint-load-error",
+            reason=f"constraint-load-failed: {e}",
         )
         fail_trace = ProofTrace(
             steps=[],
@@ -284,6 +286,51 @@ def gate(
                     session_key=sk,
                     tool_name="unknown",
                     facts={"error": str(e)},
+                    latency_us=int(latency_ms * 1000),
+                )
+        except Exception:
+            pass
+
+        return GateResult(
+            verdict=fail_verdict,
+            proof_trace=fail_trace,
+            decision_log_id=None,
+            latency_ms=latency_ms,
+            facts={},
+            datalog_verdict=None,
+            semantic_verdict=None,
+            layer_path="datalog_only",
+        )
+
+    except Exception as e:  # 真正的代码 bug — 同样 confirm，但日志更醒目
+        import logging as _logging
+        _logging.getLogger("nous.gate").critical(
+            "UNEXPECTED gate() exception (not ConstraintLoadError): %s: %s",
+            type(e).__name__, e, exc_info=True,
+        )
+        latency_ms = (time.perf_counter() - t_start) * 1000
+
+        fail_verdict = Verdict(
+            action="confirm",
+            rule_id="nous-engine-error",
+            reason=f"nous-engine-unavailable: {type(e).__name__}: {e}",
+        )
+        fail_trace = ProofTrace(
+            steps=[],
+            final_verdict="confirm",
+            total_ms=latency_ms,
+        )
+
+        try:
+            if db is not None:
+                log_decision(
+                    verdict="confirm",
+                    proof_trace=fail_trace,
+                    sampling_policy=SamplingPolicy(confirm_rate=1.0),
+                    db=db,
+                    session_key=sk,
+                    tool_name="unknown",
+                    facts={"error": str(e), "error_type": type(e).__name__},
                     latency_us=int(latency_ms * 1000),
                 )
         except Exception:

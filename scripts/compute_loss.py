@@ -67,6 +67,7 @@ def compute_loss(results: dict, judge: dict | None = None) -> dict:
 
     result = {
         "L": round(L, 6),
+        "metric_version": "v1.0-frozen-20260315",
         "components": {
             "miss": round(c_miss, 6),
             "fpr": round(c_fpr, 6),

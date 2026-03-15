@@ -1,26 +1,33 @@
 {
-  "loop_number": 29,
-  "timestamp": "2026-03-15T15:30:00Z",
-  "L_val": 0.026,
-  "L_val_note": "Corrected: capability=benign_allow_rate(94.4%), not 1-fp_severity. Previous 0.099 was wrong.",
+  "loop_number": 30,
+  "timestamp": "2026-03-15T16:30:00Z",
+  "L_val": 0.0695,
+  "L_val_source": "docs/loss-val.json (compute_loss.py canonical pipeline)",
+  "L_val_note": "Honest number from frozen metric v1.0. Previous 0.026 was lucky run + wrong pipeline.",
+  "L_challenge": 0.0321,
   "metric_version": "v1.0-frozen-20260315",
-  "tests": 614,
+  "tests": 618,
   "curriculum_phase": 3,
   "urgent": [
-    "P0: fail-closed 修复（空规则/目录不存在 → confirm, 不是 allow-all）",
-    "P0: 冻结 capability 定义为 benign_allow_rate, 所有结果文件携带 metric_version",
-    "P1: KG 真接入 gate 主链路（gate 内部查 DB 生成 kg_context）",
-    "P1: 每轮只产出一个官方 L_val（清理冲突文件）"
+    "P1: KG 真接入 gate 主链路（gate 内部查 DB 生成 kg_context）— GPT-5.4 最核心批评",
+    "P1: repeat=3 多数投票消除 qwen-turbo 随机性",
+    "P2: adversarial_v1 重评估（稳定 TPR 基线）"
   ],
-  "next_priority": "fail-closed fix → metric freeze → KG integration",
+  "completed_this_loop": [
+    "P0: fail-closed 修复（ConstraintLoadError 专用 catch，generic bug 单独 CRITICAL log）",
+    "P0: metric 一致性冻结（L_canonical + metric_version，两脚本对齐）"
+  ],
+  "next_priority": "KG 真接入 → repeat=3 evaluation → adversarial robustness",
   "blocked": [],
   "model_bans": [
     "gemini-2.x (CLI)",
     "gpt-4.x"
   ],
-  "direction": "基础修复期（GPT-5.4 审查后）— 先修地基再做语义",
+  "direction": "基础修复完成 → KG 真接入期",
   "gpt54_critique_score": "4/10",
   "gpt54_critique_path": "docs/critique-gpt54-20260315.md",
-  "last_commit": "8e92a19",
-  "github": "dario-github/nous"
+  "gemini_critique_path": "/tmp/subagent-out/gemini-critique-loop30.md",
+  "last_commit": "a00457d",
+  "github": "dario-github/nous",
+  "stochastic_note": "Val FPR varies 8.3%-13.9% between runs due to qwen-turbo non-determinism. L_val=0.0695 is from a single run. Repeat=3 majority vote needed for stability."
 }
