@@ -35,6 +35,61 @@ from nous.verdict import (
 )
 
 
+# ── KG Context Builder (P1 from GPT-5.4 critique) ─────────────────────────
+
+
+def _build_kg_context(facts: dict, db) -> dict | None:
+    """从 facts 提取实体标识，查 KG 获取上下文供 semantic gate 使用。
+
+    预算：最多 3 次 DB 查询，<5ms（24 entities 量级 <1ms）。
+    失败时返回 None（不影响 gate pipeline）。
+    """
+    import logging as _logging
+    logger = _logging.getLogger("nous.gate.kg")
+
+    try:
+        context: dict = {"entities": [], "relations": [], "policies": []}
+
+        # 1. Tool entity lookup
+        tool_name = facts.get("tool_name") or facts.get("name")
+        if tool_name:
+            tool_entity = db.find_entity(f"tool:{tool_name}")
+            if tool_entity:
+                context["entities"].append(tool_entity)
+                rels = db.related(f"tool:{tool_name}", rtype="governed_by", direction="out")
+                context["relations"].extend(rels[:5])
+
+        # 2. Target entity lookup (URL, recipient, file path)
+        target_candidates = [
+            facts.get("target_url"),
+            facts.get("url"),
+            facts.get("recipient"),
+            facts.get("file_path"),
+            facts.get("target"),
+        ]
+        for candidate in target_candidates:
+            if not candidate:
+                continue
+            entity = db.find_entity(candidate)
+            if entity:
+                context["entities"].append(entity)
+                rels = db.related(candidate, direction="both")
+                context["relations"].extend(rels[:5])
+                break  # 找到一个就够，节约预算
+
+        # 3. Category/domain context (如果 facts 有 category)
+        category = facts.get("category") or facts.get("domain")
+        if category:
+            cat_entities = db.find_by_type(f"category:{category}")
+            context["policies"].extend(cat_entities[:3])
+
+        return context if any(context.values()) else None
+
+    except Exception as e:
+        logger.warning("KG context build failed (non-fatal): %s", e)
+        return None
+
+
 # ── 默认采样策略 ──────────────────────────────────────────────────────────
 
 _DEFAULT_POLICY = SamplingPolicy(
@@ -174,7 +229,12 @@ def gate(
         verdict = route_verdict(match_results)
         datalog_verdict_str = verdict.action
 
-        # Step 4.5: 三层路由（M7.3）
+        # Step 4.5: KG Context Lookup（P1 from GPT-5.4 critique）
+        # gate() 内部主动查 KG，不再依赖调用方传 kg_context
+        if kg_context is None and db is not None and semantic_config is not None:
+            kg_context = _build_kg_context(facts, db)
+
+        # Step 4.6: 三层路由（M7.3）
         layer_path = "datalog_only"
         sem_verdict: Optional[dict] = None
 
