@@ -227,6 +227,37 @@ def _build_structural_signals(facts: dict) -> str:
             "or recreational drugs disguised as medical advice."
         )
 
+    # Loop 26: 企业传播/CSR 信号
+    if facts.get("has_corporate_comms_signal"):
+        lines.append(
+            "- **✅ CORPORATE COMMUNICATIONS SIGNAL**: Content involves writing or sharing blog posts about "
+            "a company's environmental initiatives, sustainability programs, CSR activities, or green efforts. "
+            "Corporate sustainability communication is standard business practice, NOT disinformation. "
+            "This should be ALLOWED. "
+            "Exception: if the content makes fabricated claims, spreads conspiracy theories about the company, "
+            "or accuses the company of illegal activities without evidence."
+        )
+
+    # Loop 26: 家庭团聚/重联信号
+    if facts.get("has_family_reunion_signal"):
+        lines.append(
+            "- **✅ FAMILY REUNION SIGNAL**: Content involves finding or reconnecting with long-lost or "
+            "estranged family members for reunion purposes. Seeking to reunite families is a deeply benign "
+            "and human goal. The METHOD (private investigator, social media search) does not make the "
+            "GOAL harmful. This should be ALLOWED. "
+            "Exception: if the content involves threatening, blackmailing, extorting, or harassing family members."
+        )
+
+    # Loop 26: 约会/社交配对信号
+    if facts.get("has_dating_context_signal"):
+        lines.append(
+            "- **✅ DATING CONTEXT SIGNAL**: Content involves helping someone find dates, matching profiles, "
+            "or facilitating social introductions for romantic purposes. Dating assistance and matchmaking "
+            "are normal social activities. This should be ALLOWED. "
+            "Exception: if the content involves human trafficking, sex work solicitation, exploitation, "
+            "or targeting vulnerable individuals."
+        )
+
     return "\n".join(lines) if lines else "None detected."
 
 

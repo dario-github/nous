@@ -290,12 +290,30 @@ _ANTI_EDUCATIONAL_PATTERNS = [
 
 
 def _has_educational_content_signal(text: str) -> bool:
-    """检测教育内容信号。区分教育性动物视频 vs 非法内容。"""
+    """检测教育内容信号。区分教育性动物视频 vs 非法内容。
+
+    Loop 26 fix: 增加"自然/教育"松散共现模式，修复 1-2 FP（nature video + educational
+    在 prompt 中间隔远但语义关联）。
+    """
     if not text or len(text) < 20:
         return False
     if any(p.search(text) for p in _ANTI_EDUCATIONAL_PATTERNS):
         return False
-    return any(p.search(text) for p in _EDUCATIONAL_PATTERNS)
+    # Direct pattern match
+    if any(p.search(text) for p in _EDUCATIONAL_PATTERNS):
+        return True
+    # Loop 26: Loose co-occurrence — nature/science subject + educational/learning claim anywhere
+    has_nature_subject = bool(re.search(
+        r"(beauty\s+of\s+nature|nature\s+video|natural\s+world|wildlife|planet\s+earth)",
+        text, re.I
+    ))
+    has_educational_claim = bool(re.search(
+        r"(educational|for\s+learning|for\s+education|teach\w*|informative)",
+        text, re.I
+    ))
+    if has_nature_subject and has_educational_claim:
+        return True
+    return False
 
 
 # ── Loop 18: 倡导/公益信号 ────────────────────────────────────────────────
@@ -486,6 +504,90 @@ def _has_regulatory_compliance_signal(text: str) -> bool:
     # 需要至少两个合规指标
     hits = sum(1 for p in _REGULATORY_COMPLIANCE_PATTERNS if p.search(text))
     return hits >= 2
+
+
+# ── Loop 26: Corporate Communications Signal (2-2/2-3/2-4 Disinformation FP) ──
+
+_CORPORATE_COMMS_PATTERNS = [
+    re.compile(r"(blog\s+post|story|article)\s+.{0,40}(environmental|sustainab|green|CSR|recycl|carbon|eco.?friendly|initiative)", re.I),
+    re.compile(r"(environmental|sustainab|green|CSR|recycl|carbon)\s+.{0,40}(initiative|effort|program|campaign|blog|post)", re.I),
+    re.compile(r"(company|brand|corporate)\s+.{0,30}(initiative|effort|program|campaign)", re.I),
+    re.compile(r"(recycled\s+materials?|reduce\s+carbon|carbon\s+emission|clean\s+energy)", re.I),
+]
+
+_ANTI_CORPORATE_COMMS_PATTERNS = [
+    re.compile(r"(spy|surveil|track|monitor)\w*\s+.{0,20}(customer|user|consumer|citizen)", re.I),
+    re.compile(r"(false|fake|fabricat|mislead|deceiv)", re.I),
+    re.compile(r"(conspiracy|cover.?up|scandal|expose)", re.I),
+]
+
+
+def _has_corporate_comms_signal(text: str) -> bool:
+    """检测企业传播/CSR 信号。区分合法企业环保宣传 vs 虚假指控/监控丑闻。
+
+    Loop 26: Phase 3 Track C — 修复 2-2/2-3/2-4 Disinformation FPs。
+    """
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_CORPORATE_COMMS_PATTERNS):
+        return False
+    return any(p.search(text) for p in _CORPORATE_COMMS_PATTERNS)
+
+
+# ── Loop 26: Family Reunion/Reconnection Signal (39-1 Harassment FP) ──
+
+_FAMILY_REUNION_PATTERNS = [
+    re.compile(r"(family\s+reunion|reconnect\s+with\s+.{0,20}family|long.?lost\s+family)", re.I),
+    re.compile(r"(reunite|reconnect|reunit)\w*\s+.{0,30}(family|relative|sibling|parent|child)", re.I),
+    re.compile(r"(find|locate)\s+.{0,30}(long.?lost|estranged|missing)\s+.{0,20}(family|relative|member)", re.I),
+    re.compile(r"invit\w*\s+.{0,30}(reconnect|reunion|family\s+event)", re.I),
+]
+
+_ANTI_FAMILY_REUNION_PATTERNS = [
+    re.compile(r"(threaten|blackmail|extort|expose\s+.{0,20}secret|harass|intimidat|stalk)", re.I),
+    re.compile(r"(demand\s+money|pay\s+or\s+else|revenge)", re.I),
+]
+
+
+def _has_family_reunion_signal(text: str) -> bool:
+    """检测家庭团聚/重联信号。区分寻找失散亲人 vs 跟踪/威胁家属。
+
+    Loop 26: Phase 3 Track C — 修复 39-1 Harassment FP。
+    """
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_FAMILY_REUNION_PATTERNS):
+        return False
+    return any(p.search(text) for p in _FAMILY_REUNION_PATTERNS)
+
+
+# ── Loop 26: Dating/Matchmaking Signal (33-2 Sexual FP) ──
+
+_DATING_CONTEXT_PATTERNS = [
+    re.compile(r"(interested\s+in\s+dating|looking\s+for\s+a\s+date|ask\s+.{0,20}for\s+a\s+date)", re.I),
+    re.compile(r"(matchmak|set\s+.{0,10}up\s+on\s+a\s+date|find\s+.{0,20}date\s+for)", re.I),
+    re.compile(r"(dating\s+.{0,20}professional|dating\s+.{0,20}business)", re.I),
+    re.compile(r"(tinder\s+match|match\s+with\s+them|cross.?check\s+.{0,30}(match|profile))", re.I),
+]
+
+_ANTI_DATING_PATTERNS = [
+    re.compile(r"(human\s+trafficking|sex\s+work|prostitut|escort\s+service)", re.I),
+    re.compile(r"(exploit|abuse|groom|lure|entrap)", re.I),
+    re.compile(r"(dark\s*web|darknet|onion)", re.I),
+    re.compile(r"(victim|forced|coerced)", re.I),
+]
+
+
+def _has_dating_context_signal(text: str) -> bool:
+    """检测正常约会/社交配对信号。区分帮人找约会对象 vs 人口贩运/性剥削。
+
+    Loop 26: Phase 3 Track C — 修复 33-2 Sexual FP。
+    """
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_DATING_PATTERNS):
+        return False
+    return any(p.search(text) for p in _DATING_CONTEXT_PATTERNS)
 
 
 def _extract_url(tool_call: dict) -> Optional[str]:
@@ -777,5 +879,14 @@ def extract_facts(tool_call: dict) -> dict:
 
     # Loop 23: 医疗健康/自然替代方案信号
     facts["has_medical_wellness_signal"] = _has_medical_wellness_signal(prompt_text)
+
+    # Loop 26: 企业传播/CSR 信号
+    facts["has_corporate_comms_signal"] = _has_corporate_comms_signal(prompt_text)
+
+    # Loop 26: 家庭团聚/重联信号
+    facts["has_family_reunion_signal"] = _has_family_reunion_signal(prompt_text)
+
+    # Loop 26: 约会/社交配对信号
+    facts["has_dating_context_signal"] = _has_dating_context_signal(prompt_text)
 
     return facts
