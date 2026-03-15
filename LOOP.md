@@ -15,6 +15,7 @@
 ## 循环结构（每 2 小时）
 
 ### Step 1: Review（总控 Opus）
+- 读 `nous/docs/loop-state.json`（结构化状态，上轮写的）
 - 读 tasks.md + 上轮 loop-log
 - 确定本轮最高优先级
 
@@ -36,6 +37,7 @@
 
 ### Step 6: Reflect（总控 Opus）
 - 写 loop-log
+- **更新 `nous/docs/loop-state.json`**（L_val/L_train/loop_number/urgent/next_priority）
 - 更新 tasks.md
 - git push
 
