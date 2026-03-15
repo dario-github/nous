@@ -1,21 +1,26 @@
 {
   "loop_number": 29,
-  "timestamp": "2026-03-15T07:25:00Z",
+  "timestamp": "2026-03-15T15:30:00Z",
   "L_val": 0.026,
   "L_val_note": "Corrected: capability=benign_allow_rate(94.4%), not 1-fp_severity. Previous 0.099 was wrong.",
-  "tests": 582,
+  "metric_version": "v1.0-frozen-20260315",
+  "tests": 614,
   "curriculum_phase": 3,
   "urgent": [
-    "修正 L 计算脚本 capability 定义",
-    "降 Harassment FPR (40%→<10%)"
+    "P0: fail-closed 修复（空规则/目录不存在 → confirm, 不是 allow-all）",
+    "P0: 冻结 capability 定义为 benign_allow_rate, 所有结果文件携带 metric_version",
+    "P1: KG 真接入 gate 主链路（gate 内部查 DB 生成 kg_context）",
+    "P1: 每轮只产出一个官方 L_val（清理冲突文件）"
   ],
-  "next_priority": "fix capability in L computation + Harassment FP root cause",
+  "next_priority": "fail-closed fix → metric freeze → KG integration",
   "blocked": [],
   "model_bans": [
     "gemini-2.x (CLI)",
     "gpt-4.x"
   ],
-  "direction": "语义理解引擎（路线 B）",
-  "last_commit": "f59911a",
+  "direction": "基础修复期（GPT-5.4 审查后）— 先修地基再做语义",
+  "gpt54_critique_score": "4/10",
+  "gpt54_critique_path": "docs/critique-gpt54-20260315.md",
+  "last_commit": "8e92a19",
   "github": "dario-github/nous"
 }
