@@ -25,6 +25,14 @@ import yaml
 from nous.schema import Constraint
 
 
+# ── 异常 ───────────────────────────────────────────────────────────────────
+
+
+class ConstraintLoadError(Exception):
+    """FAIL_CLOSED: 约束加载失败时阻止 gate 以无约束模式运行。"""
+    pass
+
+
 # ── 默认约束目录 ─────────────────────────────────────────────────────────────
 
 DEFAULT_CONSTRAINTS_DIR = (
@@ -89,13 +97,10 @@ def load_constraints(constraints_dir: Optional[Path] = None) -> list[Constraint]
     constraints_dir = Path(constraints_dir)
 
     if not constraints_dir.exists():
-        import warnings
-        warnings.warn(
-            f"[constraint_parser] ⚠️ 约束目录不存在: {constraints_dir}. "
-            f"Gate 将在无约束模式运行——所有操作默认 allow！",
-            stacklevel=2,
+        raise ConstraintLoadError(
+            f"约束目录不存在: {constraints_dir}. "
+            f"FAIL_CLOSED: 拒绝在无约束模式运行。"
         )
-        return []
 
     constraints = []
     errors = []
@@ -117,11 +122,9 @@ def load_constraints(constraints_dir: Optional[Path] = None) -> list[Constraint]
     constraints.sort(key=lambda c: c.priority)
 
     if not constraints:
-        import warnings
-        warnings.warn(
-            f"[constraint_parser] ⚠️ 目录 {constraints_dir} 存在但加载了 0 条约束！"
-            f"Gate 将在无约束模式运行。",
-            stacklevel=2,
+        raise ConstraintLoadError(
+            f"目录 {constraints_dir} 存在但加载了 0 条约束！"
+            f"FAIL_CLOSED: 拒绝在无约束模式运行。"
         )
 
     return constraints

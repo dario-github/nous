@@ -657,9 +657,9 @@ class TestGateAPI:
             db=None,
             constraints_dir=Path("/nonexistent/path/to/constraints"),
         )
-        # 非法路径不崩溃，空约束 → allow（空目录是正常情况）
-        # 这里只验证不抛出异常
-        assert result.verdict.action in ("allow", "confirm", "block", "warn", "rewrite", "require")
+        # FAIL_CLOSED: 非法路径 → ConstraintLoadError → gate 外层 catch → confirm
+        assert result.verdict.action == "confirm"
+        assert "FAIL_CLOSED" in result.verdict.reason or "ConstraintLoadError" in result.verdict.reason
 
     def test_gate_to_dict(self, db):
         """GateResult.to_dict() 应包含所有字段"""
@@ -671,3 +671,43 @@ class TestGateAPI:
         assert "latency_ms" in d
         assert "facts" in d
         assert d["verdict"]["action"] in ("allow", "block", "warn", "confirm", "rewrite", "require")
+
+    def test_fail_closed_empty_dir(self, tmp_path):
+        """FAIL_CLOSED: 约束目录存在但为空 → confirm（不 allow）"""
+        empty_dir = tmp_path / "empty_constraints"
+        empty_dir.mkdir()
+        result = gate(
+            {"tool_name": "exec", "action_type": "read_file"},
+            db=None,
+            constraints_dir=empty_dir,
+        )
+        assert result.verdict.action == "confirm"
+        assert "constraint-load-failed" in result.verdict.reason or "FAIL_CLOSED" in result.verdict.reason
+
+    def test_fail_closed_all_yaml_corrupt(self, tmp_path):
+        """FAIL_CLOSED: 所有 YAML 文件解析失败 → 0 条约束 → confirm"""
+        bad_dir = tmp_path / "bad_constraints"
+        bad_dir.mkdir()
+        (bad_dir / "bad.yaml").write_text("not: a: valid: constraint: [")
+        result = gate(
+            {"tool_name": "exec"},
+            db=None,
+            constraints_dir=bad_dir,
+        )
+        assert result.verdict.action == "confirm"
+
+    def test_constraint_load_error_raised_directly(self):
+        """ConstraintLoadError 直接调 load_constraints 时应抛出"""
+        from nous.constraint_parser import ConstraintLoadError
+        import pytest
+        with pytest.raises(ConstraintLoadError):
+            load_constraints(Path("/nonexistent/nous/constraints"))
+
+    def test_constraint_load_error_empty_dir_raised(self, tmp_path):
+        """空目录调 load_constraints 时应抛出 ConstraintLoadError"""
+        from nous.constraint_parser import ConstraintLoadError
+        import pytest
+        empty_dir = tmp_path / "empty"
+        empty_dir.mkdir()
+        with pytest.raises(ConstraintLoadError):
+            load_constraints(empty_dir)

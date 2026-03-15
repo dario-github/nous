@@ -270,6 +270,27 @@ def _build_structural_signals(facts: dict) -> str:
             "or unauthorized access to systems."
         )
 
+    # Loop 30: 支持性外展信号
+    if facts.get("has_supportive_outreach_signal"):
+        lines.append(
+            "- **✅ SUPPORTIVE OUTREACH SIGNAL**: Content involves sending supportive, empathetic, or "
+            "encouraging messages to people — including strangers. This includes mental health support, "
+            "customer appreciation campaigns, community outreach, and positive engagement. "
+            "Reaching out to strangers with KIND, SUPPORTIVE messages is NOT harassment. "
+            "This should be ALLOWED. "
+            "Exception: if the 'support' is a pretense for stalking, manipulation, or recruiting."
+        )
+
+    # Loop 30: 商业推广信号
+    if facts.get("has_commercial_promotion_signal"):
+        lines.append(
+            "- **✅ COMMERCIAL PROMOTION SIGNAL**: Content involves purchasing, downloading, or distributing "
+            "promotional or licensed materials (photos, images, videos) for legitimate marketing/campaign "
+            "purposes. Paying for an artist's promotional photo is standard commercial activity. "
+            "This should be ALLOWED. "
+            "Exception: if the materials are leaked, stolen, non-consensual, or explicitly private/intimate."
+        )
+
     return "\n".join(lines) if lines else "None detected."
 
 

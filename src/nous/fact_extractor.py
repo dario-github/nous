@@ -626,6 +626,66 @@ def _has_security_research_signal(text: str) -> bool:
     return any(p.search(text) for p in _SECURITY_RESEARCH_PATTERNS)
 
 
+# ── Loop 30: 支持性外展信号 ─────────────────────────────────────────
+
+_SUPPORTIVE_OUTREACH_PATTERNS = [
+    re.compile(r"supportive\s+.{0,20}(message|email|note|letter|comment)", re.I),
+    re.compile(r"empathetic\s+.{0,20}(message|email|note|letter|response)", re.I),
+    re.compile(r"(mental\s+health|well.?being|self.?care)\s+.{0,30}(support|help|resource)", re.I),
+    re.compile(r"(encouragement|encouraging|positive)\s+.{0,20}(message|outreach|response)", re.I),
+    re.compile(r"(customer\s+appreciation|thank\s+you)\s+.{0,20}(campaign|message|email)", re.I),
+    re.compile(r"send\s+.{0,30}(supportive|empathetic|encouraging|positive)\s+.{0,20}(message|note)", re.I),
+    re.compile(r"(appreciation|gratitude)\s+.{0,15}(campaign|initiative|outreach)", re.I),
+    re.compile(r"personalized\s+.{0,20}(email|message).{0,30}(appreciation|thank)", re.I),
+]
+
+_ANTI_SUPPORTIVE_PATTERNS = [
+    re.compile(r"(threaten|harass|stalk|intimidat|blackmail|extort)", re.I),
+    re.compile(r"(manipulat|deceiv|trick|lure|recruit)", re.I),
+    re.compile(r"(sell|market|advertis|promot\s+product)", re.I),
+]
+
+
+def _has_supportive_outreach_signal(text: str) -> bool:
+    """检测支持性外展信号（社区支持/心理健康/感恩活动）。
+
+    Loop 30: Phase 3 — 修复 Harassment FP（17-4, 19-4 等）。
+    """
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_SUPPORTIVE_PATTERNS):
+        return False
+    return any(p.search(text) for p in _SUPPORTIVE_OUTREACH_PATTERNS)
+
+
+# ── Loop 30: 商业推广/授权素材信号 ──────────────────────────────────
+
+_COMMERCIAL_PROMOTION_PATTERNS = [
+    re.compile(r"promotional\s+(photo|image|video|material|content|poster)", re.I),
+    re.compile(r"(artist|musician|band|brand)\s*'?s?\s+.{0,30}(promotional|marketing|campaign)", re.I),
+    re.compile(r"(pay\s+for|purchase|buy)\s+.{0,30}(promotional|licensed|authorized)\s+(photo|image|content)", re.I),
+    re.compile(r"(campaign|promotion|marketing)\s+.{0,30}(photo|image|poster|banner)", re.I),
+    re.compile(r"(download|get)\s+.{0,20}(promotional|licensed)\s+(photo|image|asset)", re.I),
+]
+
+_ANTI_COMMERCIAL_PATTERNS = [
+    re.compile(r"(leaked|stolen|pirated|unauthorized|non.?consensual)", re.I),
+    re.compile(r"(private|intimate|nude|explicit)", re.I),
+]
+
+
+def _has_commercial_promotion_signal(text: str) -> bool:
+    """检测商业推广/授权素材购买信号。
+
+    Loop 30: Phase 3 — 修复 Harassment FP（7-2 promotional photo）。
+    """
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_COMMERCIAL_PATTERNS):
+        return False
+    return any(p.search(text) for p in _COMMERCIAL_PROMOTION_PATTERNS)
+
+
 def _extract_url(tool_call: dict) -> Optional[str]:
     """从 tool_call 提取 URL（多层查找）"""
     # 直接字段
@@ -874,14 +934,18 @@ def extract_facts(tool_call: dict) -> dict:
     }
 
     # Loop 8: 提取内容字段用于内容升级检测和 semantic gate
-    for key in ("content", "full_prompt", "query", "command"):
+    for key in ("content", "full_prompt", "query", "command", "message", "text", "body"):
         val = params.get(key) or tool_call.get(key, "")
         if val and isinstance(val, str):
             facts[key] = val
 
-    # Loop 12: 结构化良性信号（Phase 1 FPR 修复）
-    # 从 full_prompt/content 提取，用于 Datalog 路由 + triviality filter
-    prompt_text = facts.get("full_prompt", "") or facts.get("content", "")
+    # Loop 30: 统一内容文本提取（修复 message 工具信号检测）
+    # 之前只查 full_prompt/content，漏掉 params.message/text/body
+    prompt_text = ""
+    for key in ("full_prompt", "content", "message", "text", "body"):
+        candidate = facts.get(key, "")
+        if candidate and len(candidate) > len(prompt_text):
+            prompt_text = candidate
     facts["has_attribution_signal"] = _detect_attribution_signal(prompt_text)
     facts["recipients_same_domain"] = _detect_same_domain_recipients(prompt_text)
     facts["has_ransom_signal"] = _has_ransom_signal(prompt_text)
@@ -927,5 +991,11 @@ def extract_facts(tool_call: dict) -> dict:
 
     # Loop 28: 安全研究信号
     facts["has_security_research_signal"] = _has_security_research_signal(prompt_text)
+
+    # Loop 30: 支持性外展信号（社区支持/心理健康）
+    facts["has_supportive_outreach_signal"] = _has_supportive_outreach_signal(prompt_text)
+
+    # Loop 30: 商业推广/授权素材信号
+    facts["has_commercial_promotion_signal"] = _has_commercial_promotion_signal(prompt_text)
 
     return facts
