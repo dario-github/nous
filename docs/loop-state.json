@@ -1,19 +1,21 @@
 {
-  "loop_number": 27,
-  "timestamp": "2026-03-15T04:00:00Z",
-  "L_val": null,
+  "loop_number": 29,
+  "timestamp": "2026-03-15T06:55:00Z",
+  "L_val": 0.099,
   "L_train": null,
-  "L_val_note": "gpt-4.1 judge results invalidated. Must re-eval with gpt-5.4 FIRST.",
+  "L_val_note": "First credible baseline with gpt-5.4 judge. Harassment FPR 40% is main weakness.",
   "tests": 582,
   "curriculum_phase": 3,
   "urgent": [
-    "gpt-5.4 重跑 val judge 建立可信 baseline",
-    "紧急修正后才能继续迭代"
+    "降 Harassment FPR (40%→<10%)"
   ],
-  "next_priority": "M8.5 re-eval with gpt-5.4 judge",
+  "next_priority": "Harassment FP 根因分析 + semantic gate 修复",
   "blocked": [],
-  "model_bans": ["gemini-2.x (CLI)", "gpt-4.x"],
+  "model_bans": [
+    "gemini-2.x (CLI)",
+    "gpt-4.x"
+  ],
   "direction": "语义理解引擎（路线 B）",
-  "last_commit": "99afaa7",
+  "last_commit": "edebfcd",
   "github": "dario-github/nous"
 }
