@@ -48,12 +48,39 @@
 - 评估机制最重要——对标 AgentHarm benchmark
 - 不是关键词匹配，是理解上下文语义
 
+## Geo Reasoning RL Loop（2026-03-16 新增）
+
+**架构**：规则推理 → LLM 综合层 → LLM Judge 评估 → 自动策略更新
+
+| 组件 | 文件 | 作用 |
+|------|------|------|
+| 规则推理 | `scripts/geo_reason.py` | Datalog 规则 → 预测 |
+| LLM 综合层 | `scripts/geo_llm_layer.py` | 精炼概率 + 补充遗漏事件 |
+| LLM Judge | `scripts/judge_geo.py` | 语义匹配(60% LLM + 40% 启发式) |
+| 自动化 Loop | `scripts/geo_train_loop_v2.py` | 全自动迭代 + 策略更新 + patience |
+| 模型比较 | `scripts/judge_model_comparison.py` | 多模型 Judge 对比 |
+
+**Loss**: `L_geo = 1 - (0.30·R_event + 0.25·R_causal + 0.15·R_timing + 0.20·R_calibration - 0.10·R_hallucination)`
+
+**10 轮迭代结果**（Loop 1-10）：
+- Best L_geo_val = **0.5227**（Loop 4），R_event=0.5, matches=5/5
+- 瓶颈：R_event 持续最弱，过拟合（train 0.43 vs val 0.52）
+- LLM synthesis: DeepSeek-V3.2 能成功，qwen3-32b thinking 模式不兼容
+- LLM synthesis 反而降低了 val（移除了能匹配的预测）→ 需要约束移除逻辑
+
+**下一步**：
+1. 修复 qwen3-32b thinking 参数（extra_body 关闭 thinking）
+2. LLM synthesis 约束：不允许移除 val 已匹配的预测（anti-regression）
+3. R_event 改善：扩展事件类型映射 + 更多规则覆盖
+4. 解决过拟合：train/val gap 需要缩小
+
 ## 优先级队列
 
-1. **评估基础设施** — 接入 AgentHarm benchmark，建立 baseline
-2. **KG 语义增强** — 实体属性丰富化 + 关系类型化
-3. **语义 gate** — gate 流程增加 KG enrichment
-4. **学术对标** — 复现 QuadSentinel/VIRF 关键技术
+1. **Geo RL Loop 瓶颈突破** — R_event + 过拟合 + synthesis anti-regression
+2. **评估基础设施** — 接入 AgentHarm benchmark，建立 baseline
+3. **KG 语义增强** — 实体属性丰富化 + 关系类型化
+4. **语义 gate** — gate 流程增加 KG enrichment
+5. **学术对标** — 复现 QuadSentinel/VIRF 关键技术
 
 ## 约束
 

@@ -1,5 +1,5 @@
 {
-  "loop": 4,
+  "loop": 18,
   "best_L_geo_val": 0.5227,
   "best_L_geo_train": 0.4331,
   "history": [
@@ -38,6 +38,181 @@
       "weakest": "R_event",
       "improved": true,
       "timestamp": "2026-03-16T18:15:57.921556+00:00"
+    },
+    {
+      "loop": 5,
+      "L_geo_val": 0.5979,
+      "L_geo_train": 0.4307,
+      "R_total_val": 0.4021,
+      "weakest": "R_event",
+      "improved": false,
+      "llm": true,
+      "model": "DeepSeek-V3.2",
+      "elapsed_s": 456.7,
+      "timestamp": "2026-03-16T18:50:33.391670+00:00"
+    },
+    {
+      "loop": 6,
+      "L_geo_val": 0.5227,
+      "L_geo_train": 0.4331,
+      "R_total_val": 0.4773,
+      "weakest": "R_event",
+      "improved": false,
+      "llm": true,
+      "model": "qwen3-32b",
+      "elapsed_s": 36.9,
+      "timestamp": "2026-03-16T19:04:31.727299+00:00"
+    },
+    {
+      "loop": 7,
+      "L_geo_val": 0.5227,
+      "L_geo_train": 0.4331,
+      "R_total_val": 0.4773,
+      "weakest": "R_event",
+      "improved": false,
+      "llm": true,
+      "model": "qwen3-32b",
+      "elapsed_s": 35.2,
+      "timestamp": "2026-03-16T19:05:06.975594+00:00"
+    },
+    {
+      "loop": 8,
+      "L_geo_val": 0.5227,
+      "L_geo_train": 0.4331,
+      "R_total_val": 0.4773,
+      "weakest": "R_event",
+      "improved": false,
+      "llm": true,
+      "model": "qwen3-32b",
+      "elapsed_s": 37.2,
+      "timestamp": "2026-03-16T19:05:44.133474+00:00"
+    },
+    {
+      "loop": 9,
+      "L_geo_val": 0.6285,
+      "L_geo_train": 0.4545,
+      "R_total_val": 0.3715,
+      "weakest": "R_event",
+      "improved": false,
+      "llm": true,
+      "model": "DeepSeek-V3.2",
+      "elapsed_s": 391.0,
+      "timestamp": "2026-03-16T19:12:15.130254+00:00"
+    },
+    {
+      "loop": 10,
+      "L_geo_val": 0.5444,
+      "L_geo_train": 0.3807,
+      "R_total_val": 0.4556,
+      "weakest": "R_event",
+      "improved": false,
+      "llm": true,
+      "model": "qwen3-32b",
+      "elapsed_s": 36.7,
+      "timestamp": "2026-03-16T19:12:51.867793+00:00"
+    },
+    {
+      "loop": 11,
+      "L_geo_val": 0.6309,
+      "L_geo_train": 0.4267,
+      "R_total_val": 0.3691,
+      "weakest": "R_event",
+      "improved": false,
+      "llm": true,
+      "model": "qwen3-32b",
+      "elapsed_s": 254.0,
+      "timestamp": "2026-03-16T19:19:20.318220+00:00"
+    },
+    {
+      "loop": 12,
+      "L_geo_val": 0.6479,
+      "L_geo_train": 0.4475,
+      "R_total_val": 0.3521,
+      "weakest": "R_event",
+      "improved": false,
+      "llm": true,
+      "model": "DeepSeek-V3.2",
+      "elapsed_s": 459.2,
+      "timestamp": "2026-03-16T19:26:59.510999+00:00"
+    },
+    {
+      "loop": 13,
+      "L_geo_val": 0.6358,
+      "L_geo_train": 0.4391,
+      "R_total_val": 0.3642,
+      "weakest": "R_event",
+      "improved": false,
+      "llm": true,
+      "model": "qwen3-32b",
+      "elapsed_s": 289.8,
+      "timestamp": "2026-03-16T19:31:49.276427+00:00"
+    },
+    {
+      "loop": 14,
+      "L_geo_val": 0.7568,
+      "L_geo_train": 0.4297,
+      "R_total_val": 0.2432,
+      "weakest": "R_event",
+      "improved": false,
+      "llm": true,
+      "model": "DeepSeek-V3.2",
+      "elapsed_s": 433.1,
+      "timestamp": "2026-03-16T19:39:02.408527+00:00"
+    },
+    {
+      "loop": 15,
+      "L_geo_val": 0.5825,
+      "L_geo_train": 0.4152,
+      "R_total_val": 0.4175,
+      "weakest": "R_event",
+      "improved": false,
+      "llm": true,
+      "model": "qwen3-32b",
+      "elapsed_s": 326.8,
+      "timestamp": "2026-03-16T20:00:35.901130+00:00"
+    },
+    {
+      "loop": 16,
+      "L_geo_val": 0.6285,
+      "L_geo_train": 0.3897,
+      "R_total_val": 0.3715,
+      "weakest": "R_event",
+      "improved": false,
+      "llm": true,
+      "model": "DeepSeek-V3.2",
+      "elapsed_s": 418.5,
+      "timestamp": "2026-03-16T20:07:34.448015+00:00"
+    },
+    {
+      "loop": 17,
+      "L_geo_val": 0.6263,
+      "L_geo_train": 0.3893,
+      "R_total_val": 0.3737,
+      "weakest": "R_event",
+      "improved": false,
+      "llm": true,
+      "model": "qwen3-32b",
+      "elapsed_s": 246.6,
+      "timestamp": "2026-03-16T20:11:41.007992+00:00"
+    },
+    {
+      "loop": 18,
+      "L_geo_val": 0.7384,
+      "L_geo_train": 0.3674,
+      "R_total_val": 0.2616,
+      "weakest": "R_event",
+      "improved": false,
+      "llm": true,
+      "model": "DeepSeek-V3.2",
+      "elapsed_s": 317.9,
+      "timestamp": "2026-03-16T20:16:58.891207+00:00"
     }
-  ]
+  ],
+  "strategy": {
+    "max_predictions": 10,
+    "confidence_threshold": 0.7,
+    "use_llm_synthesis": true,
+    "use_llm_judge": true,
+    "llm_model": "qwen3-32b"
+  }
 }

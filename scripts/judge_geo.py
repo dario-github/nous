@@ -113,14 +113,65 @@ def _keyword_overlap(pred: dict, gt: dict) -> float:
     return len(overlap) / min(len(pred_words), len(gt_words))
 
 
-def compute_r_event(predictions: list, ground_truth: list, judge_fn=None) -> dict:
+def _llm_match_score(pred: dict, gt: dict, client, model: str) -> float:
+    """用 LLM 判断预测与事实是否匹配，返回 0-1 分数"""
+    prompt = EVENT_MATCH_PROMPT.format(
+        prediction=json.dumps({
+            "event_type": pred.get("event_type", pred.get("prediction_type", "")),
+            "description": pred.get("description", ""),
+            "predicted_day": pred.get("predicted_day", 0),
+            "probability": pred.get("probability", 0.5),
+        }, ensure_ascii=False),
+        ground_truth=json.dumps({
+            "event_type": gt.get("event_type", ""),
+            "description": gt.get("description", ""),
+            "day": gt.get("day", 0),
+            "actors": gt.get("actors", []),
+        }, ensure_ascii=False),
+    )
+    try:
+        extra = {}
+        if "qwen3" in model.lower() or "kimi-k2-thinking" in model.lower():
+            extra["extra_body"] = {"enable_thinking": False}
+        resp = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=200, temperature=0.0, timeout=30.0,
+            **extra,
+        )
+        text = resp.choices[0].message.content or ""
+        import re
+        text = re.sub(r"^```(?:json)?\n?", "", text.strip())
+        text = re.sub(r"\n?```$", "", text)
+        result = json.loads(text)
+        if result.get("match"):
+            return result.get("confidence", 0.8)
+        return 0.0
+    except Exception as e:
+        return -1.0  # 标记 LLM 失败，回退到启发式
+
+
+def compute_r_event(predictions: list, ground_truth: list,
+                    use_llm: bool = False, llm_model: str = "DeepSeek-V3.2") -> dict:
     """计算事件预测准确率 (R_event)
 
     多维匹配：类型相似度 + 时间窗口 + 关键词重叠。
-    如果有 judge_fn（LLM），再做语义精排。
+    use_llm=True 时用 LLM 做语义精排（更准但更慢）。
     """
     if not predictions:
         return {"precision": 0, "recall": 0, "f1": 0, "matches": []}
+
+    # 可选 LLM client
+    llm_client = None
+    if use_llm:
+        try:
+            import openai
+            key = os.environ.get("OPENAI_API_KEY")
+            base_url = os.environ.get("OPENAI_BASE_URL")
+            if key:
+                llm_client = openai.OpenAI(api_key=key, base_url=base_url)
+        except Exception:
+            pass
 
     matches = []
     matched_gt = set()
@@ -133,15 +184,21 @@ def compute_r_event(predictions: list, ground_truth: list, judge_fn=None) -> dic
             if gt["id"] in matched_gt:
                 continue
 
-            # 多维打分
+            # 启发式打分
             type_sim = _semantic_type_similarity(
                 pred.get("event_type", ""), gt.get("event_type", ""))
             day_diff = abs(pred.get("predicted_day", 0) - gt.get("day", 0))
             time_score = max(0, 1.0 - day_diff * 0.1) if day_diff <= 5 else 0
             kw_score = _keyword_overlap(pred, gt)
+            heuristic_score = 0.4 * type_sim + 0.3 * time_score + 0.3 * kw_score
 
-            # 加权综合：类型 40% + 时间 30% + 关键词 30%
-            score = 0.4 * type_sim + 0.3 * time_score + 0.3 * kw_score
+            # LLM 精排：对启发式 > 0.15 的候选对做 LLM 判断
+            score = heuristic_score
+            if llm_client and heuristic_score > 0.15:
+                llm_score = _llm_match_score(pred, gt, llm_client, llm_model)
+                if llm_score >= 0:  # LLM 成功
+                    # 混合：60% LLM + 40% 启发式
+                    score = 0.6 * llm_score + 0.4 * heuristic_score
 
             if score > best_score:
                 best_score = score
@@ -241,9 +298,11 @@ def compute_r_hallucination(predictions: list, matches: list) -> float:
     return round(hallucinated / len(predictions), 4)
 
 
-def compute_reward(predictions: list, ground_truth: list) -> dict:
+def compute_reward(predictions: list, ground_truth: list,
+                   use_llm: bool = False, llm_model: str = "DeepSeek-V3.2") -> dict:
     """计算完整 reward 和 L_geo"""
-    event_result = compute_r_event(predictions, ground_truth)
+    event_result = compute_r_event(predictions, ground_truth,
+                                   use_llm=use_llm, llm_model=llm_model)
     r_event = event_result["f1"]
     r_causal = compute_r_causal(predictions, ground_truth)
     r_timing = compute_r_timing(predictions, ground_truth, event_result["matches"])
@@ -279,12 +338,15 @@ def main():
     parser.add_argument("predictions", help="预测 JSON 文件路径")
     parser.add_argument("--split", default="val", choices=["train", "val", "test"])
     parser.add_argument("--output", help="输出结果 JSON 路径")
+    parser.add_argument("--use-llm", action="store_true", help="用 LLM 做语义匹配")
+    parser.add_argument("--llm-model", default="DeepSeek-V3.2", help="LLM 模型")
     args = parser.parse_args()
 
     gt = load_ground_truth(args.split)
     preds = load_predictions(args.predictions)
 
-    result = compute_reward(preds, gt)
+    result = compute_reward(preds, gt, use_llm=args.use_llm,
+                            llm_model=args.llm_model)
 
     print(f"\n{'='*60}")
     print(f"Nous Geo Reasoning Evaluation — {args.split} set")
