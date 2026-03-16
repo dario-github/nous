@@ -1,15 +1,15 @@
 {
-  "R_event": 0.8,
-  "R_causal": 0.6667,
+  "R_event": 0.6957,
+  "R_causal": 0.6733,
   "R_timing": 0.5561,
-  "R_calibration": 0.8181,
-  "R_hallucination": 0.3333,
-  "R_total": 0.6204,
-  "L_geo": 0.3796,
+  "R_calibration": 0.7655,
+  "R_hallucination": 0.4667,
+  "R_total": 0.5669,
+  "L_geo": 0.4331,
   "event_detail": {
-    "precision": 0.6667,
+    "precision": 0.5333,
     "recall": 1.0,
-    "f1": 0.8,
+    "f1": 0.6957,
     "matches": [
       {
         "pred": "pred_001",
@@ -53,7 +53,7 @@
       }
     ]
   },
-  "n_predictions": 12,
+  "n_predictions": 15,
   "n_ground_truth": 8,
   "n_matches": 8
 }

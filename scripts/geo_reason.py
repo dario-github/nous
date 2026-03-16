@@ -228,7 +228,58 @@ class GeoReasoner:
         all_inferences.extend(self.r8_escalation_spiral())
         all_inferences.extend(self.r9_regional_spillover())
         all_inferences.extend(self.r10_humanitarian())
+        all_inferences.extend(self.r11_narrative_warfare())
         all_inferences.extend(self.r12_nuclear_strike())
+        all_inferences.extend(self.r13_diplomatic_backchannel())
+        all_inferences.extend(self.r14_strategic_reserve_response())
+        return all_inferences
+
+    def r11_narrative_warfare(self) -> list[dict]:
+        """R11: 叙事战 — 国内政治压力→控制战争叙事"""
+        inferences = []
+        # Trump 面临国内政治压力 + 战争进行中
+        if self._get_entity("leader:trump"):
+            inferences.append({
+                "rule": "R11",
+                "fact": "narrative_warfare(trump)",
+                "confidence": 0.70,
+                "reasoning": "Trump面临国内政治压力+中期选举考量=战争叙事控制（宣称胜利/缓和信号）",
+                "prediction_type": "diplomatic",
+                "predicted_day_range": [8, 14],
+                "description": "Trump 发出缓和信号或宣称战争即将结束，影响油价和市场",
+            })
+        return inferences
+
+    def r13_diplomatic_backchannel(self) -> list[dict]:
+        """R13: 外交降级尝试 — 长期冲突+第三方调解→降级尝试"""
+        inferences = []
+        # 伊朗温和派存在 + 海湾国家利益相关
+        if self._get_entity("leader:pezeshkian"):
+            inferences.append({
+                "rule": "R13",
+                "fact": "diplomatic_backchannel(pezeshkian, gulf_states)",
+                "confidence": 0.55,
+                "reasoning": "Pezeshkian是改革派总统+海湾国家受战争冲击=可能尝试外交降级",
+                "prediction_type": "diplomatic",
+                "predicted_day_range": [7, 12],
+                "description": "伊朗温和派（Pezeshkian）尝试向海湾国家外交降级",
+            })
+        return inferences
+
+    def r14_strategic_reserve_response(self) -> list[dict]:
+        """R14: 战略储备释放 — 油价暴涨+消费国压力→IEA行动"""
+        inferences = []
+        if self._has_rel("country:iran", "CONTROLS", "facility:hormuz"):
+            inferences.append({
+                "rule": "R14",
+                "fact": "strategic_reserve_release(iea)",
+                "confidence": 0.65,
+                "reasoning": "霍尔木兹封锁→油价暴涨→IEA消费国协调释放战略储备",
+                "prediction_type": "economic",
+                "predicted_day_range": [10, 16],
+                "description": "IEA 协调成员国释放战略石油储备以平抑油价",
+            })
+        return inferences
         return all_inferences
 
     def generate_predictions(self, max_predictions: int = 15) -> list[dict]:
@@ -279,7 +330,10 @@ class GeoReasoner:
             "R8": ["sig_003", "sig_005", "sig_007", "sig_012"],  # 双方能力
             "R9": ["sig_015", "sig_011"],  # 预置部队+GCC
             "R10": ["sig_005"],  # 大规模打击
+            "R11": ["sig_001", "sig_002"],  # Trump政治议程+国内政治
             "R12": ["sig_009", "sig_006"],  # 核浓缩+情报
+            "R13": ["sig_011", "sig_013"],  # GCC+伊朗内部
+            "R14": ["sig_004", "sig_008"],  # 油价+霍尔木兹
         }
 
         # 从规则映射获取信号

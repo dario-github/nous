@@ -1,7 +1,7 @@
 {
-  "loop": 2,
-  "best_L_geo_val": 0.5487,
-  "best_L_geo_train": 0.3796,
+  "loop": 4,
+  "best_L_geo_val": 0.5227,
+  "best_L_geo_train": 0.4331,
   "history": [
     {
       "loop": 1,
@@ -20,6 +20,24 @@
       "weakest": "R_event",
       "improved": true,
       "timestamp": "2026-03-16T18:06:52.081267+00:00"
+    },
+    {
+      "loop": 3,
+      "L_geo_val": 0.5444,
+      "L_geo_train": 0.3807,
+      "R_total_val": 0.4556,
+      "weakest": "R_event",
+      "improved": true,
+      "timestamp": "2026-03-16T18:15:27.988918+00:00"
+    },
+    {
+      "loop": 4,
+      "L_geo_val": 0.5227,
+      "L_geo_train": 0.4331,
+      "R_total_val": 0.4773,
+      "weakest": "R_event",
+      "improved": true,
+      "timestamp": "2026-03-16T18:15:57.921556+00:00"
     }
   ]
 }
