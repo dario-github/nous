@@ -1,13 +1,13 @@
 """after_tool_call 自动实体/关系提取 (M7.1)
 
 提供 Python API，用于从工具调用结果中自动提取实体和关系写入 KG。
-接入方式：在 ontology-gate-extension 的 after_tool_call hook 中调用此模块，
-或通过 Python subprocess 调用。
+接入方式：在 gateway_hook.py 的 after_tool_call 中调用此模块。
 """
 from __future__ import annotations
 
 import json
 import logging
+import time
 from typing import Any, Awaitable, Callable
 
 logger = logging.getLogger(__name__)
@@ -75,12 +75,14 @@ async def extract_from_tool_call(
         tool_name: 工具名称（如 "web_search"）
         params:    工具参数 dict
         result:    工具返回值（任意类型）
-        db:        NousDB 实例（需有 upsert_entity / upsert_relation 方法）
+        db:        NousDB 实例（需有 upsert_entities / upsert_relations 方法）
         llm_fn:    异步 LLM 调用函数，接受 prompt 字符串，返回解析后的 dict
 
     Returns:
         {"extracted": N}  其中 N 是写入 KG 的条目数
     """
+    from nous.schema import Entity, Relation
+
     # 1. 过滤低信号工具
     if tool_name in SKIP_TOOLS:
         logger.debug("skip tool: %s", tool_name)
@@ -103,44 +105,75 @@ async def extract_from_tool_call(
         logger.warning("llm_fn failed for tool %s: %s", tool_name, exc)
         return {"extracted": 0}
 
-    # 4. 写入 KG
-    count = 0
+    # 4. 构建 Entity/Relation 对象并写入 KG
+    now = time.time()
+    entities_to_upsert = []
+    relations_to_upsert = []
 
-    for entity in extracted.get("entities", []):
-        if not isinstance(entity, dict):
+    for raw_entity in extracted.get("entities", []):
+        if not isinstance(raw_entity, dict):
             continue
-        if entity.get("confidence", 0) < ENTITY_CONFIDENCE_THRESHOLD:
+        if raw_entity.get("confidence", 0) < ENTITY_CONFIDENCE_THRESHOLD:
             continue
         try:
-            db.upsert_entity(entity)
-            count += 1
-            logger.debug("upsert entity: %s", entity.get("id"))
-        except Exception as exc:
-            logger.warning("upsert_entity failed: %s — %s", entity.get("id"), exc)
-
-    for relation in extracted.get("relations", []):
-        if not isinstance(relation, dict):
-            continue
-        if relation.get("confidence", 0) < RELATION_CONFIDENCE_THRESHOLD:
-            continue
-        try:
-            db.upsert_relation(relation)
-            count += 1
-            logger.debug(
-                "upsert relation: %s -[%s]-> %s",
-                relation.get("from"),
-                relation.get("type"),
-                relation.get("to"),
+            entity = Entity(
+                id=raw_entity["id"],
+                etype=raw_entity.get("type", "concept"),
+                labels=[raw_entity.get("name", "")],
+                properties=raw_entity.get("props", {}),
+                confidence=raw_entity.get("confidence", 0.8),
+                source=f"auto_extract:{tool_name}",
+                created_at=now,
+                updated_at=now,
             )
+            entities_to_upsert.append(entity)
+        except Exception as exc:
+            logger.warning("build entity failed: %s — %s", raw_entity.get("id"), exc)
+
+    for raw_relation in extracted.get("relations", []):
+        if not isinstance(raw_relation, dict):
+            continue
+        if raw_relation.get("confidence", 0) < RELATION_CONFIDENCE_THRESHOLD:
+            continue
+        try:
+            relation = Relation(
+                from_id=raw_relation["from"],
+                to_id=raw_relation["to"],
+                rtype=raw_relation.get("type", "RELATED_TO"),
+                properties=raw_relation.get("props", {}),
+                confidence=raw_relation.get("confidence", 0.8),
+                source=f"auto_extract:{tool_name}",
+                created_at=now,
+            )
+            relations_to_upsert.append(relation)
         except Exception as exc:
             logger.warning(
-                "upsert_relation failed: %s→%s — %s",
-                relation.get("from"),
-                relation.get("to"),
+                "build relation failed: %s→%s — %s",
+                raw_relation.get("from"),
+                raw_relation.get("to"),
                 exc,
             )
 
-    logger.info("tool=%s extracted=%d", tool_name, count)
+    # 5. 批量写入
+    count = 0
+    if entities_to_upsert:
+        try:
+            db.upsert_entities(entities_to_upsert)
+            count += len(entities_to_upsert)
+            logger.debug("upserted %d entities", len(entities_to_upsert))
+        except Exception as exc:
+            logger.warning("upsert_entities failed: %s", exc)
+
+    if relations_to_upsert:
+        try:
+            db.upsert_relations(relations_to_upsert)
+            count += len(relations_to_upsert)
+            logger.debug("upserted %d relations", len(relations_to_upsert))
+        except Exception as exc:
+            logger.warning("upsert_relations failed: %s", exc)
+
+    logger.info("tool=%s extracted=%d (entities=%d, relations=%d)",
+                tool_name, count, len(entities_to_upsert), len(relations_to_upsert))
     return {"extracted": count}
 
 
