@@ -172,6 +172,23 @@
   },
   {
     "id": "pred_011",
+    "predicted_day": 11,
+    "event_type": "diplomatic",
+    "description": "Trump 发出缓和信号或宣称战争即将结束，影响油价和市场",
+    "probability": 0.7,
+    "causal_chain": [
+      "sig_001",
+      "sig_002"
+    ],
+    "reasoning": "Trump面临国内政治压力+中期选举考量=战争叙事控制（宣称胜利/缓和信号）",
+    "rule": "R11",
+    "day_range": [
+      8,
+      14
+    ]
+  },
+  {
+    "id": "pred_012",
     "predicted_day": 5,
     "event_type": "military_strike",
     "description": "美以打击伊朗核设施（Natanz/Fordow）",
@@ -188,7 +205,7 @@
     ]
   },
   {
-    "id": "pred_012",
+    "id": "pred_013",
     "predicted_day": 9,
     "event_type": "escalation",
     "description": "冲突外溢至Bahrain（美军基地所在国）",
@@ -202,6 +219,40 @@
     "day_range": [
       5,
       14
+    ]
+  },
+  {
+    "id": "pred_014",
+    "predicted_day": 9,
+    "event_type": "escalation",
+    "description": "冲突外溢至Qatar（美军基地所在国）",
+    "probability": 0.65,
+    "causal_chain": [
+      "sig_015",
+      "sig_011"
+    ],
+    "reasoning": "Qatar有美军基地=可能成为代理人攻击目标",
+    "rule": "R9",
+    "day_range": [
+      5,
+      14
+    ]
+  },
+  {
+    "id": "pred_015",
+    "predicted_day": 13,
+    "event_type": "economic",
+    "description": "IEA 协调成员国释放战略石油储备以平抑油价",
+    "probability": 0.65,
+    "causal_chain": [
+      "sig_004",
+      "sig_008"
+    ],
+    "reasoning": "霍尔木兹封锁→油价暴涨→IEA消费国协调释放战略储备",
+    "rule": "R14",
+    "day_range": [
+      10,
+      16
     ]
   }
 ]
