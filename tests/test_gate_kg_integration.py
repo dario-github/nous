@@ -176,7 +176,9 @@ class TestGateKgIntegration:
                 assert kg_arg is not None or True  # May be None if allow didn't trigger semantic
 
     def test_gate_explicit_kg_context_not_overridden(self, mem_db, constraints_dir):
-        """If caller passes kg_context explicitly, don't override it."""
+        """After ablation (bf036b0): kg_context is NOT injected into semantic gate.
+        Even if caller passes explicit kg_context, semantic gate receives None.
+        The kg_context is preserved in GateResult for post-gate enrichment."""
         explicit_ctx = {"entities": [{"id": "explicit"}], "relations": [], "policies": []}
         mock_sem_result = {
             "action": "allow",
@@ -200,8 +202,10 @@ class TestGateKgIntegration:
             if result.layer_path == "semantic":
                 call_args = mock_sem.call_args
                 kg_arg = call_args[0][3]
-                # Should use the explicit context, not auto-built
-                assert kg_arg == explicit_ctx
+                # Post-ablation: semantic gate always receives None
+                assert kg_arg is None
+            # kg_context preserved in result for post-gate enrichment
+            assert result.kg_context == explicit_ctx
 
     def test_gate_kg_failure_doesnt_break_pipeline(self, constraints_dir):
         """If KG query fails, gate still works normally."""

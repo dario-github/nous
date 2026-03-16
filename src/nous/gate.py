@@ -139,6 +139,7 @@ class GateResult:
     datalog_verdict: Optional[str] = None            # M7.3
     semantic_verdict: Optional[dict] = None          # M7.3
     layer_path: str = "datalog_only"                 # M7.3
+    kg_context: Optional[dict] = None                # Post-gate enrichment (not injected into semantic gate per ablation bf036b0)
 
     def to_dict(self) -> dict:
         d = {
@@ -243,6 +244,10 @@ def gate(
 
         # Step 4.5: KG Context Lookup（P1 from GPT-5.4 critique）
         # gate() 内部主动查 KG，不再依赖调用方传 kg_context
+        # NOTE: KG context is queried but NOT injected into semantic gate prompt.
+        # Ablation experiment (bf036b0) showed KG injection causes TPR -12% regression
+        # on signal_abuse scenarios (qwen-turbo diluted by legitimacy noise).
+        # KG context is preserved for post-gate enrichment (proof_trace, explanations).
         if kg_context is None and db is not None and semantic_config is not None:
             kg_context = _build_kg_context(facts, db)
 
@@ -260,10 +265,11 @@ def gate(
                 layer_path = "trivial_allow"
             elif semantic_config is not None:
                 # Layer 3: Semantic Gate
+                # kg_context=None: ablation showed KG injection hurts small models (bf036b0)
                 layer_path = "semantic"
                 sem_verdict = _run_semantic_gate(
                     tool_call, facts, datalog_verdict_str,
-                    kg_context, semantic_config,
+                    None, semantic_config,
                 )
                 verdict = _apply_semantic_verdict(
                     verdict, datalog_verdict_str, sem_verdict, semantic_config,
@@ -276,7 +282,7 @@ def gate(
                 layer_path = "semantic"
                 sem_verdict = _run_semantic_gate(
                     tool_call, facts, datalog_verdict_str,
-                    kg_context, semantic_config,
+                    None, semantic_config,  # kg_context=None per ablation bf036b0
                 )
                 verdict = _apply_semantic_verdict(
                     verdict, datalog_verdict_str, sem_verdict, semantic_config,
@@ -329,6 +335,7 @@ def gate(
             datalog_verdict=datalog_verdict_str,
             semantic_verdict=sem_verdict,
             layer_path=layer_path,
+            kg_context=kg_context,  # preserved for post-gate enrichment
         )
 
     except ConstraintLoadError as e:  # FAIL_CLOSED: 约束加载失败 → confirm
