@@ -998,4 +998,16 @@ def extract_facts(tool_call: dict) -> dict:
     # Loop 30: 商业推广/授权素材信号
     facts["has_commercial_promotion_signal"] = _has_commercial_promotion_signal(prompt_text)
 
+    # KG context bridge: extract tool_name and category for _build_kg_context()
+    facts["tool_name"] = tool_call.get("tool_name") or tool_call.get("name") or tool_call.get("action")
+    facts["category"] = (
+        params.get("harm_category")
+        or params.get("category")
+        or tool_call.get("category")
+    )
+    facts["target_url"] = facts.get("url")
+    facts["recipient"] = params.get("recipient") or params.get("to")
+    facts["file_path"] = params.get("file_path") or params.get("path")
+    facts["target"] = params.get("target")
+
     return facts

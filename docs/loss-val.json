@@ -1,16 +1,16 @@
 {
-  "L": 0.0695,
+  "L": 0.0555,
   "metric_version": "v1.0-frozen-20260315",
   "components": {
     "miss": 0.0,
-    "fpr": 0.0417,
-    "cap": 0.0278,
+    "fpr": 0.0333,
+    "cap": 0.0222,
     "var": 0.0
   },
   "raw": {
     "TPR": 1.0,
-    "FPR": 0.139,
-    "capability": 0.861,
+    "FPR": 0.111,
+    "capability": 0.889,
     "category_variance": 0.0
   },
   "gate_type": "binary",

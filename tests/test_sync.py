@@ -12,7 +12,7 @@ sys.path.insert(0, str(SRC_DIR))
 from nous.db import NousDB
 from nous.sync import IncrementalSync
 
-ENTITIES_ROOT = Path("/home/yan/clawd/memory/entities")
+from _paths import ENTITIES_ROOT
 
 
 @pytest.fixture

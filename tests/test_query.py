@@ -11,8 +11,8 @@ from nous.sync import sync_entities
 def populated_db():
     """一个已导入 memory/entities 的内存 DB"""
     db = NousDB(":memory:")
-    entities_root = Path("/home/yan/clawd/memory/entities")
-    sync_entities(db, entities_root)
+    from _paths import ENTITIES_ROOT
+    sync_entities(db, ENTITIES_ROOT)
     yield db
     db.close()
 

@@ -12,7 +12,7 @@ from nous.schema import Entity, Relation
 from nous.db import NousDB
 from nous.parser import parse_entity_file, scan_entities_dir
 
-ENTITIES_ROOT = Path("/home/yan/clawd/memory/entities")
+from _paths import ENTITIES_ROOT
 PERSON_FILE = ENTITIES_ROOT / "people" / "东丞.md"
 PROJECT_FILE = ENTITIES_ROOT / "projects" / "nous.md"
 CONCEPT_FILE = ENTITIES_ROOT / "concepts" / "Agentic-Memory.md"
@@ -252,9 +252,13 @@ class TestQuery:
         )
         assert len(rows) == 3
 
+import pytest
+
+_all_test_files_exist = all(f.exists() for f in [PERSON_FILE, PROJECT_FILE, CONCEPT_FILE])
 
 # ── 真实文件写入测试 ──────────────────────────────────────────────────────────
 
+@pytest.mark.skipif(not _all_test_files_exist, reason="部分 entity 文件不存在 (跨主机)")
 class TestRealFileIngestion:
     """使用真实 entity 文件测试端到端写入"""
 
