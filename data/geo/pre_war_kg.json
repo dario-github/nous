@@ -1,0 +1,324 @@
+{
+  "entities": [
+    {
+      "id": "country:us",
+      "type": "country",
+      "name": "United States",
+      "props": {
+        "gdp_t": 28,
+        "military_rank": 1
+      }
+    },
+    {
+      "id": "country:iran",
+      "type": "country",
+      "name": "Iran",
+      "props": {
+        "gdp_b": 400,
+        "pop_m": 88,
+        "inflation_pct": 45
+      }
+    },
+    {
+      "id": "country:israel",
+      "type": "country",
+      "name": "Israel",
+      "props": {
+        "military_rank": 18,
+        "nuclear": true
+      }
+    },
+    {
+      "id": "country:saudi",
+      "type": "country",
+      "name": "Saudi Arabia",
+      "props": {
+        "oil_export_mbd": 7.5
+      }
+    },
+    {
+      "id": "country:uae",
+      "type": "country",
+      "name": "UAE",
+      "props": {}
+    },
+    {
+      "id": "country:bahrain",
+      "type": "country",
+      "name": "Bahrain",
+      "props": {
+        "us_naval_base": true
+      }
+    },
+    {
+      "id": "country:kuwait",
+      "type": "country",
+      "name": "Kuwait",
+      "props": {}
+    },
+    {
+      "id": "country:qatar",
+      "type": "country",
+      "name": "Qatar",
+      "props": {
+        "us_air_base": true
+      }
+    },
+    {
+      "id": "leader:trump",
+      "type": "leader",
+      "name": "Donald Trump",
+      "props": {
+        "role": "US President"
+      }
+    },
+    {
+      "id": "leader:khamenei",
+      "type": "leader",
+      "name": "Ali Khamenei",
+      "props": {
+        "role": "Supreme Leader of Iran",
+        "age": 86
+      }
+    },
+    {
+      "id": "leader:netanyahu",
+      "type": "leader",
+      "name": "Benjamin Netanyahu",
+      "props": {
+        "role": "Israel PM"
+      }
+    },
+    {
+      "id": "leader:pezeshkian",
+      "type": "leader",
+      "name": "Masoud Pezeshkian",
+      "props": {
+        "role": "Iran President",
+        "orientation": "moderate"
+      }
+    },
+    {
+      "id": "leader:mojtaba",
+      "type": "leader",
+      "name": "Mojtaba Khamenei",
+      "props": {
+        "role": "Son of Supreme Leader",
+        "orientation": "hardline"
+      }
+    },
+    {
+      "id": "leader:hegseth",
+      "type": "leader",
+      "name": "Pete Hegseth",
+      "props": {
+        "role": "US Defense Secretary"
+      }
+    },
+    {
+      "id": "org:irgc",
+      "type": "military_unit",
+      "name": "IRGC",
+      "props": {
+        "type": "revolutionary_guard",
+        "loyalty": "supreme_leader"
+      }
+    },
+    {
+      "id": "org:centcom",
+      "type": "military_unit",
+      "name": "CENTCOM",
+      "props": {
+        "aor": "middle_east"
+      }
+    },
+    {
+      "id": "org:idf",
+      "type": "military_unit",
+      "name": "IDF",
+      "props": {}
+    },
+    {
+      "id": "org:mossad",
+      "type": "military_unit",
+      "name": "Mossad",
+      "props": {
+        "type": "intelligence"
+      }
+    },
+    {
+      "id": "org:hezbollah",
+      "type": "military_unit",
+      "name": "Hezbollah",
+      "props": {
+        "base": "Lebanon",
+        "patron": "Iran"
+      }
+    },
+    {
+      "id": "org:houthis",
+      "type": "military_unit",
+      "name": "Houthis",
+      "props": {
+        "base": "Yemen",
+        "patron": "Iran"
+      }
+    },
+    {
+      "id": "org:fifth_fleet",
+      "type": "military_unit",
+      "name": "US Fifth Fleet",
+      "props": {
+        "base": "Bahrain"
+      }
+    },
+    {
+      "id": "facility:hormuz",
+      "type": "economic_asset",
+      "name": "Strait of Hormuz",
+      "props": {
+        "oil_flow_mbd": 17,
+        "global_share_pct": 20
+      }
+    },
+    {
+      "id": "facility:kharg",
+      "type": "facility",
+      "name": "Kharg Island",
+      "props": {
+        "iran_oil_export_pct": 90,
+        "type": "oil_terminal"
+      }
+    },
+    {
+      "id": "facility:natanz",
+      "type": "facility",
+      "name": "Natanz",
+      "props": {
+        "type": "nuclear_enrichment"
+      }
+    },
+    {
+      "id": "facility:fordow",
+      "type": "facility",
+      "name": "Fordow",
+      "props": {
+        "type": "nuclear_enrichment",
+        "underground": true
+      }
+    },
+    {
+      "id": "facility:parchin",
+      "type": "facility",
+      "name": "Parchin",
+      "props": {
+        "type": "nuclear_research"
+      }
+    },
+    {
+      "id": "asset:spr",
+      "type": "economic_asset",
+      "name": "US Strategic Petroleum Reserve",
+      "props": {
+        "capacity_mb": 700
+      }
+    }
+  ],
+  "relations": [
+    {
+      "from": "country:us",
+      "to": "country:israel",
+      "type": "ALLIED_WITH"
+    },
+    {
+      "from": "country:us",
+      "to": "country:iran",
+      "type": "HOSTILE_TO"
+    },
+    {
+      "from": "country:israel",
+      "to": "country:iran",
+      "type": "HOSTILE_TO"
+    },
+    {
+      "from": "country:iran",
+      "to": "org:hezbollah",
+      "type": "SUPPLIES"
+    },
+    {
+      "from": "country:iran",
+      "to": "org:houthis",
+      "type": "SUPPLIES"
+    },
+    {
+      "from": "country:iran",
+      "to": "facility:hormuz",
+      "type": "CONTROLS"
+    },
+    {
+      "from": "country:iran",
+      "to": "facility:kharg",
+      "type": "CONTROLS"
+    },
+    {
+      "from": "country:iran",
+      "to": "facility:natanz",
+      "type": "CONTROLS"
+    },
+    {
+      "from": "org:fifth_fleet",
+      "to": "country:bahrain",
+      "type": "LOCATED_AT"
+    },
+    {
+      "from": "org:centcom",
+      "to": "country:qatar",
+      "type": "LOCATED_AT"
+    },
+    {
+      "from": "leader:khamenei",
+      "to": "org:irgc",
+      "type": "GOVERNS"
+    },
+    {
+      "from": "leader:khamenei",
+      "to": "country:iran",
+      "type": "GOVERNS"
+    },
+    {
+      "from": "leader:mojtaba",
+      "to": "leader:khamenei",
+      "type": "SUCCEEDS"
+    },
+    {
+      "from": "country:saudi",
+      "to": "facility:hormuz",
+      "type": "DEPENDS_ON"
+    },
+    {
+      "from": "country:uae",
+      "to": "facility:hormuz",
+      "type": "DEPENDS_ON"
+    },
+    {
+      "from": "country:kuwait",
+      "to": "facility:hormuz",
+      "type": "DEPENDS_ON"
+    },
+    {
+      "from": "facility:kharg",
+      "to": "country:iran",
+      "type": "PART_OF"
+    },
+    {
+      "from": "org:hezbollah",
+      "to": "country:israel",
+      "type": "THREATENS"
+    },
+    {
+      "from": "org:houthis",
+      "to": "facility:hormuz",
+      "type": "THREATENS"
+    }
+  ]
+}

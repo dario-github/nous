@@ -1,0 +1,169 @@
+[
+  {
+    "id": "evt_001",
+    "date": "2026-02-28",
+    "day": 1,
+    "event_type": "military_strike",
+    "description": "美以联合空袭伊朗，最高领袖哈梅内伊在以色列空袭中遇害",
+    "severity": 5,
+    "actors": [
+      "US",
+      "Israel"
+    ],
+    "targets": [
+      "Tehran",
+      "military_facilities",
+      "Khamenei"
+    ],
+    "consequences": [
+      "leadership_decapitation",
+      "retaliation_cycle_initiated"
+    ],
+    "category": "military_escalation"
+  },
+  {
+    "id": "evt_002",
+    "date": "2026-03-01",
+    "day": 2,
+    "event_type": "military_strike",
+    "description": "多战线展开：伊朗对以色列发射导弹报复，霍尔木兹海峡被伊朗海军封锁",
+    "severity": 5,
+    "actors": [
+      "Iran",
+      "IRGC"
+    ],
+    "targets": [
+      "Israel",
+      "Hormuz_Strait"
+    ],
+    "consequences": [
+      "multi_front_war",
+      "oil_chokepoint_blocked",
+      "global_supply_shock"
+    ],
+    "category": "retaliation"
+  },
+  {
+    "id": "evt_003",
+    "date": "2026-03-01",
+    "day": 2,
+    "event_type": "escalation",
+    "description": "真主党从黎巴嫩向以色列北部发射火箭弹，以色列地面部队进入南黎巴嫩",
+    "severity": 4,
+    "actors": [
+      "Hezbollah",
+      "Israel"
+    ],
+    "targets": [
+      "northern_israel",
+      "southern_lebanon"
+    ],
+    "consequences": [
+      "second_front_opened",
+      "civilian_displacement"
+    ],
+    "category": "military_escalation"
+  },
+  {
+    "id": "evt_004",
+    "date": "2026-03-02",
+    "day": 3,
+    "event_type": "economic",
+    "description": "油价暴涨。WTI 从 $55 跳涨至 $75+。全球市场恐慌，韩国股市两日跌 19%",
+    "severity": 4,
+    "actors": [
+      "global_markets"
+    ],
+    "targets": [
+      "oil_markets",
+      "equity_markets"
+    ],
+    "consequences": [
+      "energy_crisis_signal",
+      "recession_fears"
+    ],
+    "category": "economic_shock"
+  },
+  {
+    "id": "evt_005",
+    "date": "2026-03-04",
+    "day": 5,
+    "event_type": "military_strike",
+    "description": "美以打击伊朗核设施（Natanz/Fordow），核科学家被暗杀",
+    "severity": 5,
+    "actors": [
+      "US",
+      "Israel",
+      "Mossad"
+    ],
+    "targets": [
+      "Natanz",
+      "Fordow",
+      "nuclear_scientists"
+    ],
+    "consequences": [
+      "nuclear_program_setback",
+      "escalation_to_strategic_targets"
+    ],
+    "category": "military_escalation"
+  },
+  {
+    "id": "evt_006",
+    "date": "2026-03-04",
+    "day": 5,
+    "event_type": "escalation",
+    "description": "库尔德武装在叙利亚北部趁乱推进，高加索局势外溢",
+    "severity": 3,
+    "actors": [
+      "Kurdish_forces",
+      "Syria"
+    ],
+    "targets": [
+      "northern_syria"
+    ],
+    "consequences": [
+      "conflict_spillover",
+      "regional_destabilization"
+    ],
+    "category": "spillover"
+  },
+  {
+    "id": "evt_007",
+    "date": "2026-03-06",
+    "day": 7,
+    "event_type": "humanitarian",
+    "description": "Minab 学校空袭争议引发国际谴责。Trump 叙事控制：归因伊朗使用人体盾牌",
+    "severity": 4,
+    "actors": [
+      "US",
+      "media"
+    ],
+    "targets": [
+      "Minab_school"
+    ],
+    "consequences": [
+      "international_condemnation",
+      "narrative_warfare"
+    ],
+    "category": "humanitarian"
+  },
+  {
+    "id": "evt_008",
+    "date": "2026-03-07",
+    "day": 8,
+    "event_type": "economic",
+    "description": "油价 WTI 收 $90.90，周涨 36%（1983 年来最大单周涨幅）",
+    "severity": 4,
+    "actors": [
+      "global_markets"
+    ],
+    "targets": [
+      "oil_markets"
+    ],
+    "consequences": [
+      "energy_crisis_confirmed",
+      "inflation_fears"
+    ],
+    "category": "economic_shock"
+  }
+]
