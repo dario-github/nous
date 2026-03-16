@@ -1,36 +1,46 @@
 {
-  "loop_number": 31,
-  "timestamp": "2026-03-16T16:44:00Z",
+  "loop_number": 32,
+  "timestamp": "2026-03-16T20:45:00Z",
   "L_val": 0.0695,
   "L_val_source": "docs/loss-val.json (compute_loss.py canonical pipeline)",
-  "L_val_note": "Unchanged from Loop 30. This loop is spec update + M7 Phase A kickoff, no metric change expected.",
-  "L_challenge": 0.0321,
+  "L_val_note": "Unchanged from Loop 31. This loop is KG context format redesign (code quality), no val set re-run.",
+  "L_challenge_kg_off": 0.0682,
+  "L_challenge_kg_on": 0.0882,
+  "L_challenge_delta": 0.02,
+  "L_challenge_note": "KG ON still +0.020 vs OFF due to model capacity (qwen-turbo FPR increases with longer prompts). Format redesign fixed signal_abuse flips from raw JSON era (+0.048).",
   "metric_version": "v1.0-frozen-20260315",
-  "tests": 618,
+  "tests": 649,
   "curriculum_phase": 3,
   "urgent": [
-    "P0: M7.1a+M7.1b — auto_extract 真接入 after_tool_call hook（东丞 03-16 确认推进）",
-    "P0: M7.2 — 关系类型化（RELATED_TO → 9 种）",
-    "P1: M8.6 — Judge 模型选型 benchmark（6 候选，CC 在 Mac 跑）",
-    "P2: repeat=3 多数投票消除 qwen-turbo 随机性（等 M8.6 选型结果）"
+    "P0: M8.6 — Judge 模型选型 benchmark 结果（CC on Mac，benchmark running）",
+    "P1: M7.3 — KG entity seeding with evasion pattern entities（Drugs/Disinformation FN 根治）",
+    "P2: M7.2 — 关系类型化（低优先级，延后到 L_challenge < 0.05）",
+    "P2: repeat=3 多数投票消除 qwen-turbo 随机性（等 M8.6 结果）"
   ],
   "completed_this_loop": [
-    "Spec 更新：M7 拆为 Phase A/B/C，任务粒度细化",
-    "M8.6 启动：judge_model_comparison.py 修复（base_url + dry-run + 模型列表更新），CC 后台 benchmark 运行中",
-    "CC Session 管理：固定 UUID 905e9cf0 保持上下文连续",
-    "代码审计：gate.py 已有 _build_kg_context() 但 KG 只有 56 静态实体，auto_extract 未接入"
+    "Gemini 3.1 Pro 批判：根因是语义锚点偏见，not 格式问题。evasion_patterns 必须保留+告警框架",
+    "KG context format redesign：raw JSON → evasion-alert framing（_format_kg_context_for_prompt()）",
+    "消融实验 3 轮：raw JSON(+0.048) → v1 no-evasion(+0.020) → v2 evasion-alert(+0.020)",
+    "signal_abuse 3x TP→FN 翻转修复（vs raw JSON）",
+    "残余 ΔL=+0.020 确认为模型容量问题（qwen-turbo prompt length sensitivity）",
+    "Tests: 649 passed（+31 from loop 31 618 after fact_extractor bridging）",
+    "Commit: 860d4a1"
   ],
-  "next_priority": "M7 Phase A 执行（CC on Mac）→ M8.6 benchmark 结果 → judge 切换",
+  "gemini_critique_loop32": {
+    "summary": "Format not root cause; semantic anchoring bias in small models. Evasion patterns must be Alert-framed, not dropped. M7.2 low priority. M8.6 is root fix.",
+    "m72_priority": "low — delay",
+    "model_capacity_gap": "qwen-turbo cannot handle professional framing evasion even with alert context"
+  },
   "blocked": [],
   "model_bans": [
     "gemini-2.x (CLI)",
     "gpt-4.x"
   ],
-  "direction": "KG 自动构建真接入（M7 Phase A）+ Judge 选型（M8.6）",
+  "direction": "M8.6 judge 选型（根本修复）→ M7.3 evasion entity seeding → KG injection re-evaluation",
   "gpt54_critique_score": "4/10",
   "gpt54_critique_path": "docs/critique-gpt54-20260315.md",
-  "last_commit": "a00457d",
+  "last_commit": "860d4a1",
   "github": "dario-github/nous",
   "cc_session_id": "905e9cf0-bbce-525c-86c6-9a1e7208cb78",
-  "stochastic_note": "Val FPR varies 8.3%-13.9% between runs due to qwen-turbo non-determinism. L_val=0.0695 is from a single run. Judge benchmark running to find more stable alternative."
+  "stochastic_note": "qwen-turbo non-determinism causes challenge TPR to vary 88%-96% between runs. L_val=0.0695 is from judge pipeline (GPT-5.4). KG ON penalty ~+0.020 consistent across format versions."
 }
