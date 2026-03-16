@@ -11,13 +11,16 @@ sys.path.insert(0, str(SRC_DIR))
 from nous.parser import parse_entity_file, scan_entities_dir, build_slug_to_id_map
 from nous.schema import Entity, Relation
 
-# 实际 entities 目录
-ENTITIES_ROOT = Path("/home/yan/clawd/memory/entities")
+from _paths import ENTITIES_ROOT
 
 # 测试用的 3 个真实文件
 PERSON_FILE = ENTITIES_ROOT / "people" / "东丞.md"
 PROJECT_FILE = ENTITIES_ROOT / "projects" / "nous.md"
 CONCEPT_FILE = ENTITIES_ROOT / "concepts" / "Agentic-Memory.md"
+
+_skip_if_no_file = pytest.mark.skipif(
+    not ENTITIES_ROOT.exists(), reason="entities dir not found on this host"
+)
 
 
 # ── 文件存在性检查 ────────────────────────────────────────────────────────────
@@ -25,7 +28,8 @@ CONCEPT_FILE = ENTITIES_ROOT / "concepts" / "Agentic-Memory.md"
 @pytest.mark.parametrize("path", [PERSON_FILE, PROJECT_FILE, CONCEPT_FILE])
 def test_files_exist(path):
     """确认测试文件存在"""
-    assert path.exists(), f"测试文件不存在: {path}"
+    if not path.exists():
+        pytest.skip(f"测试文件不存在 (跨主机): {path}")
 
 
 # ── 单文件解析测试 ────────────────────────────────────────────────────────────
@@ -87,6 +91,7 @@ class TestParsePersonFile:
             assert "RELATED_TO" in rtypes
 
 
+@pytest.mark.skipif(not PROJECT_FILE.exists(), reason=f"{PROJECT_FILE} not found")
 class TestParseProjectFile:
     """解析项目实体文件"""
 
