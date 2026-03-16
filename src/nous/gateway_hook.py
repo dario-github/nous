@@ -182,13 +182,14 @@ class NousGatewayHook:
         except Exception as e:
             logger.error("[gateway_hook] 写 shadow alert 失败: %s", e)
 
-    # ── after_tool_call（M7.1a）──────────────────────────────────────────
+    # ── after_tool_call（M7.1a + P0 eval 隔离）──────────────────────────────
 
     def after_tool_call(
         self,
         tool_call: dict,
         result: Any,
         session_key: Optional[str] = None,
+        session_ctx: Optional[dict] = None,
     ) -> dict[str, int]:
         """
         在工具调用执行完成后运行 auto_extract，从结果中提取实体/关系。
@@ -197,12 +198,34 @@ class NousGatewayHook:
             tool_call:   工具调用 dict（同 before_tool_call 的输入）
             result:      工具执行结果（任意类型）
             session_key: 日志会话标识（可选）
+            session_ctx: session 上下文 dict（可选，用于 eval 检测）
+                         支持 session_tag/tags/session_id/session_type/mode
 
         Returns:
             {"extracted": N}  其中 N 是写入 KG 的条目数
+            eval session 时返回 {"extracted": 0, "skipped": "eval_session"}
         """
         if not self.auto_extract_enabled:
             return {"extracted": 0}
+
+        # P0-1: eval session 保护 — 禁止写 KG
+        if session_ctx is not None:
+            from nous.session_guard import is_eval_session
+            if is_eval_session(session_ctx):
+                logger.info("[after_tool_call] eval session detected, skip KG write")
+                return {"extracted": 0, "skipped": "eval_session"}
+
+        # 也检查 session_key 中的 eval 标记（用更具体的模式）
+        if session_key:
+            sk_lower = session_key.lower()
+            _EVAL_KEY_PATTERNS = (
+                ":eval:", ":test:", ":golden-test", ":benchmark:", ":replay:",
+                "eval:", "test:", "golden-test", "benchmark:",
+            )
+            if any(pat in sk_lower for pat in _EVAL_KEY_PATTERNS):
+                logger.info("[after_tool_call] eval session_key detected: %s, skip KG write",
+                           session_key)
+                return {"extracted": 0, "skipped": "eval_session"}
 
         if self.db is None:
             logger.debug("[after_tool_call] no db, skip extract")
@@ -218,42 +241,23 @@ class NousGatewayHook:
         try:
             from nous.auto_extract import extract_from_tool_call
 
-            # extract_from_tool_call 是 async，用 asyncio 运行
-            loop = None
-            try:
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                pass
-
-            if loop and loop.is_running():
-                # 已有事件循环 — 创建 task（调用方需 await）
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor() as pool:
-                    extract_result = pool.submit(
-                        asyncio.run,
-                        extract_from_tool_call(
-                            tool_name=tool_name,
-                            params=params,
-                            result=result,
-                            db=self.db,
-                            llm_fn=self.llm_fn,
-                        )
-                    ).result(timeout=30)
-            else:
-                extract_result = asyncio.run(
-                    extract_from_tool_call(
-                        tool_name=tool_name,
-                        params=params,
-                        result=result,
-                        db=self.db,
-                        llm_fn=self.llm_fn,
-                    )
+            # extract_from_tool_call 是 async，同步调用
+            extract_result = asyncio.run(
+                extract_from_tool_call(
+                    tool_name=tool_name,
+                    params=params,
+                    result=result,
+                    db=self.db,
+                    llm_fn=self.llm_fn,
                 )
+            )
 
             # 记录提取日志
             extracted_count = extract_result.get("extracted", 0)
-            if extracted_count > 0:
-                self._write_extract_log(tool_name, extracted_count, session_key)
+            proposed_count = extract_result.get("proposed", 0)
+            if extracted_count > 0 or proposed_count > 0:
+                self._write_extract_log(tool_name, extracted_count, session_key,
+                                        proposed=proposed_count)
 
             return extract_result
 
@@ -266,6 +270,7 @@ class NousGatewayHook:
         tool_name: str,
         extracted_count: int,
         session_key: Optional[str],
+        proposed: int = 0,
     ) -> None:
         """记录提取日志到 extract_log.jsonl"""
         self.extract_log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -273,6 +278,7 @@ class NousGatewayHook:
             "ts": time.time(),
             "tool_name": tool_name,
             "extracted": extracted_count,
+            "proposed": proposed,
             "session_key": session_key or "",
         }
         try:

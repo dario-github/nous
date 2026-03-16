@@ -193,7 +193,7 @@ class TestM7Integration:
         hook.after_tool_call(
             tool_call={"tool_name": "web_search", "params": {"query": "nvidia gtc"}},
             result="GTC 2026 keynote...",
-            session_key="test:integration",
+            session_key="agent:main:user:integration",
         )
 
         assert extract_log.exists()
@@ -201,7 +201,7 @@ class TestM7Integration:
             log_entry = json.loads(f.readline())
         assert log_entry["tool_name"] == "web_search"
         assert log_entry["extracted"] == 1
-        assert log_entry["session_key"] == "test:integration"
+        assert log_entry["session_key"] == "agent:main:user:integration"
 
     def test_llm_error_graceful_no_kg_change(self, db, extract_log):
         """LLM 失败时 KG 不变，不崩溃"""
@@ -222,7 +222,7 @@ class TestM7Integration:
             result="some result",
         )
 
-        assert result == {"extracted": 0}
+        assert result["extracted"] == 0
         assert _count_entities(db) == initial_count  # 无变更
 
     def test_before_and_after_full_lifecycle(self, db, tmp_path, extract_log):
@@ -246,14 +246,14 @@ class TestM7Integration:
         }
 
         # before_tool_call（gate 评估）
-        returned = hook.before_tool_call(tool_call, session_key="test:lifecycle")
+        returned = hook.before_tool_call(tool_call, session_key="agent:main:user:lifecycle")
         assert returned == tool_call  # shadow mode，原样返回
 
         # after_tool_call（KG 提取）
         result = hook.after_tool_call(
             tool_call=tool_call,
             result="OpenAI API documentation...",
-            session_key="test:lifecycle",
+            session_key="agent:main:user:lifecycle",
         )
         assert result["extracted"] == 1
         assert _count_entities(db) == 1
