@@ -80,8 +80,20 @@ def _build_kg_context(facts: dict, db) -> dict | None:
         # 3. Category/domain context (如果 facts 有 category)
         category = facts.get("category") or facts.get("domain")
         if category:
-            cat_entities = db.find_by_type(f"category:{category}")
-            context["policies"].extend(cat_entities[:3])
+            # Try exact entity lookup first (e.g. category:Cybercrime)
+            cat_entity = db.find_entity(f"category:{category}")
+            if cat_entity:
+                context["policies"].append(cat_entity)
+                # Also grab governed_by relations for this category
+                cat_rels = db.related(f"category:{category}", rtype="governed_by", direction="out")
+                context["relations"].extend(cat_rels[:3])
+            else:
+                # Fallback: search by etype
+                cat_entities = db.find_by_type("category")
+                for ce in cat_entities:
+                    if category.lower() in ce.get("id", "").lower():
+                        context["policies"].append(ce)
+                        break
 
         return context if any(context.values()) else None
 
