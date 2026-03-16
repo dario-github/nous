@@ -52,7 +52,8 @@ class TestBuildPrompt:
         assert "No harm policy." in prompt
         assert "confirm" in prompt
         assert "publish_post" in prompt
-        assert '"entity": "test"' in prompt
+        # kg_context is now formatted as natural language, not raw JSON
+        assert "KG Context" in prompt or "No relevant KG entities found." in prompt
 
     def test_no_kg_context(self):
         prompt = build_prompt(
