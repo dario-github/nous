@@ -1,0 +1,110 @@
+[
+  {
+    "id": "pred_001",
+    "predicted_day": 1,
+    "event_type": "military_strike",
+    "description": "美以对伊朗发动大规模空袭，打击军事设施和指挥系统",
+    "probability": 0.85,
+    "causal_chain": ["sig_001", "sig_003", "sig_005", "sig_006"],
+    "reasoning": "军事部署到位(sig_005)+情报收集完成(sig_006)+政治意志明确(sig_003)+演习准备(sig_001)= 打击窗口成熟"
+  },
+  {
+    "id": "pred_002",
+    "predicted_day": 2,
+    "event_type": "military_strike",
+    "description": "伊朗使用导弹和无人机对以色列发动报复性攻击",
+    "probability": 0.90,
+    "causal_chain": ["sig_007", "sig_012"],
+    "reasoning": "哈梅内伊事先承诺报复(sig_007)+IRGC有导弹库存(sig_012)+报复是政治必需"
+  },
+  {
+    "id": "pred_003",
+    "predicted_day": 2,
+    "event_type": "escalation",
+    "description": "伊朗封锁或限制霍尔木兹海峡通行",
+    "probability": 0.75,
+    "causal_chain": ["sig_008", "sig_012"],
+    "reasoning": "伊朗海军已在海峡部署(sig_008)+这是伊朗最大的不对称杠杆+历史上多次威胁使用"
+  },
+  {
+    "id": "pred_004",
+    "predicted_day": 3,
+    "event_type": "escalation",
+    "description": "真主党从黎巴嫩对以色列北部发动攻击，开辟第二战线",
+    "probability": 0.80,
+    "causal_chain": ["sig_010"],
+    "reasoning": "真主党已明确声明(sig_010)+伊朗代理人网络的战略协调+分散以色列军力"
+  },
+  {
+    "id": "pred_005",
+    "predicted_day": 3,
+    "event_type": "economic",
+    "description": "油价大幅上涨 50%+，从 $55 涨至 $80+",
+    "probability": 0.90,
+    "causal_chain": ["sig_004", "sig_008"],
+    "reasoning": "霍尔木兹通过全球20%原油(sig_008)+战前低油价基数(sig_004)+供应中断恐慌"
+  },
+  {
+    "id": "pred_006",
+    "predicted_day": 5,
+    "event_type": "military_strike",
+    "description": "美以打击伊朗核设施（Natanz/Fordow）",
+    "probability": 0.70,
+    "causal_chain": ["sig_009", "sig_006"],
+    "reasoning": "核浓缩接近武器级(sig_009)+情报完备(sig_006)+这是以色列的核心战略目标"
+  },
+  {
+    "id": "pred_007",
+    "predicted_day": 7,
+    "event_type": "humanitarian",
+    "description": "平民伤亡引发国际谴责和人道危机",
+    "probability": 0.85,
+    "causal_chain": [],
+    "reasoning": "大规模空袭不可避免造成附带损害+伊朗人口密集城市+历史先例"
+  },
+  {
+    "id": "pred_008",
+    "predicted_day": 8,
+    "event_type": "economic",
+    "description": "油价持续高位（$80-100 区间），全球市场大幅下跌",
+    "probability": 0.80,
+    "causal_chain": ["sig_004", "sig_008"],
+    "reasoning": "持续冲突+霍尔木兹封锁+供应链中断→能源价格维持高位"
+  },
+  {
+    "id": "pred_009",
+    "predicted_day": 4,
+    "event_type": "escalation",
+    "description": "冲突外溢至伊拉克/叙利亚，库尔德武装趁乱活动",
+    "probability": 0.60,
+    "causal_chain": ["sig_015"],
+    "reasoning": "美军在库尔德地区预置(sig_015)+伊拉克什叶派民兵可能参战+权力真空效应"
+  },
+  {
+    "id": "pred_010",
+    "predicted_day": 10,
+    "event_type": "political",
+    "description": "伊朗领导层更替或继任危机（如哈梅内伊遇害后）",
+    "probability": 0.55,
+    "causal_chain": ["sig_007"],
+    "reasoning": "如果斩首成功→继任程序启动+穆杰塔巴可能继任(已知为接班人)+内部权力斗争"
+  },
+  {
+    "id": "pred_011",
+    "predicted_day": 10,
+    "event_type": "diplomatic",
+    "description": "海湾国家被迫表态或卷入冲突（尤其巴林作为第五舰队母港）",
+    "probability": 0.65,
+    "causal_chain": ["sig_011", "sig_015"],
+    "reasoning": "GCC 紧急磋商但无统一立场(sig_011)+第五舰队在巴林(sig_015)+胡塞可能攻击海湾"
+  },
+  {
+    "id": "pred_012",
+    "predicted_day": 6,
+    "event_type": "diplomatic",
+    "description": "Trump 政府发表'进展顺利'类声明，试图控制叙事",
+    "probability": 0.75,
+    "causal_chain": ["sig_003"],
+    "reasoning": "Trump 风格的叙事控制+国内政治需要+midterm 考量"
+  }
+]
