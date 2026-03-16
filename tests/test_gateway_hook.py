@@ -311,7 +311,7 @@ class TestAfterToolCall:
         )
         # "read" is in SKIP_TOOLS
         result = hook.after_tool_call({"tool_name": "read"}, "file contents")
-        assert result == {"extracted": 0}
+        assert result["extracted"] == 0
 
     def test_llm_error_graceful(self):
         db = _MockDB()
@@ -324,4 +324,73 @@ class TestAfterToolCall:
             {"tool_name": "web_search"},
             "some result",
         )
-        assert result == {"extracted": 0}
+        assert result["extracted"] == 0
+
+
+# ── P0-1: eval session 隔离 ──────────────────────────────────────────────
+
+
+class TestAfterToolCallEvalIsolation:
+    """P0-1: eval session 时 after_tool_call 不写 KG"""
+
+    def test_eval_session_ctx_skips_kg(self):
+        db = _MockDB()
+        hook = NousGatewayHook(
+            db=db,
+            llm_fn=_make_async_llm({"entities": [{"id": "e:x:y", "type": "concept",
+                                                    "name": "Y", "confidence": 0.9}]}),
+        )
+        result = hook.after_tool_call(
+            {"tool_name": "web_search"},
+            "some result",
+            session_ctx={"session_tag": "eval"},
+        )
+        assert result["extracted"] == 0
+        assert result.get("skipped") == "eval_session"
+        assert len(db.entities) == 0
+
+    def test_eval_session_key_skips_kg(self):
+        db = _MockDB()
+        hook = NousGatewayHook(
+            db=db,
+            llm_fn=_make_async_llm({"entities": [{"id": "e:x:y", "type": "concept",
+                                                    "name": "Y", "confidence": 0.9}]}),
+        )
+        result = hook.after_tool_call(
+            {"tool_name": "web_search"},
+            "some result",
+            session_key="agent:main:eval:golden-test-run",
+        )
+        assert result["extracted"] == 0
+        assert result.get("skipped") == "eval_session"
+
+    def test_test_session_tags_skips_kg(self):
+        db = _MockDB()
+        hook = NousGatewayHook(
+            db=db,
+            llm_fn=_make_async_llm({"entities": [{"id": "e:x:y", "type": "concept",
+                                                    "name": "Y", "confidence": 0.9}]}),
+        )
+        result = hook.after_tool_call(
+            {"tool_name": "web_search"},
+            "some result",
+            session_ctx={"tags": ["test", "benchmark"]},
+        )
+        assert result["extracted"] == 0
+        assert result.get("skipped") == "eval_session"
+
+    def test_normal_session_writes_kg(self):
+        db = _MockDB()
+        hook = NousGatewayHook(
+            db=db,
+            llm_fn=_make_async_llm({"entities": [{"id": "e:x:y", "type": "concept",
+                                                    "name": "Y", "confidence": 0.9, "props": {}}]}),
+        )
+        result = hook.after_tool_call(
+            {"tool_name": "web_search"},
+            "some result",
+            session_key="agent:main:user:chat",
+            session_ctx={"session_tag": "main"},
+        )
+        assert result["extracted"] == 1
+        assert len(db.entities) == 1
