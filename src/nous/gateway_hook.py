@@ -1,25 +1,27 @@
-"""Nous — Gateway Hook (M2.7)
+"""Nous — Gateway Hook (M2.7 + M7.1a)
 
-模拟 OpenClaw gateway 的 before_tool_call hook，支持 shadow mode。
+模拟 OpenClaw gateway 的 before_tool_call / after_tool_call hook，支持 shadow mode。
 
 Shadow mode（默认开启）：
-  - 调用 gate() 获取 verdict
-  - 若 Nous 与 legacy 结果不一致 → 写 alert 到 nous/logs/shadow_alerts.jsonl
+  - before: 调用 gate() 获取 verdict，与 legacy 对比记录 alert
+  - after: 调用 auto_extract 从结果中提取实体/关系入 KG
   - **不拦截**：始终返回原始 tool_call（只观测，不阻断）
 
 Primary mode（shadow_mode=False）：
   - block verdict → 真正抛出 BlockedByNous 异常（阻断调用）
   - 其他 verdict → 放行
+  - after: 同样调用 auto_extract
 
 注：这是模拟 hook，不直接接入 OpenClaw gateway（需要东丞配合集成）。
 提供标准接口 + 完整集成测试，方便后续对接。
 """
+import asyncio
 import json
 import logging
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from nous.gate import GateResult, gate
 from nous.db import NousDB
@@ -28,6 +30,7 @@ logger = logging.getLogger("nous.gateway_hook")
 
 # 默认 alert 日志路径
 _DEFAULT_ALERT_LOG = Path(__file__).parent.parent.parent.parent / "logs" / "shadow_alerts.jsonl"
+_DEFAULT_EXTRACT_LOG = Path(__file__).parent.parent.parent.parent / "logs" / "extract_log.jsonl"
 
 
 # ── 异常 ───────────────────────────────────────────────────────────────────
@@ -47,18 +50,24 @@ class BlockedByNous(Exception):
 @dataclass
 class NousGatewayHook:
     """
-    Gateway before_tool_call hook。
+    Gateway before_tool_call / after_tool_call hook。
 
     Attributes:
         shadow_mode:      True = 只记录不拦截（默认）；False = 真正拦截
-        db:               NousDB 实例（可选，用于写 decision_log）
+        db:               NousDB 实例（可选，用于写 decision_log + KG）
         alert_log_path:   shadow alert JSONL 文件路径
+        extract_log_path: auto_extract 结果 JSONL 文件路径
         constraints_dir:  约束目录（None = 使用默认）
+        llm_fn:           异步 LLM 函数（用于 auto_extract，可选）
+        auto_extract_enabled: 是否启用 after_tool_call 自动提取（默认 True）
     """
     shadow_mode: bool = True
     db: Optional[NousDB] = field(default=None, repr=False)
     alert_log_path: Path = field(default_factory=lambda: _DEFAULT_ALERT_LOG)
+    extract_log_path: Path = field(default_factory=lambda: _DEFAULT_EXTRACT_LOG)
     constraints_dir: Optional[Path] = None
+    llm_fn: Optional[Any] = field(default=None, repr=False)
+    auto_extract_enabled: bool = True
 
     def before_tool_call(
         self,
@@ -172,6 +181,105 @@ class NousGatewayHook:
             )
         except Exception as e:
             logger.error("[gateway_hook] 写 shadow alert 失败: %s", e)
+
+    # ── after_tool_call（M7.1a）──────────────────────────────────────────
+
+    def after_tool_call(
+        self,
+        tool_call: dict,
+        result: Any,
+        session_key: Optional[str] = None,
+    ) -> dict[str, int]:
+        """
+        在工具调用执行完成后运行 auto_extract，从结果中提取实体/关系。
+
+        Args:
+            tool_call:   工具调用 dict（同 before_tool_call 的输入）
+            result:      工具执行结果（任意类型）
+            session_key: 日志会话标识（可选）
+
+        Returns:
+            {"extracted": N}  其中 N 是写入 KG 的条目数
+        """
+        if not self.auto_extract_enabled:
+            return {"extracted": 0}
+
+        if self.db is None:
+            logger.debug("[after_tool_call] no db, skip extract")
+            return {"extracted": 0}
+
+        if self.llm_fn is None:
+            logger.debug("[after_tool_call] no llm_fn, skip extract")
+            return {"extracted": 0}
+
+        tool_name = tool_call.get("tool_name") or tool_call.get("name", "unknown")
+        params = tool_call.get("params") or tool_call.get("arguments") or {}
+
+        try:
+            from nous.auto_extract import extract_from_tool_call
+
+            # extract_from_tool_call 是 async，用 asyncio 运行
+            loop = None
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                pass
+
+            if loop and loop.is_running():
+                # 已有事件循环 — 创建 task（调用方需 await）
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as pool:
+                    extract_result = pool.submit(
+                        asyncio.run,
+                        extract_from_tool_call(
+                            tool_name=tool_name,
+                            params=params,
+                            result=result,
+                            db=self.db,
+                            llm_fn=self.llm_fn,
+                        )
+                    ).result(timeout=30)
+            else:
+                extract_result = asyncio.run(
+                    extract_from_tool_call(
+                        tool_name=tool_name,
+                        params=params,
+                        result=result,
+                        db=self.db,
+                        llm_fn=self.llm_fn,
+                    )
+                )
+
+            # 记录提取日志
+            extracted_count = extract_result.get("extracted", 0)
+            if extracted_count > 0:
+                self._write_extract_log(tool_name, extracted_count, session_key)
+
+            return extract_result
+
+        except Exception as exc:
+            logger.warning("[after_tool_call] extract failed for %s: %s", tool_name, exc)
+            return {"extracted": 0}
+
+    def _write_extract_log(
+        self,
+        tool_name: str,
+        extracted_count: int,
+        session_key: Optional[str],
+    ) -> None:
+        """记录提取日志到 extract_log.jsonl"""
+        self.extract_log_path.parent.mkdir(parents=True, exist_ok=True)
+        entry = {
+            "ts": time.time(),
+            "tool_name": tool_name,
+            "extracted": extracted_count,
+            "session_key": session_key or "",
+        }
+        try:
+            with open(self.extract_log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        except Exception as e:
+            logger.error("[gateway_hook] 写 extract_log 失败: %s", e)
 
 
 # ── 辅助函数 ──────────────────────────────────────────────────────────────

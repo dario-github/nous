@@ -1,33 +1,36 @@
 {
-  "loop_number": 30,
-  "timestamp": "2026-03-15T16:30:00Z",
+  "loop_number": 31,
+  "timestamp": "2026-03-16T16:44:00Z",
   "L_val": 0.0695,
   "L_val_source": "docs/loss-val.json (compute_loss.py canonical pipeline)",
-  "L_val_note": "Honest number from frozen metric v1.0. Previous 0.026 was lucky run + wrong pipeline.",
+  "L_val_note": "Unchanged from Loop 30. This loop is spec update + M7 Phase A kickoff, no metric change expected.",
   "L_challenge": 0.0321,
   "metric_version": "v1.0-frozen-20260315",
   "tests": 618,
   "curriculum_phase": 3,
   "urgent": [
-    "P1: KG 真接入 gate 主链路（gate 内部查 DB 生成 kg_context）— GPT-5.4 最核心批评",
-    "P1: repeat=3 多数投票消除 qwen-turbo 随机性",
-    "P2: adversarial_v1 重评估（稳定 TPR 基线）"
+    "P0: M7.1a+M7.1b — auto_extract 真接入 after_tool_call hook（东丞 03-16 确认推进）",
+    "P0: M7.2 — 关系类型化（RELATED_TO → 9 种）",
+    "P1: M8.6 — Judge 模型选型 benchmark（6 候选，CC 在 Mac 跑）",
+    "P2: repeat=3 多数投票消除 qwen-turbo 随机性（等 M8.6 选型结果）"
   ],
   "completed_this_loop": [
-    "P0: fail-closed 修复（ConstraintLoadError 专用 catch，generic bug 单独 CRITICAL log）",
-    "P0: metric 一致性冻结（L_canonical + metric_version，两脚本对齐）"
+    "Spec 更新：M7 拆为 Phase A/B/C，任务粒度细化",
+    "M8.6 启动：judge_model_comparison.py 修复（base_url + dry-run + 模型列表更新），CC 后台 benchmark 运行中",
+    "CC Session 管理：固定 UUID 905e9cf0 保持上下文连续",
+    "代码审计：gate.py 已有 _build_kg_context() 但 KG 只有 56 静态实体，auto_extract 未接入"
   ],
-  "next_priority": "KG 真接入 → repeat=3 evaluation → adversarial robustness",
+  "next_priority": "M7 Phase A 执行（CC on Mac）→ M8.6 benchmark 结果 → judge 切换",
   "blocked": [],
   "model_bans": [
     "gemini-2.x (CLI)",
     "gpt-4.x"
   ],
-  "direction": "基础修复完成 → KG 真接入期",
+  "direction": "KG 自动构建真接入（M7 Phase A）+ Judge 选型（M8.6）",
   "gpt54_critique_score": "4/10",
   "gpt54_critique_path": "docs/critique-gpt54-20260315.md",
-  "gemini_critique_path": "/tmp/subagent-out/gemini-critique-loop30.md",
   "last_commit": "a00457d",
   "github": "dario-github/nous",
-  "stochastic_note": "Val FPR varies 8.3%-13.9% between runs due to qwen-turbo non-determinism. L_val=0.0695 is from a single run. Repeat=3 majority vote needed for stability."
+  "cc_session_id": "905e9cf0-bbce-525c-86c6-9a1e7208cb78",
+  "stochastic_note": "Val FPR varies 8.3%-13.9% between runs due to qwen-turbo non-determinism. L_val=0.0695 is from a single run. Judge benchmark running to find more stable alternative."
 }

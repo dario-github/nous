@@ -238,3 +238,90 @@ class TestSummarizeToolCall:
         s = _summarize_tool_call(tc, max_len=50)
         assert len(s) <= 53  # 50 + "..."
         assert s.endswith("...")
+
+
+# ── after_tool_call（M7.1a）──────────────────────────────────────────────
+
+
+class _MockDB:
+    """轻量 Mock，支持 after_tool_call 所需接口"""
+    def __init__(self):
+        self.entities = []
+        self.relations = []
+
+    def upsert_entities(self, ents):
+        self.entities.extend(ents)
+
+    def upsert_relations(self, rels):
+        self.relations.extend(rels)
+
+
+def _make_async_llm(response: dict):
+    async def _fn(prompt: str) -> dict:
+        return response
+    return _fn
+
+
+class TestAfterToolCall:
+    def test_disabled_returns_zero(self):
+        hook = NousGatewayHook(auto_extract_enabled=False)
+        result = hook.after_tool_call({"tool_name": "web_search"}, "some result")
+        assert result == {"extracted": 0}
+
+    def test_no_db_returns_zero(self):
+        hook = NousGatewayHook(db=None, llm_fn=_make_async_llm({}))
+        result = hook.after_tool_call({"tool_name": "web_search"}, "some result")
+        assert result == {"extracted": 0}
+
+    def test_no_llm_returns_zero(self):
+        hook = NousGatewayHook(db=_MockDB(), llm_fn=None)
+        result = hook.after_tool_call({"tool_name": "web_search"}, "some result")
+        assert result == {"extracted": 0}
+
+    def test_extracts_entity(self, tmp_path):
+        db = _MockDB()
+        llm_resp = {
+            "entities": [
+                {"id": "entity:concept:test-model", "type": "concept",
+                 "name": "Test Model", "props": {}, "confidence": 0.9},
+            ],
+            "relations": [],
+        }
+        hook = NousGatewayHook(
+            db=db,
+            llm_fn=_make_async_llm(llm_resp),
+            extract_log_path=tmp_path / "extract.jsonl",
+        )
+        result = hook.after_tool_call(
+            {"tool_name": "web_search", "params": {"query": "new AI model"}},
+            "Found: Test Model v3.0",
+        )
+        assert result["extracted"] == 1
+        assert len(db.entities) == 1
+        assert db.entities[0].id == "entity:concept:test-model"
+        # 检查日志写入
+        assert (tmp_path / "extract.jsonl").exists()
+
+    def test_skips_low_signal_tools(self):
+        db = _MockDB()
+        hook = NousGatewayHook(
+            db=db,
+            llm_fn=_make_async_llm({"entities": [{"id": "e:x:y", "type": "concept",
+                                                    "name": "Y", "confidence": 0.9}]}),
+        )
+        # "read" is in SKIP_TOOLS
+        result = hook.after_tool_call({"tool_name": "read"}, "file contents")
+        assert result == {"extracted": 0}
+
+    def test_llm_error_graceful(self):
+        db = _MockDB()
+
+        async def _failing(p):
+            raise RuntimeError("API down")
+
+        hook = NousGatewayHook(db=db, llm_fn=_failing)
+        result = hook.after_tool_call(
+            {"tool_name": "web_search"},
+            "some result",
+        )
+        assert result == {"extracted": 0}

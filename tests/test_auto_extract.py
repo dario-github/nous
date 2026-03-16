@@ -24,6 +24,12 @@ class MockDB:
     def upsert_relation(self, relation):
         self.relations.append(relation)
 
+    def upsert_entities(self, entities):
+        self.entities.extend(entities)
+
+    def upsert_relations(self, relations):
+        self.relations.extend(relations)
+
 
 def make_llm_fn(response: dict):
     """返回一个总是返回 response 的 mock LLM 函数"""
@@ -110,7 +116,7 @@ def test_high_confidence_entity_upserted():
     ))
     assert result["extracted"] == 1
     assert len(db.entities) == 1
-    assert db.entities[0]["id"] == "entity:person:bar"
+    assert db.entities[0].id == "entity:person:bar"
 
 
 def test_relation_upserted():
@@ -126,7 +132,7 @@ def test_relation_upserted():
         "web_search", {}, "result", db, make_llm_fn(llm_resp)
     ))
     assert result["extracted"] == 1
-    assert db.relations[0]["type"] == "WORKS_ON"
+    assert db.relations[0].rtype == "WORKS_ON"
 
 
 def test_llm_error_returns_zero():
