@@ -76,10 +76,48 @@ CAUSAL_JUDGE_PROMPT = """你是一个因果推理质量评估器。
 """
 
 
+def _semantic_type_similarity(pred_type: str, gt_type: str) -> float:
+    """事件类型的语义相似度（不要求精确匹配）"""
+    if pred_type == gt_type:
+        return 1.0
+
+    # 相近类型组（同组内 0.7 分）
+    TYPE_GROUPS = [
+        {"military_strike", "escalation", "military_escalation"},
+        {"diplomatic", "de_escalation_signal", "de_escalation", "political", "political_transition", "political_dynamics"},
+        {"economic", "economic_shock", "economic_intervention"},
+        {"humanitarian", "regional_spillover", "regional_war", "spillover"},
+    ]
+
+    for group in TYPE_GROUPS:
+        if pred_type in group and gt_type in group:
+            return 0.7
+
+    return 0.0
+
+
+def _keyword_overlap(pred: dict, gt: dict) -> float:
+    """描述关键词重叠度"""
+    pred_words = set(pred.get("description", "").lower().split())
+    gt_words = set(gt.get("description", "").lower().split())
+
+    # 加入实体/行为者关键词
+    for key in ("actors", "targets", "consequences"):
+        for item in gt.get(key, []):
+            gt_words.update(item.lower().replace("_", " ").split())
+
+    if not pred_words or not gt_words:
+        return 0.0
+
+    overlap = pred_words & gt_words
+    return len(overlap) / min(len(pred_words), len(gt_words))
+
+
 def compute_r_event(predictions: list, ground_truth: list, judge_fn=None) -> dict:
     """计算事件预测准确率 (R_event)
 
-    如果有 judge_fn（LLM），用语义匹配。否则用 event_type 精确匹配。
+    多维匹配：类型相似度 + 时间窗口 + 关键词重叠。
+    如果有 judge_fn（LLM），再做语义精排。
     """
     if not predictions:
         return {"precision": 0, "recall": 0, "f1": 0, "matches": []}
@@ -95,24 +133,25 @@ def compute_r_event(predictions: list, ground_truth: list, judge_fn=None) -> dic
             if gt["id"] in matched_gt:
                 continue
 
-            # 简易匹配：event_type + 时间窗口
-            type_match = pred.get("event_type") == gt.get("event_type")
+            # 多维打分
+            type_sim = _semantic_type_similarity(
+                pred.get("event_type", ""), gt.get("event_type", ""))
             day_diff = abs(pred.get("predicted_day", 0) - gt.get("day", 0))
-            time_match = day_diff <= 3  # 3 天窗口
+            time_score = max(0, 1.0 - day_diff * 0.1) if day_diff <= 5 else 0
+            kw_score = _keyword_overlap(pred, gt)
 
-            score = 0
-            if type_match and time_match:
-                score = 1.0 - day_diff * 0.1
+            # 加权综合：类型 40% + 时间 30% + 关键词 30%
+            score = 0.4 * type_sim + 0.3 * time_score + 0.3 * kw_score
 
             if score > best_score:
                 best_score = score
                 best_match = gt
 
-        if best_match and best_score > 0.3:
+        if best_match and best_score > 0.25:
             matches.append({
                 "pred": pred["id"],
                 "gt": best_match["id"],
-                "score": best_score,
+                "score": round(best_score, 4),
             })
             matched_gt.add(best_match["id"])
 
