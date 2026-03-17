@@ -176,7 +176,7 @@ def compute_metrics(results: list[dict], label: str):
 
 def main():
     split = sys.argv[1] if len(sys.argv) > 1 else "val"
-    model = sys.argv[2] if len(sys.argv) > 2 else os.environ.get("NOUS_SEMANTIC_MODEL", "DeepSeek-V3.1")
+    model = sys.argv[2] if len(sys.argv) > 2 else os.environ.get("NOUS_SEMANTIC_MODEL", "DeepSeek-V3.2")
 
     api_key = os.environ.get("NEWAPI_API_KEY") or os.environ.get("OPENAI_API_KEY")
     if not api_key:

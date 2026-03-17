@@ -9,14 +9,14 @@ from typing import Optional
 
 
 def create_openai_provider(
-    model: str = "DeepSeek-V3.1",
+    model: str = "DeepSeek-V3.2",
     api_key: Optional[str] = None,
     max_retries: int = 2,
 ) -> callable:
     """Create an OpenAI-compatible LLM provider for semantic_gate.
 
     Args:
-        model: Model name (default: DeepSeek-V3.1 for logical disentanglement + strict instruction following)
+        model: Model name (default: DeepSeek-V3.2 for logical disentanglement + strict instruction following)
         api_key: API key (defaults to OPENAI_API_KEY env var)
         max_retries: Number of retries on transient errors (default: 2)
 
