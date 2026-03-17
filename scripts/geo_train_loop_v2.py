@@ -38,7 +38,7 @@ def load_state() -> dict:
             "confidence_threshold": 0.50,
             "use_llm_synthesis": True,
             "use_llm_judge": True,
-            "llm_model": "DeepSeek-V3.2",
+            "llm_model": "DeepSeek-V3.1",
         },
     }
 
@@ -73,7 +73,7 @@ def run_reasoning(max_preds: int = 15) -> tuple[str, list]:
 
 # ── Step 2: LLM 综合层 ──────────────────────────────────────────────────
 
-def run_synthesis(rule_preds: list, model: str = "DeepSeek-V3.2",
+def run_synthesis(rule_preds: list, model: str = "DeepSeek-V3.1",
                   max_new: int = 3) -> list:
     """LLM 精炼规则预测"""
     try:
@@ -92,7 +92,7 @@ def run_synthesis(rule_preds: list, model: str = "DeepSeek-V3.2",
 # ── Step 3: 评估 ────────────────────────────────────────────────────────
 
 def run_evaluation(predictions: list, split: str = "val",
-                   use_llm: bool = False, model: str = "DeepSeek-V3.2") -> dict:
+                   use_llm: bool = False, model: str = "DeepSeek-V3.1") -> dict:
     """评估预测 reward"""
     sys.path.insert(0, str(SCRIPTS))
     from judge_geo import compute_reward, load_ground_truth
@@ -159,12 +159,12 @@ def diagnose_and_update(val_result: dict, train_result: dict,
         diagnosis["suggestions"].append(
             "⚠️ 连续 3 轮未改善，考虑换方向")
         # 尝试切模型
-        if strategy.get("llm_model") == "DeepSeek-V3.2":
+        if strategy.get("llm_model") == "DeepSeek-V3.1":
             strategy["llm_model"] = "qwen3-32b"
-            diagnosis["strategy_changes"].append("llm_model: DeepSeek-V3.2 → qwen3-32b")
+            diagnosis["strategy_changes"].append("llm_model: DeepSeek-V3.1 → qwen3-32b")
         else:
-            strategy["llm_model"] = "DeepSeek-V3.2"
-            diagnosis["strategy_changes"].append(f"llm_model: → DeepSeek-V3.2")
+            strategy["llm_model"] = "DeepSeek-V3.1"
+            diagnosis["strategy_changes"].append(f"llm_model: → DeepSeek-V3.1")
 
     state["strategy"] = strategy
     return diagnosis
@@ -235,7 +235,7 @@ def main():
         strategy = state.get("strategy", {})
         use_llm = not args.no_llm and strategy.get("use_llm_synthesis", True)
         use_llm_judge = not args.no_llm and strategy.get("use_llm_judge", True)
-        model = strategy.get("llm_model", "DeepSeek-V3.2")
+        model = strategy.get("llm_model", "DeepSeek-V3.1")
         max_preds = strategy.get("max_predictions", 15)
 
         print(f"\n{'='*60}")

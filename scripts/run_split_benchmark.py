@@ -308,7 +308,7 @@ def main():
 
     api_key = os.environ.get("OPENAI_API_KEY")
     if api_key:
-        sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", "DeepSeek-V3.2")
+        sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", "DeepSeek-V3.1")
         print(f"Semantic gate: {sem_model}")
         from nous.providers.openai_provider import create_openai_provider
         provider = create_openai_provider(model=sem_model, api_key=api_key)

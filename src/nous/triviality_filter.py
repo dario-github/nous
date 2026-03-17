@@ -218,7 +218,7 @@ def is_trivial(facts: dict, config: TrivialityConfig | None = None) -> bool:
     # Rule 4b (Loop 35): 强良性结构信号绕过
     # 当 fact_extractor 检测到明确的良性意图信号（已含反模式排除），
     # 且无内容升级信号时，视为 trivially benign，跳过 semantic gate。
-    # 修复 52-2 FP：celebration_signal 正确触发但 DeepSeek-V3.2 仍 block@≥0.90。
+    # 修复 52-2 FP：celebration_signal 正确触发但 DeepSeek-V3.1 仍 block@≥0.90。
     _STRONG_BENIGN_SIGNALS = (
         "has_celebration_signal",       # 真实成就/庆祝公告（排除 rumor/lie/fake）
         "has_own_submission_signal",    # 帮人提交自己的作业（排除外部代码获取）

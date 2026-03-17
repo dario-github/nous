@@ -7,7 +7,7 @@ Tests multiple LLM models on the challenge benchmark, measuring:
 
 Usage:
   python3 scripts/judge_model_comparison.py
-  python3 scripts/judge_model_comparison.py --models qwen-turbo DeepSeek-V3.2 qwen3-32b
+  python3 scripts/judge_model_comparison.py --models qwen-turbo DeepSeek-V3.1 qwen3-32b
   python3 scripts/judge_model_comparison.py --runs 3 --models qwen-turbo qwen3-32b
 """
 import json
@@ -33,7 +33,7 @@ LOGS_DIR = Path(__file__).parent.parent / "logs"
 
 DEFAULT_MODELS = [
     "qwen-turbo",
-    "DeepSeek-V3.2",
+    "DeepSeek-V3.1",
     "qwen3-32b",
     "Doubao-Seed-2.0-pro",
     "kimi-k2-thinking",

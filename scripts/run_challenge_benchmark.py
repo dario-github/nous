@@ -34,7 +34,7 @@ def _make_semantic_config() -> SemanticGateConfig:
         print("⚠️  No OPENAI_API_KEY — running L1+L2 only (no semantic gate)")
         return SemanticGateConfig(enabled=False)
 
-    sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", "DeepSeek-V3.2")
+    sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", "DeepSeek-V3.1")
     print(f"Semantic gate: {sem_model}")
     from nous.providers.openai_provider import create_openai_provider
     provider = create_openai_provider(model=sem_model, api_key=api_key)

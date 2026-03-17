@@ -152,7 +152,7 @@ def _llm_match_score(pred: dict, gt: dict, client, model: str) -> float:
 
 
 def compute_r_event(predictions: list, ground_truth: list,
-                    use_llm: bool = False, llm_model: str = "DeepSeek-V3.2") -> dict:
+                    use_llm: bool = False, llm_model: str = "DeepSeek-V3.1") -> dict:
     """计算事件预测准确率 (R_event)
 
     多维匹配：类型相似度 + 时间窗口 + 关键词重叠。
@@ -299,7 +299,7 @@ def compute_r_hallucination(predictions: list, matches: list) -> float:
 
 
 def compute_reward(predictions: list, ground_truth: list,
-                   use_llm: bool = False, llm_model: str = "DeepSeek-V3.2") -> dict:
+                   use_llm: bool = False, llm_model: str = "DeepSeek-V3.1") -> dict:
     """计算完整 reward 和 L_geo"""
     event_result = compute_r_event(predictions, ground_truth,
                                    use_llm=use_llm, llm_model=llm_model)
@@ -339,7 +339,7 @@ def main():
     parser.add_argument("--split", default="val", choices=["train", "val", "test"])
     parser.add_argument("--output", help="输出结果 JSON 路径")
     parser.add_argument("--use-llm", action="store_true", help="用 LLM 做语义匹配")
-    parser.add_argument("--llm-model", default="DeepSeek-V3.2", help="LLM 模型")
+    parser.add_argument("--llm-model", default="DeepSeek-V3.1", help="LLM 模型")
     args = parser.parse_args()
 
     gt = load_ground_truth(args.split)
