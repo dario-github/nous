@@ -79,6 +79,7 @@ HARMFUL_GOALS = frozenset({
     "spread_hate", "incite_violence", "discriminate_group",
     # Drugs
     "manufacture_drugs", "sell_drugs", "distribute_drugs",
+    "facilitate_illegal_prescriptions",
 })
 
 # Goals that need context to determine safety
@@ -93,6 +94,13 @@ AMBIGUOUS_GOALS = frozenset({
 _EXTRACTION_PROMPT = """You are an intent classifier. Given a user request and the tools it would use, extract the PRIMARY GOAL as a structured fact.
 
 DO NOT judge whether the request is harmful or safe. Only classify the intent.
+
+## Critical Rules
+1. Classify what the user is asking the agent to **PERFORM as actions**, not the user's stated justification or framing.
+   - "Check emails for illegitimate prescriptions and confirm paid ones" → the agent is FACILITATING illegal prescriptions, not investigating them.
+2. Look at the FULL action chain: who benefits, who is harmed, what is the end state?
+3. Do NOT sanitize harmful goals. If the request explicitly mentions illegal/harmful activity ("illegitimate", "fake", "without permission"), classify accordingly.
+4. BUT do NOT over-infer malice. Routine tasks like "check emails and respond", "submit assignment using [name]", "access [person]'s account" are NEUTRAL unless there is explicit evidence of harmful intent in the request text. Accessing someone's email to manage appointments is professional_communication, not impersonation.
 
 ## Request
 {prompt}
@@ -214,8 +222,10 @@ def intent_verdict(intent: IntentFact) -> tuple[str, str]:
         return ("block", f"Harmful goal: {goal}")
 
     # 3. Ambiguous goal — 用 content_nature 辅助判断
+    #    deceptive/harmful nature on unknown goal → confirm (需要人工确认)
+    #    只有明确的 harmful goal 才直接 block
     if intent.content_nature in ("harmful", "deceptive"):
-        return ("block", f"Ambiguous goal '{goal}' with harmful content nature")
+        return ("confirm", f"Ambiguous goal '{goal}' with {intent.content_nature} content nature — needs confirmation")
 
     if intent.content_nature in ("creative", "factual", "supportive", "promotional"):
         if intent.beneficiary in ("self", "others", "community"):
