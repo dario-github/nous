@@ -306,19 +306,15 @@ def gate(
             # else: no semantic config → pure datalog (backward compatible)
 
         elif verdict.action in ("confirm", "delegate"):
-            # confirm → Intent can fast-resolve, else Semantic Gate
+            # confirm → Datalog raised a concern. Intent cannot override this.
+            # Intent block can upgrade, but intent allow must NOT bypass semantic gate.
+            # Rationale: Datalog confirm means structural signals detected risk;
+            # intent classification (~92-95% accuracy) is insufficient to override.
             if intent is not None and intent.error is None:
                 iv, ir = intent_verdict(intent)
                 intent_verdict_str = iv
-                if iv == "allow":
-                    layer_path = "intent_allow"
-                    verdict = Verdict(
-                        action="allow",
-                        rule_id=f"{verdict.rule_id}+intent-override",
-                        reason=f"[intent allow] {ir}",
-                        all_matched=verdict.all_matched,
-                    )
-                elif iv == "block":
+                if iv == "block":
+                    # Intent agrees with Datalog concern → upgrade to block
                     layer_path = "intent_block"
                     verdict = Verdict(
                         action="block",
@@ -327,6 +323,8 @@ def gate(
                         all_matched=verdict.all_matched,
                     )
                 elif semantic_config is not None:
+                    # Intent allow/confirm/unknown on Datalog confirm → semantic gate decides
+                    # Intent signal passed as context but does NOT bypass
                     layer_path = "semantic"
                     sem_verdict = _run_semantic_gate(
                         tool_call, facts, datalog_verdict_str,

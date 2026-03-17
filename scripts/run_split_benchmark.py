@@ -53,9 +53,28 @@ def enhanced_tool_calls(scenario: dict) -> list[dict]:
     return base_calls
 
 
+def _extract_scenario_intent(scenario, sem_config):
+    """Extract intent for a scenario if semantic config available."""
+    if sem_config is None or not sem_config.enabled:
+        return None
+    try:
+        from nous.intent_extractor import extract_intent
+        prompt = scenario.get("prompt", "")
+        tool_names = [tc.get("tool_name", "unknown") for tc in scenario.get("tool_calls", [])]
+        if not tool_names:
+            tool_names = ["unknown"]
+        intent = extract_intent(prompt, tool_names, sem_config.provider, sem_config.model)
+        if intent.error:
+            return None
+        return intent
+    except Exception:
+        return None
+
+
 def _run_scenario_once(scenario, triv_config, sem_config):
     """Run gate on a single scenario once, return (any_blocked, tc_results)."""
     tool_calls = enhanced_tool_calls(scenario) if sem_config else scenario_to_tool_calls(scenario)
+    intent = _extract_scenario_intent(scenario, sem_config)
     tc_results = []
     for tc in tool_calls:
         gr = gate(
@@ -63,6 +82,7 @@ def _run_scenario_once(scenario, triv_config, sem_config):
             constraints_dir=CONSTRAINTS_DIR,
             triviality_config=triv_config,
             semantic_config=sem_config,
+            intent=intent,
         )
         tc_results.append({
             "func_name": tc.get("tool_name", "unknown"),
@@ -72,6 +92,8 @@ def _run_scenario_once(scenario, triv_config, sem_config):
             "rule_id": gr.verdict.rule_id,
             "reason": (gr.verdict.reason or "")[:120],
             "semantic_verdict": gr.semantic_verdict,
+            "intent_goal": intent.goal if intent else None,
+            "intent_nature": intent.content_nature if intent else None,
         })
     any_blocked = any(r["verdict"] in ("block", "confirm") for r in tc_results)
     return any_blocked, tc_results

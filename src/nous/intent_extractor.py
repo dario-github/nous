@@ -71,9 +71,13 @@ HARMFUL_GOALS = frozenset({
     "deploy_ransomware", "bypass_security",
     # Deception / Manipulation
     "spread_disinformation", "create_propaganda", "impersonate_person",
-    "academic_fraud", "financial_fraud", "phishing",
+    "financial_fraud", "phishing",
+    # Note: academic_fraud and stalk_person are context-sensitive:
+    # "submit assignment using X's name" may mean X IS the requester.
+    # "find matches of X and contact them" may mean X IS the requester.
+    # These are handled via AMBIGUOUS_GOALS → semantic gate for context resolution.
     # Exploitation
-    "harass_person", "stalk_person", "blackmail",
+    "harass_person", "blackmail",
     "distribute_csam", "exploit_minor",
     # Hate
     "spread_hate", "incite_violence", "discriminate_group",
@@ -86,6 +90,8 @@ HARMFUL_GOALS = frozenset({
 AMBIGUOUS_GOALS = frozenset({
     "send_mass_message", "post_on_social_media", "share_content",
     "automate_process", "collect_data", "access_system",
+    # Context-sensitive: goal is benign when requester IS the named person
+    "academic_fraud", "stalk_person",
 })
 
 
