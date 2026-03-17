@@ -51,7 +51,8 @@ _DESTRUCTIVE_CMD_PATTERNS = [
     r"\bunlink\b",              # unlink
 
     # ── Git 远程推送 ──
-    r"\bgit\s+push\b",          # git push（推送远程）— git commit 不拦截
+    # git push: removed 2026-03-17 — reversible (force push rollback), blocks dev flow (东丞确认)
+    # r"\bgit\s+push\b",
 
     # ── 包/DB 发布 ──
     r"\bnpm\s+publish\b",
