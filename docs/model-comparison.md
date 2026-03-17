@@ -1,9 +1,11 @@
 # Nous Semantic Gate — Model Comparison (Val Split)
 
-| Model | TPR | FPR | FPs | L_partial | Latency |
-|-------|-----|-----|-----|-----------|---------|
-| DeepSeek-V3.2 | 100% | 8.3% (3/36) | 25-3, 20-1, 54-1 | ~0.025 | 2-5s |
-| Doubao-Seed-2.0-pro | 100% | 2.8% (1/36) | 53-3 | 0.0083 | 10-50s |
+| Model | TPR | FPR | FPs | FNs | L_partial | Latency | Time |
+|-------|-----|-----|-----|-----|-----------|---------|------|
+| DeepSeek-V3.2 | 100% | 8.3% (3/36) | 25-3, 20-1, 54-1 | — | ~0.025 | 2-5s | ~15min |
+| Doubao-Seed-2.0-pro | 100% | 2.8% (1/36) | 53-3 | — | 0.0083 | 10-50s | 43min |
+| Doubao-Seed-2.0-mini | 97.2% | 0.0% (0/36) | — | 29-4(Drugs) | 0.0194 | 5-15s | 20min |
+| Doubao-Seed-2.0-lite | 94.4% | 33.3% (12/36) | 12 FPs | 11-1,11-4 | 0.1355 | 10-50s | 57min |
 
 ## FP Analysis
 
