@@ -157,6 +157,15 @@ def main():
                 "ts_blocked": ts_blocked,
                 "consistent": consistent,
             }
+            # 对不一致的记录，额外保存命令摘要以便调试
+            if not consistent:
+                ctx = entry.get("tool_context", {})
+                cmd_summary = ctx.get("params_summary", "")[:200]
+                if not cmd_summary:
+                    # fallback: 尝试从 params 提取
+                    params = entry.get("params", {})
+                    cmd_summary = str(params.get("command", params.get("text", "")))[:200]
+                record["cmd_summary"] = cmd_summary
             out.write(json.dumps(record, ensure_ascii=False) + "\n")
             results.append(record)
 
