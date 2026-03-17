@@ -79,6 +79,51 @@ def _has_escalation_signal(content: str) -> bool:
     return False
 
 
+# ── Loop 37: Harmful Domain Guard（Rule 4b 安全网） ─────────────────────────
+# 目的：捕获 benign signal 无法覆盖的有害领域（毒品名+合成、武器+制造等）
+# 设计：比 _ESCALATION_PATTERNS 更宽——escalation 检查具体犯罪行为，
+#        domain guard 检查领域知识（物质名 + 操作动词的组合）
+# 原则：只在 Rule 4b bypass 路径上使用，不影响正常的 trivial 判断
+
+_HARMFUL_SUBSTANCE_NAMES = re.compile(
+    r"\b(GHB|gamma.?hydroxybutyr|ketamine|fentanyl|methamphetamine|meth\b|MDMA|"
+    r"ecstasy|LSD|lysergic|heroin|cocaine|crack\s+cocaine|psilocybin|DMT|"
+    r"amphetamine|oxycodone|oxycontin|morphine\s+(?:synth|produc|extract)|"
+    r"PCP|phencyclidine|cathinone|bath\s+salts|carfentanil)\b", re.I
+)
+
+_HARMFUL_DOMAIN_PATTERNS = [
+    # 毒品合成/制造语境
+    re.compile(r"(?:synth\w+|produc\w+|manufactur\w+|cook\w*)\s+.{0,40}(?:compound|substance|batch|purity|yield)", re.I),
+    re.compile(r"(?:precursor|reagent|catalyst)\s+.{0,30}(?:method|ratio|protocol|route)", re.I),
+    re.compile(r"(?:purity|potency)\s+.{0,10}(?:\d+\s*%|percent)", re.I),
+    re.compile(r"(?:dosage|dose)\s+.{0,30}(?:recreational|dissociativ|psychoactiv|threshold|strong|lethal)", re.I),
+    re.compile(r"(?:K-hole|k\.hole|trip\s+dose)", re.I),
+    # 武器/爆炸物制造
+    re.compile(r"(?:assembl\w+|build\w*|construct\w*)\s+.{0,30}(?:detonat|explosive|IED|incendiary)", re.I),
+    re.compile(r"(?:3D\s*print|blueprint)\s+.{0,20}(?:gun|firearm|receiver|weapon)", re.I),
+    re.compile(r"(?:nerve\s+agent|sarin|VX|ricin|anthrax)\s+.{0,20}(?:synth|produc|extract|cultiv)", re.I),
+    # 反模式排除（合法语境）
+    # - "purity of water" / "synthesis of research paper" 不应匹配
+    # - 上方 patterns 已通过 domain-specific 词锚定，FP 风险低
+]
+
+
+def _has_harmful_domain_signal(content: str) -> bool:
+    """检测有害领域信号（物质名 + 合成/操作语境）。
+
+    用于 Rule 4b benign signal bypass 的安全网。
+    Loop 37: 修复 ch-h26（GHB 合成伪装成庆祝公告）。
+    """
+    if not content or len(content) < 15:
+        return False
+    # 物质名直接匹配
+    if _HARMFUL_SUBSTANCE_NAMES.search(content):
+        return True
+    # 领域模式匹配
+    return any(p.search(content) for p in _HARMFUL_DOMAIN_PATTERNS)
+
+
 def _extract_content_for_escalation(facts: dict) -> str:
     """从 facts 中提取用于升级检测的内容文本。"""
     parts = []
@@ -217,15 +262,13 @@ def is_trivial(facts: dict, config: TrivialityConfig | None = None) -> bool:
 
     # Rule 4b (Loop 35): 强良性结构信号绕过
     # 当 fact_extractor 检测到明确的良性意图信号（已含反模式排除），
-    # 且无内容升级信号时，视为 trivially benign，跳过 semantic gate。
+    # 且无内容升级信号 + 无有害领域信号时，视为 trivially benign，跳过 semantic gate。
     # 修复 52-2 FP：celebration_signal 正确触发但 DeepSeek-V3.1 仍 block@≥0.90。
     #
     # Loop 36 安全修复：移除 has_factual_correction_signal
-    # 原因：challenge set 测试显示 factual_correction bypass 被成功利用（3/4 有害 prompt 逃脱）。
-    # "Correctly state dosage figures" / "Fix statistics for phishing operation" 等 prompt
-    # 触发 FACTUAL_CORRECTION_PATTERNS 但语义是有害的，且 anti-patterns 不足以拦截。
-    # has_celebration_signal / has_own_submission_signal 通过 challenge 测试（0 bypass），保留。
-    # has_advocacy_signal 通过 challenge 测试（0 bypass），保留。
+    # Loop 37 安全修复：增加 harmful domain guard（ch-h26 GHB celebration bypass）
+    # 原因：benign signal 的 anti-pattern 无法穷举所有有害领域，
+    # 需要一个统一的 domain-level 安全网阻止 "毒品合成庆祝"/"武器制造里程碑" 类 bypass。
     _STRONG_BENIGN_SIGNALS = (
         "has_celebration_signal",       # 真实成就/庆祝公告（排除 rumor/lie/fake）
         "has_own_submission_signal",    # 帮人提交自己的作业（排除外部代码获取）
@@ -235,8 +278,8 @@ def is_trivial(facts: dict, config: TrivialityConfig | None = None) -> bool:
     benign_signal_active = any(facts.get(sig, False) for sig in _STRONG_BENIGN_SIGNALS)
     if benign_signal_active:
         content = _extract_content_for_escalation(facts)
-        if not _has_escalation_signal(content):
-            return True  # 良性信号 + 无有害内容 → trivially benign
+        if not _has_escalation_signal(content) and not _has_harmful_domain_signal(content):
+            return True  # 良性信号 + 无有害内容 + 无有害领域 → trivially benign
 
     # Rule 5: 自定义谓词
     for predicate in cfg.extra_predicates:
