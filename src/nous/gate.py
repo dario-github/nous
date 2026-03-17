@@ -21,6 +21,7 @@ from typing import Optional
 from nous.constraint_parser import ConstraintLoadError, load_constraints
 from nous.decision_log import CostBreakdown
 from nous.fact_extractor import extract_facts
+from nous.intent_extractor import IntentFact, BENIGN_GOALS, HARMFUL_GOALS, intent_verdict
 from nous.observability import SamplingPolicy, log_decision
 from nous.proof_trace import ProofStep, ProofTrace
 from nous.resource_budget import load_resource_budget, check_budget
@@ -138,8 +139,9 @@ class GateResult:
     cost_breakdown: Optional[CostBreakdown] = None  # M2.P2
     datalog_verdict: Optional[str] = None            # M7.3
     semantic_verdict: Optional[dict] = None          # M7.3
-    layer_path: str = "datalog_only"                 # M7.3
+    layer_path: str = "datalog_only"                 # M7.3 + Phase 4: "datalog_only" | "trivial_allow" | "semantic" | "intent_allow" | "intent_block"
     kg_context: Optional[dict] = None                # Post-gate enrichment (not injected into semantic gate per ablation bf036b0)
+    intent_fact: Optional[IntentFact] = None         # Phase 4: Intent Decomposition result
 
     def to_dict(self) -> dict:
         d = {
@@ -195,6 +197,7 @@ def gate(
     triviality_config: Optional[TrivialityConfig] = None,
     semantic_config: Optional[SemanticGateConfig] = None,
     kg_context: Optional[dict] = None,
+    intent: Optional[IntentFact] = None,
 ) -> GateResult:
     """
     三层决策 pipeline 入口。
@@ -251,9 +254,10 @@ def gate(
         if kg_context is None and db is not None and semantic_config is not None:
             kg_context = _build_kg_context(facts, db)
 
-        # Step 4.6: 三层路由（M7.3）
+        # Step 4.6: 四层路由（M7.3 + Phase 4 Intent Decomposition）
         layer_path = "datalog_only"
         sem_verdict: Optional[dict] = None
+        intent_verdict_str: Optional[str] = None  # Track intent layer result
 
         if verdict.action in ("block", "warn", "rewrite", "require"):
             # 硬裁决 → 直接返回，不需要 LLM
@@ -263,9 +267,34 @@ def gate(
             # Layer 2: Triviality Filter
             if triviality_config is not None and is_trivial(facts, triviality_config):
                 layer_path = "trivial_allow"
+            # Layer 2.5: Intent Decomposition (Phase 4)
+            elif intent is not None and intent.error is None:
+                iv, ir = intent_verdict(intent)
+                intent_verdict_str = iv
+                if iv == "allow":
+                    # Intent says benign goal → fast-track allow, skip semantic gate
+                    layer_path = "intent_allow"
+                elif iv == "block":
+                    # Intent says harmful goal → upgrade to block
+                    layer_path = "intent_block"
+                    verdict = Verdict(
+                        action="block",
+                        rule_id="intent-decomposition",
+                        reason=f"[intent block] {ir}",
+                        all_matched=verdict.all_matched,
+                    )
+                elif semantic_config is not None:
+                    # Intent uncertain → fall through to semantic gate
+                    layer_path = "semantic"
+                    sem_verdict = _run_semantic_gate(
+                        tool_call, facts, datalog_verdict_str,
+                        None, semantic_config,
+                    )
+                    verdict = _apply_semantic_verdict(
+                        verdict, datalog_verdict_str, sem_verdict, semantic_config,
+                    )
             elif semantic_config is not None:
-                # Layer 3: Semantic Gate
-                # kg_context=None: ablation showed KG injection hurts small models (bf036b0)
+                # No intent available → original semantic gate path
                 layer_path = "semantic"
                 sem_verdict = _run_semantic_gate(
                     tool_call, facts, datalog_verdict_str,
@@ -277,8 +306,36 @@ def gate(
             # else: no semantic config → pure datalog (backward compatible)
 
         elif verdict.action in ("confirm", "delegate"):
-            # confirm → Semantic Gate 可降级为 allow（降 FPR）
-            if semantic_config is not None:
+            # confirm → Intent can fast-resolve, else Semantic Gate
+            if intent is not None and intent.error is None:
+                iv, ir = intent_verdict(intent)
+                intent_verdict_str = iv
+                if iv == "allow":
+                    layer_path = "intent_allow"
+                    verdict = Verdict(
+                        action="allow",
+                        rule_id=f"{verdict.rule_id}+intent-override",
+                        reason=f"[intent allow] {ir}",
+                        all_matched=verdict.all_matched,
+                    )
+                elif iv == "block":
+                    layer_path = "intent_block"
+                    verdict = Verdict(
+                        action="block",
+                        rule_id=f"{verdict.rule_id}+intent-upgrade",
+                        reason=f"[intent block] {ir}",
+                        all_matched=verdict.all_matched,
+                    )
+                elif semantic_config is not None:
+                    layer_path = "semantic"
+                    sem_verdict = _run_semantic_gate(
+                        tool_call, facts, datalog_verdict_str,
+                        None, semantic_config,
+                    )
+                    verdict = _apply_semantic_verdict(
+                        verdict, datalog_verdict_str, sem_verdict, semantic_config,
+                    )
+            elif semantic_config is not None:
                 layer_path = "semantic"
                 sem_verdict = _run_semantic_gate(
                     tool_call, facts, datalog_verdict_str,
@@ -336,6 +393,7 @@ def gate(
             semantic_verdict=sem_verdict,
             layer_path=layer_path,
             kg_context=kg_context,  # preserved for post-gate enrichment
+            intent_fact=intent,     # Phase 4
         )
 
     except ConstraintLoadError as e:  # FAIL_CLOSED: 约束加载失败 → confirm
