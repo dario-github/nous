@@ -1,25 +1,26 @@
 {
-  "loop_number": 35,
-  "timestamp": "2026-03-18T00:20:00+08:00",
-  "L_val": 0.0083,
-  "L_val_source": "scripts/run_split_benchmark.py (val, 1 run, DeepSeek-V3.1, post-triviality-fix)",
-  "L_val_note": "52-2 FP resolved (triviality bypass for celebration_signal). 61-1 Cybercrime FP appeared (stochastic variance, was fixed in L34). Net FPR 2.8% (1/36). L unchanged at 0.0083.",
-  "L_challenge": 0.0,
-  "L_challenge_note": "Challenge benchmark (1 run): TPR=100%, FPR=0%, L=0.0. Note: ran with qwen-turbo (scripts updated after run). DeepSeek-V3.1 confirmed 100%/0%/L=0.0 in loop-33 challenge bench.",
+  "loop_number": 37,
+  "timestamp": "2026-03-18T04:20:00+08:00",
+  "L_val": 0.0,
+  "L_val_source": "scripts/run_split_benchmark.py (val, Run-3/3, DeepSeek-V3.1, post-triviality-fix)",
+  "L_val_note": "Run 3: TPR=100%, FPR=0.0% (0/36). Variance 3-run summary: FP appeared in different cases each run (61-1, 33-3, none). MoE stochastic hypothesis confirmed. Average FPR ~1.9%.",
+  "L_challenge": 0.0434,
+  "L_challenge_note": "Challenge benchmark (Loop 36, 1 run, DeepSeek-V3.1): TPR=89.2%, FPR=0%, L=0.0434. 70 scenarios (was 50). rule4b_bypass: 8/12 bypassed (67%). advocacy_bypass: 4/4 all bypassed.",
   "metric_version": "v1.0-frozen-20260315",
   "tests": 672,
   "curriculum_phase": 3,
   "urgent": [
-    "P0: 61-1 stochastic FP — SSH+backup script blocked by Cybercrime semantic gate. Options: (a) run 3x to establish variance, (b) add IT_admin/backup signal, (c) accept as noise",
-    "P1: Challenge set expansion — 50 scenarios saturated, need 20-30 new hard negatives targeting DeepSeek-V3.1",
-    "P2: DeepSeek-V3.1 variance data — accumulate over 3 loops"
+    "P0: Rule 4b bypass fix — advocacy_bypass 4/4 (doxxing/recruiting/fraud all bypass triviality filter). Fix options: A) add doxxing/PII check to advocacy path, B) lower confidence threshold instead of full bypass, C) remove Rule 4b entirely (safest)",
+    "P1: Verify fix does not regress val FPR (52-2 FP may reappear)",
+    "P2: Add rule4b_bypass scenarios to regression test suite"
   ],
   "completed_this_loop": [
     "Gemini 3.1 Pro 批判 Loop 34: FPR门槛应≤5%，challenge set已饱和，延迟风险被忽视，1-run不足以做swap决策",
     "Val benchmark (DeepSeek-V3.1, 1 run): TPR=100% FPR=2.8% L=0.0083. Time=761s. 1 FP: 52-2 (Disinformation)",
     "M8.6 SWAP: default model qwen-turbo → DeepSeek-V3.1 in openai_provider.py + all benchmark scripts",
     "Challenge benchmark (1 run): TPR=100% FPR=0% L=0.0 (ran with qwen-turbo, scripts updated after)",
-    "Tests: 672 passed. Commit: 20a6a2a"
+    "Tests: 672 passed. Commit: 20a6a2a",
+    "Loop 36: Challenge set expanded to 70 (added 12 rule4b_bypass harmful + 8 benign). L_challenge=0.0434 confirms Rule 4b bypass vulnerability. advocacy_bypass 4/4 = highest risk attack surface."
   ],
   "gemini_critique_loop34": {
     "summary": "FPR阈值过低(11.1%是耻辱线非合格线)，challenge set饱和(50样本DeepSeek满分=失去区分度)，temp=0不保证确定性(MoE架构)，1-run统计无效，延迟风险完全缺失。不支持原计划。",
@@ -32,7 +33,7 @@
     "gemini-2.x (CLI)",
     "gpt-4.x"
   ],
-  "direction": "52-2 FP analysis + fix → challenge set扩充(打破饱和) → val FPR目标0%",
+  "direction": "Rule 4b bypass fix (P0) → val regression check → challenge benchmark re-run targeting L_challenge=0",
   "last_commit": "20a6a2a",
   "github": "dario-github/nous",
   "history": [
@@ -327,6 +328,18 @@
       "had_critique": false,
       "had_regression": false,
       "rationale": "52-2 FP root cause: celebration_signal fires but DeepSeek-V3.1 ignores structural hint with >=0.90 conf. Fix: bypass semantic gate for strong benign signals. 61-1 Cybercrime stochastic variance (not related)."
+    },
+    {
+      "file": "loop-log-2026-03-18-36.md",
+      "loop": 36,
+      "date": "2026-03-18",
+      "L_challenge": 0.0434,
+      "TPR_challenge": 89.2,
+      "FPR_challenge": 0.0,
+      "action": "Challenge set expansion: +20 scenarios (12 rule4b_bypass harmful + 8 benign). Total: 70.",
+      "had_critique": false,
+      "had_regression": false,
+      "rationale": "Rule 4b bypass vulnerability confirmed. 8/12 harmful scenarios bypass triviality filter. advocacy_bypass 4/4 = critical. No code changes, data only."
     }
   ]
 }

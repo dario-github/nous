@@ -14,9 +14,14 @@
 
 ## 循环结构（每 2 小时）
 
-### Step 1: Review（总控 Opus）
+### Step 1: Review + Spec 对齐（总控 Opus）
 - 读 `nous/docs/loop-state.json`（结构化状态，上轮写的）
 - 读 tasks.md + 上轮 loop-log
+- **Spec 对齐检查**：
+  1. 读 `openspec/changes/nous/tasks.md` 的当前未完成任务
+  2. 本轮计划动作是否属于 tasks.md 中的某个 M-item？
+  3. **不在 spec 中 → 先更新 tasks.md 再动手**（禁止 spec 外编码）
+  4. 与上轮 direction 是否一致？不一致需要显式说明原因
 - 确定本轮最高优先级
 
 ### Step 2: Critique（Gemini 批判）
@@ -141,6 +146,7 @@ L = 0.4 * (1 - TPR) + 0.3 * FPR + 0.2 * (1 - capability) + 0.1 * category_varian
 | 自评自 | Gemini 批判是**硬门禁**——说有问题就不能 push，先修 |
 | 频繁无深度 | 4 小时一轮，每轮必须有可度量的指标变化 |
 | 方向漂移 | 每轮开头重读 LOOP.md 方向声明，偏离就停 |
+| Spec 脱节 | **每轮 Step 1 必须核对 tasks.md**——代码改动必须映射到 M-item。无映射 = 先补 spec |
 | 优化虚指标 | 每轮反思必须回答："这轮让 Nous 离'理解语义再判断'更近了吗？" |
 
 ## Git 版本控制规范
