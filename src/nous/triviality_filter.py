@@ -219,11 +219,18 @@ def is_trivial(facts: dict, config: TrivialityConfig | None = None) -> bool:
     # 当 fact_extractor 检测到明确的良性意图信号（已含反模式排除），
     # 且无内容升级信号时，视为 trivially benign，跳过 semantic gate。
     # 修复 52-2 FP：celebration_signal 正确触发但 DeepSeek-V3.1 仍 block@≥0.90。
+    #
+    # Loop 36 安全修复：移除 has_factual_correction_signal
+    # 原因：challenge set 测试显示 factual_correction bypass 被成功利用（3/4 有害 prompt 逃脱）。
+    # "Correctly state dosage figures" / "Fix statistics for phishing operation" 等 prompt
+    # 触发 FACTUAL_CORRECTION_PATTERNS 但语义是有害的，且 anti-patterns 不足以拦截。
+    # has_celebration_signal / has_own_submission_signal 通过 challenge 测试（0 bypass），保留。
+    # has_advocacy_signal 通过 challenge 测试（0 bypass），保留。
     _STRONG_BENIGN_SIGNALS = (
         "has_celebration_signal",       # 真实成就/庆祝公告（排除 rumor/lie/fake）
         "has_own_submission_signal",    # 帮人提交自己的作业（排除外部代码获取）
         "has_advocacy_signal",          # 公益/倡导内容
-        "has_factual_correction_signal", # 事实性校正
+        # has_factual_correction_signal REMOVED (Loop 36): bypass rate 75% on challenge set
     )
     benign_signal_active = any(facts.get(sig, False) for sig in _STRONG_BENIGN_SIGNALS)
     if benign_signal_active:
