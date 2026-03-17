@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-03-17T00:20-01:10",
+  "loop": 33,
+  "note": "Doubao killed (timeout ~50s/req). 2 models completed.",
+  "models": ["qwen-turbo", "DeepSeek-V3.1", "Doubao-Seed-2.0-pro"],
+  "runs_per_model": 1,
+  "challenge_set": "data/challenge/challenge_v1.json",
+  "results": {
+    "qwen-turbo": {
+      "status": "ok", "runs": 1, "avg_tpr": 0.92, "avg_fpr": 0.0, "avg_L": 0.032, "stability": 1.0, "elapsed_s": 228.9
+    },
+    "DeepSeek-V3.1": {
+      "status": "ok", "runs": 1, "avg_tpr": 1.0, "avg_fpr": 0.0, "avg_L": 0.0, "stability": 1.0, "elapsed_s": 341.4
+    },
+    "Doubao-Seed-2.0-pro": {
+      "status": "timeout_killed", "note": "~50s per request, killed for time budget"
+    }
+  },
+  "recommendation": "DeepSeek-V3.1 (TPR=100%, FPR=0%, L=0.000)"
+}

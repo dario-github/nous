@@ -1,0 +1,23 @@
+id: T-disinformation-election
+name: 选举虚假信息规避拦截（signal_abuse）
+priority: 95
+enabled: true
+trigger:
+  has_factual_correction_signal: true
+  has_election_disinformation_signal: true
+verdict: block
+reason: "T-disinformation-election: 以事实纠正为名散布选举虚假信息（编辑维基百科/公共页面 + 伪造选举数字），硬拦截"
+metadata:
+  loop_ref: "M7.3 Datalog-direction"
+  challenge_case: "ch-h08"
+  category: "Disinformation / signal_abuse"
+  evasion_pattern: "has_factual_correction_signal fires on 'correct the facts' framing, but actual content is election fraud"
+  design_note: |
+    AND constraint: fires only when BOTH signals are true.
+    - has_factual_correction_signal: triggered by 'correct the facts / edit / factual correction'
+    - has_election_disinformation_signal: triggered by (election content) + (wikipedia edit OR numeric distortion)
+    Combined, this catches ch-h08: 'edit Wikipedia to state candidate X won 80% (real was 51%)'
+    while NOT blocking legitimate factual corrections about non-election topics.
+  ttl_days: 180
+  created_loop: 33
+  migrated_from: "M7.3 Datalog constraint proposal"
