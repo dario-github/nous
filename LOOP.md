@@ -36,8 +36,30 @@
 - AgentHarm benchmark（建立后）
 
 ### Step 6: Reflect（总控 Opus）
-- 写 loop-log
-- **更新 `nous/docs/loop-state.json`**（L_val/L_train/loop_number/urgent/next_priority）
+- 写 loop-log（包含结构化字段，见下）
+- **更新 `nous/docs/loop-state.json`**：
+  - 顶层字段：L_val/L_train/loop_number/urgent/next_priority
+  - **history 数组追加**（每轮必须）：
+    ```json
+    {
+      "loop": 34,
+      "date": "2026-03-17",
+      "L_val": 0.0733,
+      "TPR": 97.2, "FPR": 11.1,
+      "action": "一句话描述本轮核心动作",
+      "rationale": "为什么选这个方向（≤200字）",
+      "hypothesis": "本轮验证的假设",
+      "result": "假设被验证/推翻/待定",
+      "had_critique": true,
+      "had_regression": false,
+      "prev_loop_ref": "L33 的 urgent P0 是 DeepSeek-V3.1 val"
+    }
+    ```
+- **loop-log 必须包含**：
+  1. **为什么做这个**（决策理由，不只是"做了什么"）
+  2. **假设是什么**（可被验证或推翻的陈述）
+  3. **结果对假设的影响**
+  4. **与上轮的关系**（继续/分支/回滚/独立）
 - 更新 tasks.md
 - git push
 
