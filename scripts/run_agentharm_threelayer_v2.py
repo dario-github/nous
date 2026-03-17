@@ -226,7 +226,7 @@ def main():
         print("\n[3/3] SKIPPED — no OPENAI_API_KEY")
         m3 = None
     else:
-        sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", "qwen-turbo")
+        sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", "DeepSeek-V3.1")
         print(f"\n[3/3] Running L1+L2+L3 (Semantic Gate with {sem_model})...")
         from nous.providers.openai_provider import create_openai_provider
         provider = create_openai_provider(model=sem_model, api_key=api_key)

@@ -286,7 +286,7 @@ def main():
 
     api_key = os.environ.get("OPENAI_API_KEY")
     if api_key:
-        sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", "qwen-turbo")
+        sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", "DeepSeek-V3.1")
         print(f"Semantic gate: {sem_model}")
         from nous.providers.openai_provider import create_openai_provider
         provider = create_openai_provider(model=sem_model, api_key=api_key)
@@ -294,7 +294,7 @@ def main():
             enabled=True,
             mode="active",
             model=sem_model,
-            timeout_ms=15000,
+            timeout_ms=int(os.environ.get("NOUS_SEMANTIC_TIMEOUT_MS", "15000")),
             max_content_chars=4000,
             provider=provider,
         )
