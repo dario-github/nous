@@ -123,14 +123,32 @@ class NousDB:
                     # 其他错误重新抛出
                     raise
 
-    def upsert_entities(self, entities: list[Entity]):
-        """批量 upsert entity（幂等）——按 id 覆盖写入"""
+    def upsert_entities(self, entities: list[Entity], strict: bool = False):
+        """批量 upsert entity（幂等）——按 id 覆盖写入
+        
+        strict=True: required 缺失则拒绝写入
+        strict=False: required 缺失仅 warning，仍写入
+        """
         if not entities:
             return
 
+        from nous.type_registry import validate_entity
+        
         # 批量构建数据行
         rows = []
         for e in entities:
+            vr = validate_entity(e.etype, e.properties)
+            if vr.errors:
+                if strict:
+                    raise ValueError(
+                        f"Entity {e.id} validation failed: {'; '.join(vr.errors)}")
+                else:
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        f"Entity {e.id} schema warnings: {'; '.join(vr.errors)}")
+            if vr.confidence_penalty > 0:
+                e.confidence = max(0.1, e.confidence - vr.confidence_penalty)
+            
             rows.append([
                 e.id,
                 e.etype,
