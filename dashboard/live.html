@@ -166,6 +166,41 @@ body::before{content:'';position:fixed;inset:0;
 .tt-conf-bar{height:3px;border-radius:2px;margin-top:6px;background:rgba(255,255,255,.1)}
 .tt-conf-fill{height:100%;border-radius:2px;transition:width .3s}
 
+/* Entity Detail Panel */
+#entity-panel{position:fixed;top:48px;right:0;width:320px;height:calc(100vh - 48px);
+  background:var(--surface);border-left:1px solid var(--border);backdrop-filter:blur(16px);
+  z-index:50;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);
+  overflow-y:auto;padding:0;display:flex;flex-direction:column}
+#entity-panel.open{transform:translateX(0)}
+#entity-panel::-webkit-scrollbar{width:2px}
+#entity-panel::-webkit-scrollbar-thumb{background:var(--border)}
+.ep-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);position:relative}
+.ep-close{position:absolute;top:10px;right:12px;color:var(--dim);cursor:pointer;
+  font-size:1.1rem;padding:4px;border-radius:4px;transition:all .2s}
+.ep-close:hover{color:var(--cyan);background:rgba(0,212,255,.1)}
+.ep-id{font-size:.5rem;color:var(--dim);letter-spacing:.05em;word-break:break-all;margin-bottom:6px}
+.ep-name{font-size:1rem;font-weight:700;line-height:1.3;margin-bottom:4px}
+.ep-name-en{font-size:.7rem;color:var(--dim);margin-bottom:8px}
+.ep-type-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.55rem;
+  letter-spacing:.08em;text-transform:uppercase;font-weight:600;border:1px solid}
+.ep-conf{margin-top:8px;display:flex;align-items:center;gap:8px;font-size:.6rem}
+.ep-conf-bar{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.1)}
+.ep-conf-fill{height:100%;border-radius:2px;transition:width .4s}
+.ep-body{flex:1;overflow-y:auto;padding:12px 16px}
+.ep-section{margin-bottom:14px}
+.ep-section-title{font-size:.5rem;text-transform:uppercase;letter-spacing:.14em;color:var(--dim);
+  margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.04)}
+.ep-prop{display:flex;gap:8px;padding:4px 0;font-size:.62rem;border-bottom:1px solid rgba(255,255,255,.03)}
+.ep-prop-key{color:var(--cyan);min-width:80px;flex-shrink:0;font-weight:600}
+.ep-prop-val{color:var(--text);word-break:break-word;line-height:1.5}
+.ep-rel{display:flex;align-items:center;gap:6px;padding:5px 0;font-size:.6rem;
+  border-bottom:1px solid rgba(255,255,255,.03);cursor:pointer;transition:background .2s}
+.ep-rel:hover{background:rgba(0,212,255,.05);border-radius:4px}
+.ep-rel-arrow{color:var(--dim);font-size:.5rem}
+.ep-rel-type{color:var(--purple);font-size:.5rem;min-width:60px}
+.ep-rel-name{color:var(--text)}
+.ep-rel-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
 /* Node breathing animation for high-degree nodes */
 @keyframes breathe{
   0%,100%{filter:drop-shadow(0 0 2px currentColor)}
@@ -260,6 +295,32 @@ body::before{content:'';position:fixed;inset:0;
   <div id="trace-panel">
     <span id="trace-close" onclick="document.getElementById('trace-overlay').style.display='none'">✕</span>
     <div id="trace-content"></div>
+  </div>
+</div>
+
+<!-- Entity Detail Panel -->
+<div id="entity-panel">
+  <div class="ep-header">
+    <span class="ep-close" onclick="closeEntityPanel()">✕</span>
+    <div class="ep-id" id="ep-id"></div>
+    <div class="ep-name" id="ep-name"></div>
+    <div class="ep-name-en" id="ep-name-en"></div>
+    <span class="ep-type-badge" id="ep-type"></span>
+    <div class="ep-conf">
+      <span>置信度</span>
+      <div class="ep-conf-bar"><div class="ep-conf-fill" id="ep-conf-fill"></div></div>
+      <span id="ep-conf-val"></span>
+    </div>
+  </div>
+  <div class="ep-body">
+    <div class="ep-section">
+      <div class="ep-section-title">属性 · Properties</div>
+      <div id="ep-props"></div>
+    </div>
+    <div class="ep-section">
+      <div class="ep-section-title">关联 · Relations</div>
+      <div id="ep-rels"></div>
+    </div>
   </div>
 </div>
 

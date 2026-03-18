@@ -105,6 +105,7 @@ function buildGraphData(kg) {
     const n = {
       id: e.id, type: e.type,
       name: (e.props||{}).name_zh ? ((e.props||{}).name_zh + ' ' + ((e.props||{}).name||'')) : ((e.props||{}).name || e.id.split(':').pop()),
+      props: e.props || {},
       confidence: e.confidence || 1,
       age_hours: e.age_hours || 0,
       degree: 0, isNew: false,
@@ -220,7 +221,7 @@ function renderGraph() {
   // Interactions
   const allNodes = nodeEnter.merge(node);
   allNodes.on('mouseover', onNodeHover).on('mousemove', onNodeMove)
-    .on('mouseout', onNodeOut).on('click', onNodeClick);
+    .on('mouseout', onNodeOut).on('click', onNodeClick).on('dblclick', onNodeDblClick);
 
   allNodes.select('.conf-ring')
     .transition().duration(600)
@@ -292,6 +293,10 @@ function onNodeOut() {
 }
 function onNodeClick(e, d) {
   e.stopPropagation();
+  openEntityPanel(d);
+}
+function onNodeDblClick(e, d) {
+  e.stopPropagation();
   if (selectedId === d.id) { selectedId = null; resetHighlight(); return; }
   selectedId = d.id;
   const nb = new Set([d.id]);
@@ -305,12 +310,107 @@ function onNodeClick(e, d) {
   labelG.selectAll('text').attr('opacity', l =>
     nb.has(sid(l.source)) && nb.has(sid(l.target)) ? .8 : 0);
 }
+
+// ── Entity Detail Panel ──────────────────────────────────────────────────
+function openEntityPanel(d) {
+  const panel = document.getElementById('entity-panel');
+  const props = d.props || {};
+
+  // Header
+  document.getElementById('ep-id').textContent = d.id;
+  document.getElementById('ep-name').textContent = props.name_zh || props.name || d.name;
+  document.getElementById('ep-name-en').textContent = props.name_zh ? (props.name || '') : '';
+  const badge = document.getElementById('ep-type');
+  badge.textContent = d.type;
+  badge.style.color = COLOR[d.type] || COLOR.unknown;
+  badge.style.borderColor = COLOR[d.type] || COLOR.unknown;
+  badge.style.background = (COLOR[d.type] || COLOR.unknown) + '15';
+
+  // Confidence
+  const confPct = (d.confidence * 100).toFixed(0);
+  document.getElementById('ep-conf-val').textContent = confPct + '%';
+  const fill = document.getElementById('ep-conf-fill');
+  fill.style.width = confPct + '%';
+  fill.style.background = d.confidence > .7 ? GREEN : d.confidence > .4 ? ORANGE : RED;
+
+  // Props
+  const propsEl = document.getElementById('ep-props');
+  const skipKeys = new Set(['name', 'name_zh']); // already shown in header
+  const sortedKeys = Object.keys(props).filter(k => !skipKeys.has(k)).sort();
+  if (sortedKeys.length === 0) {
+    propsEl.innerHTML = '<div style="color:var(--dim);font-size:.55rem">无额外属性</div>';
+  } else {
+    let html = '';
+    sortedKeys.forEach(k => {
+      let val = props[k];
+      if (typeof val === 'object') val = JSON.stringify(val, null, 1);
+      if (typeof val === 'string' && val.length > 200) val = val.slice(0, 197) + '...';
+      html += `<div class="ep-prop"><span class="ep-prop-key">${k}</span><span class="ep-prop-val">${val}</span></div>`;
+    });
+    propsEl.innerHTML = html;
+  }
+
+  // Relations
+  const relsEl = document.getElementById('ep-rels');
+  const rels = [];
+  links.forEach(l => {
+    const s = sid(l.source), t = sid(l.target);
+    if (s === d.id) {
+      const target = nodeMap[t];
+      rels.push({ dir: '→', rtype: l.rtype, node: target, id: t });
+    } else if (t === d.id) {
+      const source = nodeMap[s];
+      rels.push({ dir: '←', rtype: l.rtype, node: source, id: s });
+    }
+  });
+  if (rels.length === 0) {
+    relsEl.innerHTML = '<div style="color:var(--dim);font-size:.55rem">无关联实体</div>';
+  } else {
+    let html = '';
+    rels.sort((a, b) => a.rtype.localeCompare(b.rtype));
+    rels.forEach(r => {
+      const name = r.node ? r.node.name : r.id.split(':').pop();
+      const type = r.node ? r.node.type : 'unknown';
+      const color = COLOR[type] || COLOR.unknown;
+      html += `<div class="ep-rel" onclick="openEntityPanel(nodeMap['${r.id}'])">
+        <div class="ep-rel-dot" style="background:${color}"></div>
+        <span class="ep-rel-arrow">${r.dir}</span>
+        <span class="ep-rel-type">${r.rtype}</span>
+        <span class="ep-rel-name">${name.length > 24 ? name.slice(0,22)+'...' : name}</span>
+      </div>`;
+    });
+    relsEl.innerHTML = html;
+  }
+
+  // Highlight this node + neighbors
+  selectedId = d.id;
+  const nb = new Set([d.id]);
+  links.forEach(l => {
+    if(sid(l.source)===d.id) nb.add(sid(l.target));
+    if(sid(l.target)===d.id) nb.add(sid(l.source));
+  });
+  nodeG.selectAll('g.node').attr('opacity', n => nb.has(n.id) ? 1 : .15);
+  linkG.selectAll('line').attr('stroke-opacity', l =>
+    nb.has(sid(l.source)) && nb.has(sid(l.target)) ? .8 : .03);
+  labelG.selectAll('text').attr('opacity', l =>
+    nb.has(sid(l.source)) && nb.has(sid(l.target)) ? .8 : 0);
+
+  panel.classList.add('open');
+}
+
+function closeEntityPanel() {
+  document.getElementById('entity-panel').classList.remove('open');
+  selectedId = null;
+  resetHighlight();
+}
+window.closeEntityPanel = closeEntityPanel;
+window.openEntityPanel = openEntityPanel;
 function resetHighlight() {
   nodeG.selectAll('g.node').attr('opacity', 1);
   linkG.selectAll('line').attr('stroke-opacity', d => Math.max(.15, .1 + d.effective_confidence * .5));
   labelG.selectAll('text').attr('opacity', 0);
 }
-svg && d3.select('#kg-svg').on('click', () => { if(selectedId){selectedId=null;resetHighlight();} });
+svg && d3.select('#kg-svg').on('click', () => { if(selectedId){selectedId=null;resetHighlight();closeEntityPanel();} });
 
 // ── Reasoning path highlight (electric current effect) ────────────────
 function highlightReasoningPath(kgContext, proofTrace) {
