@@ -13,6 +13,8 @@
 FAIL_CLOSED 原则：Datalog/基础设施异常 → confirm（永不 allow）
 FAIL_OPEN 原则：Semantic Gate 异常 → 不改变 Datalog verdict
 """
+import json
+import logging as _gate_logging
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -21,7 +23,6 @@ from typing import Optional
 from nous.constraint_parser import ConstraintLoadError, load_constraints
 from nous.decision_log import CostBreakdown
 from nous.fact_extractor import extract_facts
-from nous.intent_extractor import IntentFact, BENIGN_GOALS, HARMFUL_GOALS, intent_verdict
 from nous.observability import SamplingPolicy, log_decision
 from nous.proof_trace import ProofStep, ProofTrace
 from nous.resource_budget import load_resource_budget, check_budget
@@ -103,6 +104,68 @@ def _build_kg_context(facts: dict, db) -> dict | None:
         return None
 
 
+# ── Gate 事件推送 (Loop 42) ────────────────────────────────────────────────
+
+_GATE_EVENTS_FILE: Optional[Path] = None
+_gate_event_logger = _gate_logging.getLogger("nous.gate.events")
+
+
+def _get_gate_events_path() -> Path:
+    """返回 gate_events.jsonl 路径，懒初始化。"""
+    global _GATE_EVENTS_FILE
+    if _GATE_EVENTS_FILE is None:
+        logs_dir = Path(__file__).parent.parent.parent / "logs"
+        logs_dir.mkdir(exist_ok=True)
+        _GATE_EVENTS_FILE = logs_dir / "gate_events.jsonl"
+    return _GATE_EVENTS_FILE
+
+
+def _emit_gate_event(result: "GateResult", tool_call: dict) -> None:
+    """将 gate 结果写入 gate_events.jsonl，供 dashboard SSE 消费。
+
+    格式：{ts, tool_call, verdict, proof_trace_summary, kg_entities_involved, layer_path, latency_ms}
+    失败不影响 gate pipeline。
+    """
+    try:
+        # proof_trace 摘要：只保留 matched rules
+        matched_rules = []
+        if result.proof_trace and result.proof_trace.steps:
+            matched_rules = [
+                s.rule_id for s in result.proof_trace.steps if s.verdict == "match"
+            ]
+
+        # KG 涉及的实体 ID
+        kg_ids = []
+        if result.kg_context:
+            for ent_list in (result.kg_context.get("entities", []),
+                             result.kg_context.get("policies", [])):
+                for e in ent_list:
+                    eid = e.get("id") if isinstance(e, dict) else None
+                    if eid:
+                        kg_ids.append(eid)
+
+        event = {
+            "ts": time.time(),
+            "tool_call": {
+                "tool_name": tool_call.get("tool_name") or tool_call.get("name", "?"),
+                "action_type": tool_call.get("action_type", ""),
+            },
+            "verdict": result.verdict.action,
+            "reason": result.verdict.reason[:200] if result.verdict.reason else "",
+            "matched_rules": matched_rules,
+            "kg_entities_involved": kg_ids,
+            "layer_path": result.layer_path,
+            "latency_ms": round(result.latency_ms, 2),
+        }
+
+        path = _get_gate_events_path()
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(event, ensure_ascii=False) + "\n")
+
+    except Exception as exc:
+        _gate_event_logger.debug("gate event emit failed (non-fatal): %s", exc)
+
+
 # ── 默认采样策略 ──────────────────────────────────────────────────────────
 
 _DEFAULT_POLICY = SamplingPolicy(
@@ -139,9 +202,8 @@ class GateResult:
     cost_breakdown: Optional[CostBreakdown] = None  # M2.P2
     datalog_verdict: Optional[str] = None            # M7.3
     semantic_verdict: Optional[dict] = None          # M7.3
-    layer_path: str = "datalog_only"                 # M7.3 + Phase 4: "datalog_only" | "trivial_allow" | "semantic" | "intent_allow" | "intent_block"
+    layer_path: str = "datalog_only"                 # M7.3
     kg_context: Optional[dict] = None                # Post-gate enrichment (not injected into semantic gate per ablation bf036b0)
-    intent_fact: Optional[IntentFact] = None         # Phase 4: Intent Decomposition result
 
     def to_dict(self) -> dict:
         d = {
@@ -197,7 +259,6 @@ def gate(
     triviality_config: Optional[TrivialityConfig] = None,
     semantic_config: Optional[SemanticGateConfig] = None,
     kg_context: Optional[dict] = None,
-    intent: Optional[IntentFact] = None,
 ) -> GateResult:
     """
     三层决策 pipeline 入口。
@@ -254,10 +315,9 @@ def gate(
         if kg_context is None and db is not None and semantic_config is not None:
             kg_context = _build_kg_context(facts, db)
 
-        # Step 4.6: 四层路由（M7.3 + Phase 4 Intent Decomposition）
+        # Step 4.6: 三层路由（M7.3）
         layer_path = "datalog_only"
         sem_verdict: Optional[dict] = None
-        intent_verdict_str: Optional[str] = None  # Track intent layer result
 
         if verdict.action in ("block", "warn", "rewrite", "require"):
             # 硬裁决 → 直接返回，不需要 LLM
@@ -267,34 +327,9 @@ def gate(
             # Layer 2: Triviality Filter
             if triviality_config is not None and is_trivial(facts, triviality_config):
                 layer_path = "trivial_allow"
-            # Layer 2.5: Intent Decomposition (Phase 4)
-            elif intent is not None and intent.error is None:
-                iv, ir = intent_verdict(intent)
-                intent_verdict_str = iv
-                if iv == "allow":
-                    # Intent says benign goal → fast-track allow, skip semantic gate
-                    layer_path = "intent_allow"
-                elif iv == "block":
-                    # Intent says harmful goal → upgrade to block
-                    layer_path = "intent_block"
-                    verdict = Verdict(
-                        action="block",
-                        rule_id="intent-decomposition",
-                        reason=f"[intent block] {ir}",
-                        all_matched=verdict.all_matched,
-                    )
-                elif semantic_config is not None:
-                    # Intent uncertain → fall through to semantic gate
-                    layer_path = "semantic"
-                    sem_verdict = _run_semantic_gate(
-                        tool_call, facts, datalog_verdict_str,
-                        None, semantic_config,
-                    )
-                    verdict = _apply_semantic_verdict(
-                        verdict, datalog_verdict_str, sem_verdict, semantic_config,
-                    )
             elif semantic_config is not None:
-                # No intent available → original semantic gate path
+                # Layer 3: Semantic Gate
+                # kg_context=None: ablation showed KG injection hurts small models (bf036b0)
                 layer_path = "semantic"
                 sem_verdict = _run_semantic_gate(
                     tool_call, facts, datalog_verdict_str,
@@ -306,34 +341,8 @@ def gate(
             # else: no semantic config → pure datalog (backward compatible)
 
         elif verdict.action in ("confirm", "delegate"):
-            # confirm → Datalog raised a concern. Intent cannot override this.
-            # Intent block can upgrade, but intent allow must NOT bypass semantic gate.
-            # Rationale: Datalog confirm means structural signals detected risk;
-            # intent classification (~92-95% accuracy) is insufficient to override.
-            if intent is not None and intent.error is None:
-                iv, ir = intent_verdict(intent)
-                intent_verdict_str = iv
-                if iv == "block":
-                    # Intent agrees with Datalog concern → upgrade to block
-                    layer_path = "intent_block"
-                    verdict = Verdict(
-                        action="block",
-                        rule_id=f"{verdict.rule_id}+intent-upgrade",
-                        reason=f"[intent block] {ir}",
-                        all_matched=verdict.all_matched,
-                    )
-                elif semantic_config is not None:
-                    # Intent allow/confirm/unknown on Datalog confirm → semantic gate decides
-                    # Intent signal passed as context but does NOT bypass
-                    layer_path = "semantic"
-                    sem_verdict = _run_semantic_gate(
-                        tool_call, facts, datalog_verdict_str,
-                        None, semantic_config,
-                    )
-                    verdict = _apply_semantic_verdict(
-                        verdict, datalog_verdict_str, sem_verdict, semantic_config,
-                    )
-            elif semantic_config is not None:
+            # confirm → Semantic Gate 可降级为 allow（降 FPR）
+            if semantic_config is not None:
                 layer_path = "semantic"
                 sem_verdict = _run_semantic_gate(
                     tool_call, facts, datalog_verdict_str,
@@ -380,7 +389,7 @@ def gate(
             if logged:
                 decision_log_id = sk
 
-        return GateResult(
+        result = GateResult(
             verdict=verdict,
             proof_trace=proof_trace,
             decision_log_id=decision_log_id,
@@ -391,8 +400,24 @@ def gate(
             semantic_verdict=sem_verdict,
             layer_path=layer_path,
             kg_context=kg_context,  # preserved for post-gate enrichment
-            intent_fact=intent,     # Phase 4
         )
+
+        # Loop 42: 事件推送到 gate_events.jsonl
+        _emit_gate_event(result, tool_call)
+
+        # Loop 42: 边权重贝叶斯更新
+        if db is not None and result.kg_context is not None:
+            try:
+                from nous.edge_weight import update_edge_weights
+                update_edge_weights(db, {
+                    "verdict": result.verdict.action,
+                    "kg_context": result.kg_context,
+                    "facts": result.facts,
+                })
+            except Exception as exc:
+                _gate_event_logger.debug("edge weight update failed (non-fatal): %s", exc)
+
+        return result
 
     except ConstraintLoadError as e:  # FAIL_CLOSED: 约束加载失败 → confirm
         import logging as _logging

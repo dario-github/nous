@@ -370,6 +370,11 @@ async function refreshKG() {
   try {
     const kg = await fetch(API+'/kg').then(r=>r.json());
     const oldIds = new Set(nodes.map(n=>n.id));
+    const oldConfMap = {};
+    links.forEach(l => {
+      const key = `${sid(l.source)}-${sid(l.target)}`;
+      oldConfMap[key] = l.effective_confidence;
+    });
 
     const born = kg.entities.filter(e => !oldIds.has(e.id));
 
@@ -377,11 +382,35 @@ async function refreshKG() {
 
     born.forEach(e => { if(nodeMap[e.id]) nodeMap[e.id].isNew = true; });
 
+    // Detect confidence changes for edge weight animation
+    links.forEach(l => {
+      const key = `${sid(l.source)}-${sid(l.target)}`;
+      const oldConf = oldConfMap[key];
+      if (oldConf !== undefined && Math.abs(oldConf - l.effective_confidence) > 0.01) {
+        l._confChanged = true;
+        l._confDelta = l.effective_confidence - oldConf;
+      }
+    });
+
     sim.nodes(nodes);
     sim.force('link').links(links);
     sim.alpha(.3).restart();
 
     renderGraph();
+
+    // Flash edges with changed confidence
+    linkG.selectAll('line').each(function(d) {
+      if (d._confChanged) {
+        const flashColor = d._confDelta > 0 ? RED : GREEN;
+        d3.select(this)
+          .attr('stroke', flashColor)
+          .transition().duration(300).attr('stroke-opacity', .9)
+          .transition().duration(2000).attr('stroke', CYAN)
+          .attr('stroke-opacity', dd => Math.max(.15, .1 + dd.effective_confidence * .5));
+        delete d._confChanged;
+        delete d._confDelta;
+      }
+    });
 
     born.forEach(e => {
       addEvent('kg', `New entity: ${(e.props||{}).name || e.id.split(':').pop()} (${e.type})`);
@@ -398,7 +427,7 @@ function updateStats(stats) {
   }
 }
 
-// ── SSE Event Stream ─────────────────────────────────────────────────────
+// ── SSE Event Stream (Loop 42: real gate events + incremental KG) ─────────
 function connectSSE() {
   const es = new EventSource(API+'/events');
   const indicator = document.getElementById('live-indicator');
@@ -411,13 +440,25 @@ function connectSSE() {
         return;
       }
       if (evt.type === 'gate_decision') {
-        const v = evt.data.verdict;
+        const d = evt.data;
+        const v = d.verdict;
         const cls = v === 'block' ? 'block' : v === 'confirm' ? 'confirm' : '';
-        addEvent(cls, `${evt.data.tool} -> ${v}`);
+        const rules = (d.matched_rules || []).join(',');
+        const detail = rules ? ` [${rules}]` : '';
+        addEvent(cls, `${d.tool} → ${v.toUpperCase()}${detail} (${d.layer_path||'?'}, ${d.latency_ms?.toFixed(0)||'?'}ms)`);
+
+        // Highlight KG entities involved in this decision
+        if (d.kg_entities && d.kg_entities.length) {
+          highlightGateDecision(d.kg_entities, v);
+        }
+      }
+      if (evt.type === 'shadow_decision') {
+        const d = evt.data;
+        addEvent('', `[shadow] ${d.tool} → ${d.verdict}`);
       }
       if (evt.type === 'kg_changed') {
-        addEvent('kg', `KG changed: ${evt.data.count} elements`);
-        refreshKG();
+        addEvent('kg', `KG 变更: ${evt.data.entities||'?'}E / ${evt.data.relations||'?'}R`);
+        refreshKG();  // Incremental refresh with new entity animation
       }
     } catch(err) {}
   };
@@ -425,6 +466,42 @@ function connectSSE() {
     indicator.style.color = RED;
     setTimeout(() => connectSSE(), 5000);
   };
+}
+
+// ── Highlight nodes/edges for a gate decision (electric pulse) ────────────
+function highlightGateDecision(entityIds, verdict) {
+  if (!entityIds || !entityIds.length) return;
+
+  const ids = new Set(entityIds);
+  const vColor = verdict === 'block' ? RED : verdict === 'confirm' ? ORANGE : GREEN;
+
+  // Pulse involved nodes
+  entityIds.forEach((id, i) => {
+    setTimeout(() => {
+      nodeG.selectAll('g.node').filter(d => d.id === id)
+        .select('.main-circle')
+        .transition().duration(200)
+        .attr('stroke', vColor).attr('stroke-width', 5)
+        .attr('stroke-opacity', 1)
+        .transition().duration(1500)
+        .attr('stroke', d => COLOR[d.type]||COLOR.unknown)
+        .attr('stroke-width', 1.5).attr('stroke-opacity', .5);
+    }, i * 150);
+  });
+
+  // Pulse involved edges
+  linkG.selectAll('line').each(function(d) {
+    const s = sid(d.source), t = sid(d.target);
+    if (ids.has(s) || ids.has(t)) {
+      d3.select(this)
+        .transition().duration(200)
+        .attr('stroke', vColor).attr('stroke-opacity', .9).attr('stroke-width', 4)
+        .transition().duration(2000)
+        .attr('stroke', CYAN)
+        .attr('stroke-opacity', dd => Math.max(.15, .1 + dd.effective_confidence * .5))
+        .attr('stroke-width', dd => Math.max(.5, dd.effective_confidence * 3));
+    }
+  });
 }
 
 // ── Event Feed ───────────────────────────────────────────────────────────
@@ -461,6 +538,7 @@ async function askNous() {
 
     const v = data.verdict?.action || 'unknown';
     const vColor = v==='block' ? RED : v==='allow' ? GREEN : ORANGE;
+    const ruleId = data.verdict?.rule_id || '';
 
     // Build inline proof trace
     const trace = data.proof_trace || {};
@@ -485,6 +563,27 @@ async function askNous() {
       inlineTraceHtml += '</div></div>';
     }
 
+    // Reasoning chain (Datalog path)
+    let chainHtml = '';
+    const chain = data.reasoning_chain || [];
+    if (chain.length) {
+      chainHtml = `<div style="margin-top:6px;padding:6px 8px;background:rgba(0,212,255,.04);
+        border-radius:4px;border-left:2px solid var(--cyan);font-size:.55rem">
+        <span style="color:var(--cyan);font-weight:700">推理链路</span>`;
+      chain.forEach(c => {
+        if (c.step === 'entity_lookup') {
+          chainHtml += `<div>🔍 ${c.found} <span style="color:var(--dim)">(${c.type}, conf=${(c.confidence*100).toFixed(0)}%)</span></div>`;
+        } else if (c.step === 'relation') {
+          chainHtml += `<div>→ ${c.from} <span style="color:var(--purple)">${c.type}</span> ${c.to}</div>`;
+        } else if (c.step === 'constraint_match') {
+          chainHtml += `<div>⚡ <span style="color:var(--red)">${c.rule_id}</span> matched ${JSON.stringify(c.bindings||{})}</div>`;
+        } else if (c.step === 'category_policy') {
+          chainHtml += `<div>📋 category:${c.category} (conf=${(c.confidence*100).toFixed(0)}%)</div>`;
+        }
+      });
+      chainHtml += '</div>';
+    }
+
     // Semantic verdict section
     let semanticHtml = '';
     if (data.semantic_verdict) {
@@ -500,12 +599,14 @@ async function askNous() {
 
     result.innerHTML =
       `<div style="color:${vColor};font-weight:700;font-size:.8rem">${v.toUpperCase()}</div>`+
+      (ruleId ? `<div style="color:var(--dim);font-size:.55rem">rule: ${ruleId}</div>` : '')+
       `<div style="margin-top:4px">${data.verdict?.reason || ''}</div>`+
       `<div style="margin-top:4px;color:var(--dim);font-size:.55rem">层路径: ${data.layer_path||'—'} · ${data.latency_ms?.toFixed(1)||'?'}ms</div>`+
       (data.kg_context?.length ?
         `<div style="margin-top:4px;color:var(--dim);font-size:.55rem">KG 关联: ${data.kg_context.map(c=>
           `<span style="color:var(--cyan);cursor:pointer" onclick="focusNode('${c.id}')">${c.name}</span>`
         ).join(', ')}</div>` : '')+
+      chainHtml +
       semanticHtml +
       inlineTraceHtml +
       `<div style="margin-top:6px"><a href="#" onclick="showTrace(event)" style="color:var(--cyan);font-size:.55rem">全屏查看轨迹 →</a></div>`;

@@ -38,6 +38,7 @@ DB_PATH = Path(__file__).parent.parent / "nous.db"
 SHADOW_LOG = Path(__file__).parent.parent / "logs" / "shadow_live.jsonl"
 SHADOW_STATS = Path(__file__).parent.parent / "logs" / "shadow_stats.json"
 DECISION_LOG = Path(__file__).parent.parent / "logs" / "decisions.jsonl"
+GATE_EVENTS = Path(__file__).parent.parent / "logs" / "gate_events.jsonl"
 
 
 # ── Inline effective_confidence (edge_weight module doesn't exist) ──────
@@ -232,7 +233,7 @@ class ReasonRequest(BaseModel):
 
 @app.post("/api/reason")
 def reason(req: ReasonRequest):
-    """Interactive reasoning — simulate gate() and return proof trace."""
+    """Interactive reasoning — real gate() + KG Datalog query."""
     from nous.gate import gate, GateResult
 
     db = _get_db()
@@ -242,13 +243,19 @@ def reason(req: ReasonRequest):
     else:
         tc = _question_to_tool_call(req.question)
 
+    # Enrich tool_call with KG context before gate
+    kg_pre_context = _get_related_kg_context(db, tc)
+    if kg_pre_context:
+        tc["_kg_hints"] = [c["id"] for c in kg_pre_context]
+
     result: GateResult = gate(
         tc,
         constraints_dir=Path(__file__).parent.parent / "ontology" / "constraints",
         db=db,
     )
 
-    kg_context = _get_related_kg_context(db, tc)
+    # Post-gate: Datalog reasoning — find entity paths and policy chains
+    reasoning_chain = _build_reasoning_chain(db, tc, result)
 
     return {
         "question": req.question,
@@ -256,12 +263,14 @@ def reason(req: ReasonRequest):
         "verdict": {
             "action": result.verdict.action,
             "reason": result.verdict.reason,
+            "rule_id": result.verdict.rule_id,
         },
         "proof_trace": result.proof_trace.to_dict(),
         "facts_extracted": result.facts if hasattr(result, "facts") else {},
         "layer_path": result.layer_path if hasattr(result, "layer_path") else "",
         "semantic_verdict": result.semantic_verdict if hasattr(result, "semantic_verdict") else None,
-        "kg_context": kg_context,
+        "kg_context": kg_pre_context,
+        "reasoning_chain": reasoning_chain,
         "latency_ms": result.proof_trace.total_ms,
     }
 
@@ -345,6 +354,63 @@ def _get_related_kg_context(db: NousDB, tool_call: dict) -> list:
     return context[:10]
 
 
+def _build_reasoning_chain(db: NousDB, tool_call: dict, gate_result) -> list:
+    """Build a Datalog reasoning chain: entity→relation→policy→verdict.
+
+    Uses real KG queries to explain WHY the verdict was reached,
+    not pattern matching.
+    """
+    chain = []
+    tool_name = tool_call.get("tool_name") or tool_call.get("name", "")
+
+    try:
+        # 1. Find tool entity and its governance relations
+        if tool_name:
+            tool_ent = db.find_entity(f"tool:{tool_name}")
+            if tool_ent:
+                chain.append({
+                    "step": "entity_lookup",
+                    "found": f"tool:{tool_name}",
+                    "type": "tool",
+                    "confidence": tool_ent.get("confidence", 1.0),
+                })
+                rels = db.related(f"tool:{tool_name}", direction="out")
+                for r in rels[:5]:
+                    chain.append({
+                        "step": "relation",
+                        "from": f"tool:{tool_name}",
+                        "to": r.get("to_id", ""),
+                        "type": r.get("rtype", ""),
+                        "confidence": r.get("confidence", 1.0),
+                    })
+
+        # 2. Check matched constraint rules in proof trace
+        if gate_result.proof_trace and gate_result.proof_trace.steps:
+            for step in gate_result.proof_trace.steps:
+                if step.verdict == "match":
+                    chain.append({
+                        "step": "constraint_match",
+                        "rule_id": step.rule_id,
+                        "bindings": step.fact_bindings,
+                    })
+
+        # 3. Find category policies
+        category = (gate_result.facts or {}).get("category", "")
+        if category:
+            cat_ent = db.find_entity(f"category:{category}")
+            if cat_ent:
+                chain.append({
+                    "step": "category_policy",
+                    "category": category,
+                    "confidence": cat_ent.get("confidence", 1.0),
+                })
+
+    except Exception:
+        pass
+
+    return chain
+
+
 # ── Timeline (fixed: use _query_with_params) ────────────────────────────
 @app.get("/api/timeline/{entity_id:path}")
 def get_timeline(entity_id: str):
@@ -362,44 +428,85 @@ def get_timeline(entity_id: str):
         return {"entity": None, "relations": [], "error": str(exc)}
 
 
-# ── SSE Event Stream ────────────────────────────────────────────────────
+# ── SSE Event Stream (Loop 42: real gate events) ──────────────────────────
 @app.get("/api/events")
 async def event_stream():
-    """SSE stream — push KG changes and gate decisions in real-time."""
+    """SSE stream — push real gate decisions from gate_events.jsonl."""
     async def generate():
-        last_shadow_size = SHADOW_LOG.stat().st_size if SHADOW_LOG.exists() else 0
+        # Track file positions for both event sources
+        gate_size = GATE_EVENTS.stat().st_size if GATE_EVENTS.exists() else 0
+        shadow_size = SHADOW_LOG.stat().st_size if SHADOW_LOG.exists() else 0
         last_kg_hash = None
 
         while True:
             events = []
 
+            # Primary: gate_events.jsonl (real-time gate decisions)
+            if GATE_EVENTS.exists():
+                current = GATE_EVENTS.stat().st_size
+                if current > gate_size:
+                    with open(GATE_EVENTS, encoding="utf-8") as f:
+                        f.seek(gate_size)
+                        new_lines = f.readlines()
+                    for line in new_lines[-10:]:
+                        try:
+                            entry = json.loads(line.strip())
+                            tc = entry.get("tool_call", {})
+                            events.append({
+                                "type": "gate_decision",
+                                "data": {
+                                    "tool": tc.get("tool_name", "?"),
+                                    "action_type": tc.get("action_type", ""),
+                                    "verdict": entry.get("verdict", "?"),
+                                    "reason": entry.get("reason", ""),
+                                    "matched_rules": entry.get("matched_rules", []),
+                                    "kg_entities": entry.get("kg_entities_involved", []),
+                                    "layer_path": entry.get("layer_path", ""),
+                                    "latency_ms": entry.get("latency_ms", 0),
+                                    "ts": entry.get("ts", 0),
+                                }
+                            })
+                        except json.JSONDecodeError:
+                            pass
+                    gate_size = current
+
+            # Secondary: shadow_live.jsonl (legacy shadow decisions)
             if SHADOW_LOG.exists():
-                current_size = SHADOW_LOG.stat().st_size
-                if current_size > last_shadow_size:
+                current = SHADOW_LOG.stat().st_size
+                if current > shadow_size:
                     with open(SHADOW_LOG) as f:
-                        f.seek(last_shadow_size)
+                        f.seek(shadow_size)
                         new_lines = f.readlines()
                     for line in new_lines[-5:]:
                         try:
                             entry = json.loads(line.strip())
                             events.append({
-                                "type": "gate_decision",
+                                "type": "shadow_decision",
                                 "data": {
-                                    "tool": entry.get("tool_name", "?"),
-                                    "verdict": entry.get("verdict", "?"),
-                                    "ts": entry.get("timestamp", 0),
+                                    "tool": entry.get("tool", entry.get("tool_name", "?")),
+                                    "verdict": entry.get("nous_verdict", "?"),
+                                    "ts": entry.get("ts", 0),
                                 }
                             })
                         except json.JSONDecodeError:
                             pass
-                    last_shadow_size = current_size
+                    shadow_size = current
 
+            # KG change detection
             try:
                 db = _get_db()
                 count = db.count_entities() + db.count_relations()
                 kg_hash = f"{count}"
                 if last_kg_hash and kg_hash != last_kg_hash:
-                    events.append({"type": "kg_changed", "data": {"count": count}})
+                    snapshot = _build_kg_snapshot(db)
+                    events.append({
+                        "type": "kg_changed",
+                        "data": {
+                            "count": count,
+                            "entities": len(snapshot["entities"]),
+                            "relations": len(snapshot["relations"]),
+                        }
+                    })
                 last_kg_hash = kg_hash
             except Exception:
                 pass
@@ -410,7 +517,7 @@ async def event_stream():
             if not events:
                 yield f"data: {json.dumps({'type': 'heartbeat', 'ts': time.time()})}\n\n"
 
-            await asyncio.sleep(3)
+            await asyncio.sleep(2)
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 
