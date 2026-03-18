@@ -308,8 +308,17 @@ async def event_stream():
     return StreamingResponse(generate(), media_type="text/event-stream")
 
 
+# Root → redirect to live.html
+from fastapi.responses import RedirectResponse
+
+@app.get("/", include_in_schema=False)
+async def root():
+    return RedirectResponse(url="/live.html")
+
 # Serve static files (the dashboard frontend)
-app.mount("/", StaticFiles(directory=str(Path(__file__).parent), html=True), name="static")
+app.mount("/static", StaticFiles(directory=str(Path(__file__).parent), html=True), name="static")
+# Also mount at root for direct file access (live.html, js/, etc.)
+app.mount("/", StaticFiles(directory=str(Path(__file__).parent), html=True), name="root-static")
 
 if __name__ == "__main__":
     import uvicorn
