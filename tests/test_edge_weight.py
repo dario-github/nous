@@ -1,156 +1,141 @@
-"""Tests for M11.2 — 概率边权重 + 时序衰减"""
-import math
-import time
-
+"""Tests for nous.edge_weight — Bayesian edge weight updates."""
+import json
 import pytest
-
-from nous.edge_weight import (
-    effective_confidence,
-    record_access,
-    set_decay_half_life,
-    rank_relations_by_effective_confidence,
-    DEFAULT_HALF_LIFE_SECS,
-    ACCESS_BOOST_MAX,
-)
+from nous.db import NousDB
+from nous.schema import Entity, Relation
+from nous.edge_weight import update_edge_weights, _extract_entity_ids
 
 
-class TestEffectiveConfidence:
-    """衰减计算测试"""
-
-    def test_no_decay_at_creation(self):
-        """刚创建的边，有效置信度 ≈ 基础置信度"""
-        now = time.time()
-        ec = effective_confidence(1.0, created_at=now, now=now)
-        assert ec == pytest.approx(1.0, abs=0.01)
-
-    def test_half_decay_at_half_life(self):
-        """经过一个半衰期，置信度 ≈ 0.5"""
-        now = time.time()
-        created = now - DEFAULT_HALF_LIFE_SECS  # 90 天前
-        ec = effective_confidence(1.0, created_at=created, now=now)
-        assert ec == pytest.approx(0.5, abs=0.01)
-
-    def test_quarter_at_two_half_lives(self):
-        """经过两个半衰期，置信度 ≈ 0.25"""
-        now = time.time()
-        created = now - 2 * DEFAULT_HALF_LIFE_SECS
-        ec = effective_confidence(1.0, created_at=created, now=now)
-        assert ec == pytest.approx(0.25, abs=0.01)
-
-    def test_base_confidence_scales(self):
-        """基础置信度影响衰减后的值"""
-        now = time.time()
-        created = now - DEFAULT_HALF_LIFE_SECS
-        ec = effective_confidence(0.8, created_at=created, now=now)
-        assert ec == pytest.approx(0.4, abs=0.01)
-
-    def test_custom_half_life(self):
-        """自定义半衰期"""
-        now = time.time()
-        half_life_7d = 7 * 86400
-        created = now - half_life_7d  # 7 天前
-        props = {"decay_half_life": half_life_7d}
-        ec = effective_confidence(1.0, created_at=created, props=props, now=now)
-        assert ec == pytest.approx(0.5, abs=0.01)
-
-    def test_clamp_to_1(self):
-        """boost 不应让置信度超过 1.0"""
-        now = time.time()
-        props = {"last_accessed": now}  # 刚被访问
-        ec = effective_confidence(1.0, created_at=now, props=props, now=now)
-        assert ec <= 1.0
-
-    def test_very_old_near_zero(self):
-        """非常老的边，有效置信度趋近于 0"""
-        now = time.time()
-        created = now - 365 * 86400 * 3  # 3 年前
-        ec = effective_confidence(1.0, created_at=created, now=now)
-        assert ec < 0.01
+@pytest.fixture
+def db():
+    """In-memory NousDB with test entities and relations."""
+    d = NousDB(":memory:")
+    d.upsert_entities([
+        Entity(id="tool:send_email", etype="tool", labels=["tool"]),
+        Entity(id="person:alice", etype="person", labels=["person"]),
+    ])
+    d.upsert_relations([
+        Relation(from_id="tool:send_email", to_id="person:alice", rtype="governed_by",
+                 properties={"alpha": 1.0, "beta": 1.0}, confidence=0.5),
+    ])
+    return d
 
 
-class TestAccessBoost:
-    """访问 boost 测试"""
-
-    def test_recent_access_boosts(self):
-        """最近被访问的边有 boost"""
-        now = time.time()
-        created = now - DEFAULT_HALF_LIFE_SECS  # 90 天前 → base ≈ 0.5
-        ec_no_access = effective_confidence(1.0, created_at=created, now=now)
-        ec_with_access = effective_confidence(
-            1.0, created_at=created,
-            props={"last_accessed": now},
-            now=now
-        )
-        assert ec_with_access > ec_no_access
-        assert ec_with_access - ec_no_access == pytest.approx(ACCESS_BOOST_MAX, abs=0.02)
-
-    def test_old_access_no_boost(self):
-        """8 天前的访问不再有 boost"""
-        now = time.time()
-        created = now - DEFAULT_HALF_LIFE_SECS
-        ec_no = effective_confidence(1.0, created_at=created, now=now)
-        ec_old = effective_confidence(
-            1.0, created_at=created,
-            props={"last_accessed": now - 8 * 86400},
-            now=now
-        )
-        assert ec_old == pytest.approx(ec_no, abs=0.01)
+def _read_relation(db: NousDB, fid: str, tid: str, rt: str) -> dict:
+    rows = db._query_with_params(
+        "?[from_id, to_id, rtype, props, confidence] := "
+        "*relation{from_id, to_id, rtype, props, confidence}, "
+        "from_id = $fid, to_id = $tid, rtype = $rt",
+        {"fid": fid, "tid": tid, "rt": rt},
+    )
+    assert len(rows) == 1, f"Expected 1 row, got {len(rows)}"
+    return rows[0]
 
 
-class TestRecordAccess:
-    """record_access 测试"""
+class TestExtractEntityIds:
+    def test_from_kg_context(self):
+        result = _extract_entity_ids({
+            "kg_context": {"entities": [{"id": "tool:x"}], "policies": [{"id": "cat:y"}]},
+            "facts": {},
+        })
+        assert result == {"tool:x", "cat:y"}
 
-    def test_sets_last_accessed(self):
-        """记录访问时间"""
-        props = record_access({})
-        assert "last_accessed" in props
-        assert props["access_count"] == 1
+    def test_from_facts(self):
+        result = _extract_entity_ids({
+            "kg_context": None,
+            "facts": {"tool_name": "send_email", "target": "person:alice"},
+        })
+        assert "send_email" in result
+        assert "tool:send_email" in result
+        assert "person:alice" in result
 
-    def test_increments_count(self):
-        """多次访问累加"""
-        props = record_access({"access_count": 5})
-        assert props["access_count"] == 6
-
-    def test_does_not_mutate_original(self):
-        """不修改原 props"""
-        original = {"foo": "bar"}
-        new = record_access(original)
-        assert "last_accessed" not in original
-        assert "foo" in new
-
-
-class TestSetDecayHalfLife:
-    """set_decay_half_life 测试"""
-
-    def test_sets_in_seconds(self):
-        """天 → 秒"""
-        props = set_decay_half_life({}, 30)
-        assert props["decay_half_life"] == 30 * 86400
+    def test_empty(self):
+        assert _extract_entity_ids({"verdict": "block"}) == set()
 
 
-class TestRanking:
-    """rank_relations_by_effective_confidence 测试"""
+class TestUpdateEdgeWeights:
+    def test_block_increases_alpha(self, db):
+        gate_result = {
+            "verdict": "block",
+            "kg_context": {"entities": [{"id": "tool:send_email"}], "policies": []},
+            "facts": {},
+        }
+        count = update_edge_weights(db, gate_result)
+        assert count == 1
+        rel = _read_relation(db, "tool:send_email", "person:alice", "governed_by")
+        props = rel["props"] if isinstance(rel["props"], dict) else json.loads(rel["props"])
+        assert props["alpha"] == pytest.approx(2.0)
+        assert props["beta"] == pytest.approx(1.0)
+        assert rel["confidence"] == pytest.approx(2.0 / 3.0)
 
-    def test_sorts_descending(self):
-        """按有效置信度降序"""
-        now = time.time()
-        rels = [
-            {"confidence": 0.5, "created_at": now, "props": {}},
-            {"confidence": 1.0, "created_at": now, "props": {}},
-            {"confidence": 0.8, "created_at": now, "props": {}},
-        ]
-        ranked = rank_relations_by_effective_confidence(rels, now=now)
-        scores = [r["effective_confidence"] for r in ranked]
-        assert scores == sorted(scores, reverse=True)
-        assert scores[0] == pytest.approx(1.0, abs=0.01)
+    def test_allow_increases_beta(self, db):
+        gate_result = {
+            "verdict": "allow",
+            "kg_context": None,
+            "facts": {"tool_name": "send_email"},
+        }
+        count = update_edge_weights(db, gate_result)
+        assert count >= 1
+        rel = _read_relation(db, "tool:send_email", "person:alice", "governed_by")
+        props = rel["props"] if isinstance(rel["props"], dict) else json.loads(rel["props"])
+        assert props["alpha"] == pytest.approx(1.0)
+        assert props["beta"] == pytest.approx(1.5)
+        assert rel["confidence"] == pytest.approx(1.0 / 2.5)
 
-    def test_old_low_ranked(self):
-        """老的边排后面"""
-        now = time.time()
-        rels = [
-            {"confidence": 1.0, "created_at": now - 365 * 86400, "props": {}},  # 老
-            {"confidence": 0.7, "created_at": now, "props": {}},  # 新但低 confidence
-        ]
-        ranked = rank_relations_by_effective_confidence(rels, now=now)
-        # 新的 0.7 应该高于衰减后的老 1.0
-        assert ranked[0]["confidence"] == 0.7
+    def test_confirm_small_alpha_increase(self, db):
+        gate_result = {
+            "verdict": "confirm",
+            "kg_context": {"entities": [{"id": "tool:send_email"}], "policies": []},
+            "facts": {},
+        }
+        count = update_edge_weights(db, gate_result)
+        assert count == 1
+        rel = _read_relation(db, "tool:send_email", "person:alice", "governed_by")
+        props = rel["props"] if isinstance(rel["props"], dict) else json.loads(rel["props"])
+        assert props["alpha"] == pytest.approx(1.3)
+
+    def test_unknown_verdict_noop(self, db):
+        assert update_edge_weights(db, {"verdict": "warn", "facts": {}}) == 0
+
+    def test_no_entities_noop(self, db):
+        assert update_edge_weights(db, {"verdict": "block", "facts": {}}) == 0
+
+    def test_no_relations_returns_zero(self):
+        d = NousDB(":memory:")
+        d.upsert_entities([Entity(id="tool:orphan", etype="tool")])
+        gate_result = {
+            "verdict": "block",
+            "kg_context": {"entities": [{"id": "tool:orphan"}], "policies": []},
+            "facts": {},
+        }
+        assert update_edge_weights(d, gate_result) == 0
+
+    def test_deduplication(self, db):
+        """Same edge found via both from_id and to_id should only update once."""
+        gate_result = {
+            "verdict": "block",
+            "kg_context": {
+                "entities": [{"id": "tool:send_email"}, {"id": "person:alice"}],
+                "policies": [],
+            },
+            "facts": {},
+        }
+        count = update_edge_weights(db, gate_result)
+        assert count == 1  # single edge, not 2
+        rel = _read_relation(db, "tool:send_email", "person:alice", "governed_by")
+        props = rel["props"] if isinstance(rel["props"], dict) else json.loads(rel["props"])
+        assert props["alpha"] == pytest.approx(2.0)  # updated once, not twice
+
+    def test_cumulative_updates(self, db):
+        """Two sequential block verdicts should accumulate."""
+        gate_result = {
+            "verdict": "block",
+            "kg_context": {"entities": [{"id": "tool:send_email"}], "policies": []},
+            "facts": {},
+        }
+        update_edge_weights(db, gate_result)
+        update_edge_weights(db, gate_result)
+        rel = _read_relation(db, "tool:send_email", "person:alice", "governed_by")
+        props = rel["props"] if isinstance(rel["props"], dict) else json.loads(rel["props"])
+        assert props["alpha"] == pytest.approx(3.0)
+        assert rel["confidence"] == pytest.approx(3.0 / 4.0)
