@@ -286,19 +286,21 @@ class NousDB:
         entity_id: str,
         rtype: Optional[str] = None,
         direction: str = "out",
+        rank_by_effective: bool = False,
     ) -> list[dict]:
         """
         查找实体的直接关系邻居。
 
         direction: "out"(出边), "in"(入边), "both"(双向)
         rtype: 可选过滤关系类型
+        rank_by_effective: 若 True，按 effective_confidence（含衰减）降序排列
         """
         results = []
 
         if direction in ("out", "both"):
             q = (
-                "?[to_id, rtype, props, confidence] := "
-                "*relation{from_id, to_id, rtype, props, confidence}, "
+                "?[to_id, rtype, props, confidence, created_at] := "
+                "*relation{from_id, to_id, rtype, props, confidence, created_at}, "
                 "from_id = $eid"
             )
             if rtype:
@@ -310,8 +312,8 @@ class NousDB:
 
         if direction in ("in", "both"):
             q = (
-                "?[from_id, rtype, props, confidence] := "
-                "*relation{from_id, to_id, rtype, props, confidence}, "
+                "?[from_id, rtype, props, confidence, created_at] := "
+                "*relation{from_id, to_id, rtype, props, confidence, created_at}, "
                 "to_id = $eid"
             )
             if rtype:
@@ -321,7 +323,43 @@ class NousDB:
                 r["direction"] = "in"
             results.extend(rows)
 
+        if rank_by_effective and results:
+            from nous.edge_weight import rank_relations_by_effective_confidence
+            results = rank_relations_by_effective_confidence(results)
+
         return results
+
+    def record_relation_access(self, from_id: str, to_id: str, rtype: str):
+        """记录关系被访问（M11.2 使用频率反馈）。
+
+        更新 relation.props 中的 last_accessed 和 access_count。
+        """
+        from nous.edge_weight import record_access
+        import json as _json
+
+        rows = self._query_with_params(
+            "?[props, confidence, source, created_at] := "
+            "*relation{from_id, to_id, rtype, props, confidence, source, created_at}, "
+            "from_id = $fid, to_id = $tid, rtype = $rt",
+            {"fid": from_id, "tid": to_id, "rt": rtype},
+        )
+        if not rows:
+            return
+
+        row = rows[0]
+        old_props = row["props"] if isinstance(row["props"], dict) else {}
+        new_props = record_access(old_props)
+
+        self.db.run(
+            "?[from_id, to_id, rtype, props, confidence, source, created_at] "
+            "<- [[$fid, $tid, $rt, $props, $conf, $src, $cat]] "
+            ":put relation { from_id, to_id, rtype => props, confidence, source, created_at }",
+            {
+                "fid": from_id, "tid": to_id, "rt": rtype,
+                "props": new_props, "conf": row["confidence"],
+                "src": row["source"], "cat": row["created_at"],
+            },
+        )
 
     def path(
         self,

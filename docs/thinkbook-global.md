@@ -28,9 +28,10 @@
 
 | 指标 | 值 | 说明 |
 |------|------|------|
-| Shadow | 14,043 calls / 99.32% | 稳定，但一直是 shadow 没切 active |
+| Shadow | 14,238 calls / 99.33% | 稳定，但一直是 shadow 没切 active |
 | KG 实体 | 56 | 远远不够，目标 >500 |
-| 关系类型 | 1 (RELATED_TO) | 目标 9+ |
+| 关系类型 | 5 (DEPENDS_ON/PART_OF/WORKS_ON/KNOWS/governed_by) | ✅ RELATED_TO 清零 |
+| 时间维度 | 56/56 实体有 valid_from | ✅ M11.1 完成 |
 | Tests | 672 | green |
 | AgentHarm L_val | 0.0 | 满分但不代表系统有用 |
 
