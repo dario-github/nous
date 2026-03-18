@@ -798,6 +798,44 @@ def _has_dual_use_material_education_signal(text: str) -> bool:
     return has_material and has_context
 
 
+# ── Loop 43: IT 运维/备份信号 ─────────────────────────────────────────────────
+# 目的：修复 61-1 (SSH→backup script) 稳定 FP
+# "SSH 登录 + 运行备份脚本"是合法运维，不是 cybercrime
+# 触发条件：【运维动作】AND【合法目的】AND【无恶意意图】
+
+_IT_OPS_PATTERNS = [
+    re.compile(r"\b(back\s*up|backup)\s+.{0,30}(file|director|document|data|server|system)", re.I),
+    re.compile(r"\b(file|data|document)\s+.{0,20}(back\s*up|backup|restore|recover)", re.I),
+    re.compile(r"\bSSH\s+.{0,30}(server|config|into|connect)", re.I),
+    re.compile(r"\b(check|verify|inspect)\s+.{0,20}(config|configuration|log|status)", re.I),
+    re.compile(r"\b(system\s+admin|sysadmin|devops|maintenance|cron\s*job)", re.I),
+    re.compile(r"\b(run|execute)\s+.{0,20}(backup|maintenance|deploy|monitoring)\s+(script|tool)", re.I),
+    re.compile(r"\b(server|remote)\s+.{0,20}(maintenance|backup|deploy|update)", re.I),
+]
+
+_ANTI_IT_OPS_PATTERNS = [
+    re.compile(r"\b(exfiltrat|steal|dump|extract\s+.{0,20}(credential|data|customer)|harvest\s+password)", re.I),
+    re.compile(r"\b(ransom|encrypt\s+.{0,20}demand|bitcoin\s+.{0,10}pay)", re.I),
+    re.compile(r"\b(unauthorized|without\s+(any\s+)?authorization|without\s+permission|illegally|breach)", re.I),
+    re.compile(r"\b(backdoor|rootkit|keylogger|trojan|malware)", re.I),
+    re.compile(r"\b(wipe|destroy|sabotag|corrupt)\s+.{0,20}(data|file|system)", re.I),
+    re.compile(r"\b(dark\s*web|black\s*market|for\s+sale)\b", re.I),
+]
+
+
+def _has_it_operations_signal(text: str) -> bool:
+    """检测合法 IT 运维/备份操作信号。
+
+    Loop 43: 修复 61-1 (Cybercrime FP — SSH + backup script on remote server)。
+    仅当【运维模式匹配】AND【无恶意意图】时触发。
+    """
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_IT_OPS_PATTERNS):
+        return False
+    return any(p.search(text) for p in _IT_OPS_PATTERNS)
+
+
 # ── M7.3: 选举虚假信息信号 ─────────────────────────────────────────────────
 # 目的：检测"以事实纠正为名传播选举虚假信息"的规避模式
 # 触发条件：
@@ -1207,6 +1245,9 @@ def extract_facts(tool_call: dict) -> dict:
 
     # Loop 41: 双用途化学材料教育信号
     facts["has_dual_use_material_education_signal"] = _has_dual_use_material_education_signal(prompt_text)
+
+    # Loop 43: IT 运维/备份信号（61-1 Cybercrime FP fix）
+    facts["has_it_operations_signal"] = _has_it_operations_signal(prompt_text)
 
     # M7.3: 选举虚假信息信号（ch-h08 Disinformation signal_abuse evasion）
     facts["has_election_disinformation_signal"] = _has_election_disinformation_signal(prompt_text)

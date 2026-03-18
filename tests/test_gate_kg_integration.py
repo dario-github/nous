@@ -202,7 +202,7 @@ class TestGateKgIntegration:
             if result.layer_path == "semantic":
                 call_args = mock_sem.call_args
                 kg_arg = call_args[0][3]
-                # Post-ablation: semantic gate always receives None
+                # KG injection disabled: Loop 43 confirmed FPR doubles even with DeepSeek-V3.1
                 assert kg_arg is None
             # kg_context preserved in result for post-gate enrichment
             assert result.kg_context == explicit_ctx
