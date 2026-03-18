@@ -309,8 +309,9 @@ def gate(
         # Step 4.5: KG Context Lookup（P1 from GPT-5.4 critique）
         # gate() 内部主动查 KG，不再依赖调用方传 kg_context
         # NOTE: KG context is queried but NOT injected into semantic gate prompt.
-        # Ablation experiment (bf036b0) showed KG injection causes TPR -12% regression
-        # on signal_abuse scenarios (qwen-turbo diluted by legitimacy noise).
+        # Ablation bf036b0: qwen-turbo TPR -12% with KG injection.
+        # Loop 43 re-test with DeepSeek-V3.1: FPR doubled (5.6% → 11.1%).
+        # Root cause: KG noise (auto-enriched entities) causes over-blocking.
         # KG context is preserved for post-gate enrichment (proof_trace, explanations).
         if kg_context is None and db is not None and semantic_config is not None:
             kg_context = _build_kg_context(facts, db)
@@ -329,7 +330,7 @@ def gate(
                 layer_path = "trivial_allow"
             elif semantic_config is not None:
                 # Layer 3: Semantic Gate
-                # kg_context=None: ablation showed KG injection hurts small models (bf036b0)
+                # kg_context=None: Loop 43 confirmed KG injection doubles FPR even with DeepSeek-V3.1
                 layer_path = "semantic"
                 sem_verdict = _run_semantic_gate(
                     tool_call, facts, datalog_verdict_str,
@@ -346,7 +347,7 @@ def gate(
                 layer_path = "semantic"
                 sem_verdict = _run_semantic_gate(
                     tool_call, facts, datalog_verdict_str,
-                    None, semantic_config,  # kg_context=None per ablation bf036b0
+                    None, semantic_config,  # kg_context=None per Loop 43 experiment
                 )
                 verdict = _apply_semantic_verdict(
                     verdict, datalog_verdict_str, sem_verdict, semantic_config,

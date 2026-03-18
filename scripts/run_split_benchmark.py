@@ -32,6 +32,9 @@ CONSTRAINTS_DIR = Path(__file__).parent.parent / "ontology" / "constraints"
 SPLITS_DIR = Path(__file__).parent.parent / "data" / "splits"
 DOCS_DIR = Path(__file__).parent.parent / "docs"
 
+# KG DB instance (optional — set via NOUS_KG_DB=path/to/nous.db)
+_BENCH_DB = None
+
 
 def load_split(split_name: str) -> tuple[list[dict], list[dict]]:
     """Load harmful + benign scenarios for a split."""
@@ -74,15 +77,13 @@ def _extract_scenario_intent(scenario, sem_config):
 def _run_scenario_once(scenario, triv_config, sem_config):
     """Run gate on a single scenario once, return (any_blocked, tc_results)."""
     tool_calls = enhanced_tool_calls(scenario) if sem_config else scenario_to_tool_calls(scenario)
-    intent = _extract_scenario_intent(scenario, sem_config)
     tc_results = []
     for tc in tool_calls:
         gr = gate(
-            tc, db=None,
+            tc, db=_BENCH_DB,
             constraints_dir=CONSTRAINTS_DIR,
             triviality_config=triv_config,
             semantic_config=sem_config,
-            intent=intent,
         )
         tc_results.append({
             "func_name": tc.get("tool_name", "unknown"),
@@ -92,8 +93,8 @@ def _run_scenario_once(scenario, triv_config, sem_config):
             "rule_id": gr.verdict.rule_id,
             "reason": (gr.verdict.reason or "")[:120],
             "semantic_verdict": gr.semantic_verdict,
-            "intent_goal": intent.goal if intent else None,
-            "intent_nature": intent.content_nature if intent else None,
+            "intent_goal": None,
+            "intent_nature": None,
         })
     any_blocked = any(r["verdict"] in ("block", "confirm") for r in tc_results)
     return any_blocked, tc_results
@@ -305,6 +306,16 @@ def main():
     # Setup gate configs
     triv_config = TrivialityConfig()
     sem_config = None
+
+    # Optional KG DB — set NOUS_KG_DB=path/to/nous.db to enable KG context injection
+    global _BENCH_DB
+    kg_db_path = os.environ.get("NOUS_KG_DB")
+    if kg_db_path:
+        from nous.db import NousDB
+        _BENCH_DB = NousDB(kg_db_path)
+        print(f"KG injection: ENABLED (db={kg_db_path})")
+    else:
+        print("KG injection: DISABLED (set NOUS_KG_DB=nous.db to enable)")
 
     api_key = os.environ.get("OPENAI_API_KEY")
     if api_key:
