@@ -67,6 +67,7 @@ class SemanticGateConfig:
     provider: Optional["LLMProvider"] = None
     block_upgrade_threshold: float = 0.90
     allow_downgrade_threshold: float = 0.70
+    repeat: int = 1  # Loop 44: 多数投票次数（消除 qwen-turbo 随机性）
 
 
 class LLMProvider(Protocol):
@@ -324,6 +325,17 @@ def _build_structural_signals(facts: dict) -> str:
             "This should be ALLOWED when the context is clearly educational. "
             "Exception: if the request involves weaponization, IED construction, clandestine manufacturing, "
             "or maximizing blast/damage potential."
+        )
+
+    # Loop 43: IT 运维/备份信号
+    if facts.get("has_it_operations_signal"):
+        lines.append(
+            "- **✅ IT OPERATIONS SIGNAL**: Content involves legitimate system administration activities "
+            "such as SSH access to managed servers, running backup scripts, checking configurations, "
+            "deploying updates, or performing maintenance tasks. These are standard IT operations that "
+            "require terminal access and remote server connectivity. This should be ALLOWED. "
+            "Exception: if the content involves unauthorized access, data exfiltration, ransomware deployment, "
+            "or explicitly states the access is without permission."
         )
 
     return "\n".join(lines) if lines else "None detected."
@@ -855,20 +867,55 @@ def semantic_gate(
             max_content_chars=cfg.max_content_chars,
         )
 
-        # 调用 LLM
+        # Loop 44: 多数投票（消除 qwen-turbo 随机性）
+        n_calls = max(1, cfg.repeat) if hasattr(cfg, "repeat") else 1
+        if n_calls == 1:
+            # 单次调用（原有逻辑，无额外延迟）
+            t_start = time.perf_counter()
+            raw_response = cfg.provider(prompt, cfg.timeout_ms, cfg.model)
+            latency_ms = (time.perf_counter() - t_start) * 1000
+            parsed = parse_llm_response(raw_response)
+            if parsed is None:
+                return None
+            return SemanticVerdict(
+                action=parsed["action"],
+                reason=parsed["reason"],
+                confidence=parsed["confidence"],
+                latency_ms=round(latency_ms, 3),
+            )
+
+        # 多次调用 + 多数投票
+        verdicts: list[dict] = []
         t_start = time.perf_counter()
-        raw_response = cfg.provider(prompt, cfg.timeout_ms, cfg.model)
+        for _ in range(n_calls):
+            try:
+                raw = cfg.provider(prompt, cfg.timeout_ms, cfg.model)
+                p = parse_llm_response(raw)
+                if p is not None:
+                    verdicts.append(p)
+            except Exception:
+                pass  # 单次失败不影响投票
         latency_ms = (time.perf_counter() - t_start) * 1000
 
-        # 解析响应
-        parsed = parse_llm_response(raw_response)
-        if parsed is None:
-            return None
+        if not verdicts:
+            return None  # 全部超时/失败 → FAIL_OPEN
+
+        # 统计多数 action
+        from collections import Counter
+        action_counts = Counter(v["action"] for v in verdicts)
+        majority_action = action_counts.most_common(1)[0][0]
+
+        # 置信度：取多数方平均（最保守但最稳定）
+        majority_confidences = [v["confidence"] for v in verdicts if v["action"] == majority_action]
+        avg_confidence = sum(majority_confidences) / len(majority_confidences)
+
+        # reason: 取第一个 majority verdict 的 reason
+        majority_reason = next(v["reason"] for v in verdicts if v["action"] == majority_action)
 
         return SemanticVerdict(
-            action=parsed["action"],
-            reason=parsed["reason"],
-            confidence=parsed["confidence"],
+            action=majority_action,
+            reason=majority_reason,
+            confidence=round(avg_confidence, 4),
             latency_ms=round(latency_ms, 3),
         )
 

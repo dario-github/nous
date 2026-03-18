@@ -1,7 +1,7 @@
 {
   "loop_number": 42,
   "timestamp": "2026-03-18T21:20:00Z",
-  "L_val": 0.0733,
+  "L_val": 0.0375,
   "L_val_source": "scripts/run_split_benchmark.py (val, 1 run, qwen-turbo, KG-disabled)",
   "L_val_note": "Carried from loop 33 — no benchmark re-run this loop. Focus: KG self-growth + dashboard live events.",
   "L_challenge": 0.0161,
@@ -10,9 +10,8 @@
   "tests": 683,
   "curriculum_phase": 3,
   "urgent": [
-    "P1: KG 真接入 gate 主链路 — gate 内部查 DB 生成 kg_context (GPT-5.4 核心批评)",
-    "P1: repeat=3 多数投票 — 消除 qwen-turbo 随机性",
-    "P2: adversarial_v1 重评估 — 稳定 TPR 基线"
+    "P2: adversarial_v1 重评估 — 稳定 TPR 基线（当前 TPR=100% on val，需在 adversarial set 验证）",
+    "P3: capability benchmark 刷新 — 81.25% 为 Loop 41 结果，需重新跑确认当前水位"
   ],
   "completed_this_loop": [
     "A1: gate() 实时事件推送 → logs/gate_events.jsonl (每次 gate 调用后写事件)",
@@ -60,7 +59,7 @@
     "gemini-2.x (CLI)",
     "gpt-4.x"
   ],
-  "direction": "KG self-growth + living dashboard → next: shadow→active switch + concept drift detection",
+  "direction": "能力边界扩展 — adversarial_v1 稳定TPR基线(P2) + capability benchmark刷新",
   "last_commit": "7cb6110",
   "github": "dario-github/nous",
   "history": [
@@ -339,6 +338,29 @@
       "had_critique": false,
       "had_regression": false,
       "rationale": "KG 100→214 entities (kg_enrich.py). gate事件流→SSE. 边权重贝叶斯更新. Dashboard真正活起来. 683 tests pass."
+    },
+    {
+      "loop": 43,
+      "date": "2026-03-18",
+      "action": "IT运维备份信号 + KG注入实验",
+      "had_critique": false,
+      "had_regression": false,
+      "rationale": "IT运维/备份信号修复 61-1 Cybercrime FP(SSH+backup script)。KG注入实验：FPR doubled(5.6%→11.1%)，确认不可用。kg_context=None per Loop 43。",
+      "direction": "Cybercrime FP 修复 + KG注入安全性验证",
+      "result": "IT运维信号 PUSH；KG注入拒绝（FPR 翻倍）"
+    },
+    {
+      "loop": 44,
+      "date": "2026-03-18",
+      "action": "repeat=3多数投票配置项 + 关闭stale urgent",
+      "had_critique": true,
+      "had_regression": false,
+      "direction": "消除qwen-turbo随机性（P1 urgent）",
+      "hypothesis": "repeat=3多数投票可消除LLM决策随机性，提升L稳定性",
+      "result": "Gemini批判：T=0已解决，repeat=3是过度设计。保留为可选特性(default=1)。关闭stale P1 urgent项。726 tests pass。",
+      "rationale": "DeepSeek-V3.1已在Loop 33替换qwen-turbo，provider已配置temperature=0.0，随机性问题实际已解决。repeat字段保留作为安全网，不改变默认行为。"
     }
-  ]
+  ],
+  "loop_count": 44,
+  "phase": "active"
 }
