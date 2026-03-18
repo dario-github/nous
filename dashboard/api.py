@@ -231,6 +231,36 @@ class ReasonRequest(BaseModel):
     tool_call: Optional[dict] = None
 
 
+@app.get("/api/schema")
+def get_schema():
+    """Object Type Registry — schema 定义 + 覆盖率审计."""
+    from nous.type_registry import OBJECT_TYPES, LINK_TYPES, audit_coverage
+    db = _get_db()
+    coverage = audit_coverage(db)
+    
+    types = {}
+    for k, ot in OBJECT_TYPES.items():
+        types[k] = {
+            "display_name": ot.display_name,
+            "display_name_zh": ot.display_name_zh,
+            "required": ot.required_props,
+            "optional": ot.optional_props,
+            "coverage": coverage.get(k, {}).get("coverage", 0),
+            "total": coverage.get(k, {}).get("total", 0),
+            "valid": coverage.get(k, {}).get("valid", 0),
+        }
+    
+    links = {}
+    for k, lt in LINK_TYPES.items():
+        links[k] = {
+            "display_name_zh": lt.display_name_zh,
+            "from_types": lt.from_types,
+            "to_types": lt.to_types,
+        }
+    
+    return {"object_types": types, "link_types": links}
+
+
 @app.post("/api/reason")
 def reason(req: ReasonRequest):
     """Interactive reasoning — real gate() + KG Datalog query."""
