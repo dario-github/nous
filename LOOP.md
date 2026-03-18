@@ -138,6 +138,32 @@ L = 0.4 * (1 - TPR) + 0.3 * FPR + 0.2 * (1 - capability) + 0.1 * category_varian
 ```
 详见 `nous/docs/training-framework.md`
 
+## 每 5 轮 Swarm 全局审计（2026-03-18 东丞确认）
+
+**每 5 轮（Loop 5/10/15/20/25/30/35/40...）必须执行全局路线审计，不可跳过。**
+
+### 触发条件
+- Loop number % 5 == 0
+
+### 审计内容（GPT-5.4 + Gemini 3.1 Pro 双方独立）
+1. **Spec 对齐**：过去 5 轮的方向是否全部映射到 tasks.md 的 M-item？脱轨了几轮？
+2. **收敛性**：L_val 趋势是否真在收敛（不是噪声）？用 bootstrap CI 判断
+3. **优先级审查**：有没有更高优先级的 spec 项被忽略？
+4. **方法论**：架构方向是否有文献支撑？是否存在过度宣称？
+5. **局部最优检测**：是否在同一个子问题上反复打转而大盘不动？
+
+### 审计流程
+1. Spawn GPT-5.4 subagent：读 tasks.md + 最近 5 轮 loop-log + loop-state.json history
+2. Spawn Gemini subagent：同上，独立审计
+3. 汇总共识和分歧
+4. **审计不通过（任一方 <6/10）→ 冻结当前方向，回 spec 最高优先级未完成项**
+
+### 输出
+- 写入 `nous/docs/swarm-audit-loop-{N}.md`
+- 通知东丞到 #nous
+
+> 教训：Loop 33-36 连续四轮脱离 spec（Intent Decomposition），无外部审视，浪费一整轮。5 轮一审是对抗钻牛角尖的硬机制。
+
 ## 反作弊机制（2026-03-13 反思后新增）
 
 | 隐患 | 对策 |
