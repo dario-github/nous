@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>νοῦς — Living Knowledge Graph</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a1a;--surface:rgba(6,14,38,.9);--surface2:rgba(10,20,55,.85);
+  --cyan:#00d4ff;--purple:#7b2fff;--green:#00ff9f;--orange:#ff8c40;--red:#ff4466;
+  --gold:#ffd700;--text:#e2e8f0;--dim:#6b7fa3;--border:rgba(0,212,255,.18);
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);
+  font-family:'JetBrains Mono','Fira Code',ui-monospace,monospace;font-size:13px}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 80% 50% at 20% 20%,rgba(0,80,180,.08) 0%,transparent 60%),
+             radial-gradient(ellipse 60% 60% at 80% 80%,rgba(123,47,255,.07) 0%,transparent 60%);
+  pointer-events:none;z-index:0}
+
+/* Nav */
+#nav{position:relative;z-index:10;display:flex;align-items:center;height:48px;padding:0 20px;gap:0;
+  background:var(--surface);border-bottom:1px solid var(--border);backdrop-filter:blur(16px)}
+#nav-brand{display:flex;flex-direction:column;margin-right:24px}
+#nav-title{font-size:1.2rem;font-weight:700;color:var(--cyan);letter-spacing:.05em;
+  text-shadow:0 0 20px rgba(0,212,255,.6)}
+#nav-sub{font-size:.5rem;color:var(--dim);letter-spacing:.12em;margin-top:1px}
+.nsep{width:1px;background:var(--border);height:28px;margin:0 4px}
+.nstat{display:flex;flex-direction:column;align-items:center;padding:0 14px}
+.nstat-v{font-size:1rem;font-weight:700;color:var(--cyan);line-height:1;transition:all .5s}
+.nstat-l{font-size:.5rem;color:var(--dim);text-transform:uppercase;letter-spacing:.12em;margin-top:2px}
+#nav-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.sbadge{display:flex;align-items:center;gap:6px;padding:4px 12px;
+  border:1px solid rgba(255,200,0,.35);border-radius:20px;background:rgba(255,200,0,.05)}
+.sdot{width:7px;height:7px;border-radius:50%;background:#ffd700;
+  box-shadow:0 0 8px #ffd700;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.slbl{font-size:.6rem;color:#ffd700;letter-spacing:.1em}
+#live-indicator{font-size:.55rem;color:var(--green)}
+
+/* Layout: 3 columns */
+#layout{position:relative;z-index:1;display:grid;grid-template-columns:1fr 280px;
+  grid-template-rows:1fr 220px;height:calc(100vh - 48px)}
+
+/* Graph takes full left, spanning both rows */
+#gwrap{grid-row:1/3;position:relative;border-right:1px solid var(--border);overflow:hidden}
+#kg-svg{width:100%;height:100%}
+#glabel{position:absolute;top:10px;left:12px;font-size:.5rem;color:var(--dim);
+  text-transform:uppercase;letter-spacing:.18em}
+#legend{position:absolute;bottom:10px;left:12px;display:flex;flex-direction:column;gap:4px}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:.55rem;color:var(--dim)}
+.leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* Event feed — right top */
+#event-feed{overflow-y:auto;padding:10px;background:rgba(0,0,0,.2);
+  border-bottom:1px solid var(--border)}
+#event-feed::-webkit-scrollbar{width:2px}
+#event-feed::-webkit-scrollbar-thumb{background:var(--border)}
+.feed-title{font-size:.5rem;text-transform:uppercase;letter-spacing:.16em;color:var(--dim);
+  margin-bottom:8px;position:sticky;top:0;background:rgba(0,0,0,.9);padding:4px 0;z-index:1}
+.evt{padding:4px 6px;margin-bottom:3px;border-radius:4px;font-size:.6rem;
+  border-left:2px solid var(--cyan);background:rgba(0,212,255,.03);
+  animation:fadeIn .3s ease-out}
+.evt.block{border-left-color:var(--red)}
+.evt.confirm{border-left-color:var(--orange)}
+.evt.kg{border-left-color:var(--green)}
+.evt-time{color:var(--dim);font-size:.5rem}
+@keyframes fadeIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
+
+/* Ask box — right bottom */
+#ask-panel{padding:10px;background:var(--surface2);display:flex;flex-direction:column}
+#ask-title{font-size:.5rem;text-transform:uppercase;letter-spacing:.16em;color:var(--dim);margin-bottom:8px}
+#ask-input{flex:0 0 auto;background:rgba(0,0,0,.4);border:1px solid var(--border);
+  border-radius:6px;color:var(--text);font-family:inherit;font-size:.75rem;
+  padding:8px 10px;outline:none;resize:none;height:60px}
+#ask-input:focus{border-color:var(--cyan);box-shadow:0 0 8px rgba(0,212,255,.2)}
+#ask-input::placeholder{color:var(--dim)}
+#ask-btn{margin-top:6px;padding:6px;background:linear-gradient(135deg,rgba(0,212,255,.15),rgba(123,47,255,.15));
+  border:1px solid var(--cyan);border-radius:5px;color:var(--cyan);cursor:pointer;
+  font-family:inherit;font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;
+  transition:all .2s}
+#ask-btn:hover{background:rgba(0,212,255,.25);box-shadow:0 0 12px rgba(0,212,255,.3)}
+#ask-btn:disabled{opacity:.4;cursor:not-allowed}
+#reason-result{flex:1;overflow-y:auto;margin-top:8px;font-size:.6rem;line-height:1.6}
+#reason-result::-webkit-scrollbar{width:2px}
+#reason-result::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* Proof trace overlay */
+#trace-overlay{display:none;position:fixed;inset:0;z-index:100;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(8px)}
+#trace-panel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:700px;max-height:80vh;overflow-y:auto;background:var(--surface);
+  border:1px solid var(--cyan);border-radius:12px;padding:24px;
+  box-shadow:0 0 60px rgba(0,212,255,.2)}
+#trace-close{position:absolute;top:12px;right:16px;color:var(--dim);cursor:pointer;
+  font-size:1.2rem;z-index:1}
+#trace-close:hover{color:var(--cyan)}
+.trace-step{padding:10px 12px;margin:6px 0;border-radius:6px;
+  border-left:3px solid var(--dim);background:rgba(0,0,0,.3);
+  animation:traceIn .4s ease-out both}
+.trace-step.match{border-left-color:var(--red)}
+.trace-step.no-match{border-left-color:var(--green);opacity:.6}
+.trace-step .rule{font-weight:700;color:var(--cyan)}
+.trace-step .binding{color:var(--orange);font-size:.6rem}
+.trace-step .verdict-tag{display:inline-block;padding:1px 6px;border-radius:3px;
+  font-size:.55rem;font-weight:600;margin-left:6px}
+.vt-block{background:rgba(255,68,102,.2);color:var(--red)}
+.vt-allow{background:rgba(0,255,159,.15);color:var(--green)}
+.vt-confirm{background:rgba(255,140,64,.2);color:var(--orange)}
+@keyframes traceIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.trace-verdict{text-align:center;padding:16px;margin-top:12px;border-radius:8px;font-size:1.1rem;font-weight:700}
+.trace-verdict.block{background:rgba(255,68,102,.1);color:var(--red);border:1px solid rgba(255,68,102,.3)}
+.trace-verdict.allow{background:rgba(0,255,159,.08);color:var(--green);border:1px solid rgba(0,255,159,.2)}
+.trace-verdict.confirm{background:rgba(255,140,64,.1);color:var(--orange);border:1px solid rgba(255,140,64,.3)}
+
+/* Tooltip */
+#tt{position:fixed;display:none;z-index:999;pointer-events:none;
+  background:rgba(6,12,40,.96);border:1px solid var(--cyan);border-radius:8px;
+  padding:10px 13px;max-width:260px;box-shadow:0 0 24px rgba(0,212,255,.25);
+  backdrop-filter:blur(12px)}
+.tt-type{font-size:.5rem;text-transform:uppercase;letter-spacing:.15em;margin-bottom:3px;opacity:.7}
+.tt-name{font-size:.85rem;font-weight:700;margin-bottom:5px;line-height:1.3}
+.tt-meta{font-size:.62rem;color:var(--dim);line-height:1.7}
+.tt-conf-bar{height:3px;border-radius:2px;margin-top:6px;background:rgba(255,255,255,.1)}
+.tt-conf-fill{height:100%;border-radius:2px;transition:width .3s}
+
+/* Node birth animation */
+@keyframes nodeBirth{from{r:0;opacity:0}to{opacity:1}}
+/* Edge pulse */
+@keyframes edgePulse{0%{stroke-opacity:.2}50%{stroke-opacity:.8}100%{stroke-opacity:.2}}
+</style>
+</head>
+<body>
+<nav id="nav">
+  <div id="nav-brand">
+    <div id="nav-title">νοῦς</div>
+    <div id="nav-sub">Living Knowledge Graph</div>
+  </div>
+  <div class="nsep"></div>
+  <div class="nstat"><span class="nstat-v" id="cnt-e">—</span><span class="nstat-l">实体</span></div>
+  <div class="nsep"></div>
+  <div class="nstat"><span class="nstat-v" id="cnt-r">—</span><span class="nstat-l">关系</span></div>
+  <div class="nsep"></div>
+  <div class="nstat"><span class="nstat-v" id="cnt-shadow">—</span><span class="nstat-l">Shadow</span></div>
+  <div class="nsep"></div>
+  <div class="nstat"><span class="nstat-v" id="cnt-cons">—</span><span class="nstat-l">一致率</span></div>
+  <div id="nav-right">
+    <div class="sbadge"><div class="sdot"></div><span class="slbl">SHADOW</span></div>
+    <span id="live-indicator">● LIVE</span>
+  </div>
+</nav>
+
+<div id="layout">
+  <div id="gwrap">
+    <div id="glabel">知识图谱 · 力导向 · 实时</div>
+    <svg id="kg-svg"></svg>
+    <div id="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#3a8fff"></div>人物 person</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#2eff8a"></div>项目 project</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#b06bff"></div>概念 concept</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#ff8c40"></div>工具 tool</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#ff6060"></div>策略 policy</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#888"></div>分类 category</div>
+    </div>
+  </div>
+
+  <div id="event-feed">
+    <div class="feed-title">事件流 · Event Stream</div>
+    <div id="feed-list"></div>
+  </div>
+
+  <div id="ask-panel">
+    <div id="ask-title">交互推理 · Ask Nous</div>
+    <textarea id="ask-input" placeholder="输入问题或工具调用...&#10;例：删除 /etc/passwd&#10;例：发布推文到 Twitter&#10;例：读取 portfolio.md"></textarea>
+    <button id="ask-btn" onclick="askNous()">推理 ▸</button>
+    <div id="reason-result"></div>
+  </div>
+</div>
+
+<!-- Proof Trace Overlay -->
+<div id="trace-overlay" onclick="closeTrace(event)">
+  <div id="trace-panel">
+    <span id="trace-close" onclick="document.getElementById('trace-overlay').style.display='none'">✕</span>
+    <div id="trace-content"></div>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div id="tt">
+  <div class="tt-type" id="tt-type"></div>
+  <div class="tt-name" id="tt-name"></div>
+  <div class="tt-meta" id="tt-meta"></div>
+  <div class="tt-conf-bar"><div class="tt-conf-fill" id="tt-conf-fill"></div></div>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="js/live.js"></script>
+</body>
+</html>
