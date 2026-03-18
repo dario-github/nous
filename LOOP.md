@@ -12,21 +12,46 @@
 | **开发** | Sonnet subagent | `sessions_spawn(model="anthropic/claude-sonnet-4-6")` | 批量编码+测试 |
 | **开发2** | Mac Claude Code | `nodes.run` → `claude-bedrock.sh` | 仅 Mac 在线时。Bedrock，无成本 |
 
+## Thinkbook（中途暂停思考机制，2026-03-18 东丞提出）
+
+> 核心：在 Loop 执行过程中，不是一口气跑完，而是**中途暂停做全局反思**。
+> 类比：写论文时停下来看一眼大纲，确保当前段落没有偏离主题。
+
+### Global Todo（项目级，跨 Loop 持续）
+文件：`nous/docs/thinkbook-global.md`
+- 每 5 轮 Swarm 审计时更新
+- 内容：Nous 的核心方向、未完成的大块、学术研究缺口、东丞的反馈
+- Loop 开始时必读，确认本轮动作在 Global Todo 覆盖范围内
+
+### Local Todo（单 Loop 级，Loop 内使用）
+格式：在 loop-log 开头写 3-5 条本轮微任务
+- Step 2（Critique）后暂停：核对 Local Todo，critique 是否改变了优先级？
+- Step 4（Implement）后暂停：已完成哪些？剩余哪些？方向有没有偏？
+- Step 6（Reflect）时回顾：Local Todo 完成率 + 对 Global Todo 的贡献
+
+### 暂停触发条件
+1. 代码修改超过 3 个文件 → 暂停，回看 Global Todo
+2. 发现"有趣但不在计划内"的方向 → 暂停，记录到 Global Todo 的 Backlog，不追
+3. L_val 变化超预期（上升或大幅下降）→ 暂停，分析原因再继续
+
 ## 循环结构（每 2 小时）
 
-### Step 1: Review + Spec 对齐（总控 Opus）
+### Step 1: Review + Spec 对齐 + Thinkbook（总控 Opus）
 - 读 `nous/docs/loop-state.json`（结构化状态，上轮写的）
 - 读 tasks.md + 上轮 loop-log
+- **读 `nous/docs/thinkbook-global.md`**（Global Todo）
 - **Spec 对齐检查**：
   1. 读 `openspec/changes/nous/tasks.md` 的当前未完成任务
   2. 本轮计划动作是否属于 tasks.md 中的某个 M-item？
   3. **不在 spec 中 → 先更新 tasks.md 再动手**（禁止 spec 外编码）
   4. 与上轮 direction 是否一致？不一致需要显式说明原因
+- **写 Local Todo**（3-5 条本轮微任务）
 - 确定本轮最高优先级
 
 ### Step 2: Critique（Gemini 批判）
 - `gemini -m gemini-2.5-pro "审查 nous 当前实现的 [具体模块]，找出虚假/注水/方法论问题"`
 - 输出写入 /tmp
+- **Thinkbook 暂停点 A**：critique 是否改变了 Local Todo 优先级？
 
 ### Step 3: Design（Codex 架构）
 - `codex exec "基于批判结果，细化 [具体功能] 的实现方案"`
@@ -35,6 +60,7 @@
 ### Step 4: Implement（Sonnet 开发）
 - spawn subagent 写代码 + 测试
 - Mac 在线时用 Claude Code
+- **Thinkbook 暂停点 B**：回看 Local Todo，已完成哪些？方向偏了吗？
 
 ### Step 5: Evaluate（总控 Opus）
 - 跑 pytest，对比基线
