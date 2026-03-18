@@ -1,7 +1,2 @@
-# Nous 运行模式配置
-# mode: shadow   — 只观测，不拦截（默认）
-# mode: primary  — Nous 升为主路径，真正拦截
-mode: shadow
-
-# 版本
-version: "0.1.0"
+mode: primary
+version: 0.1.0
