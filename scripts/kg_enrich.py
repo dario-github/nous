@@ -9,6 +9,23 @@ from nous.db import NousDB  # noqa: E402
 from nous.schema import Entity, Relation  # noqa: E402
 
 SHADOW = ROOT / "logs" / "shadow_live.jsonl"
+
+# Tool name → Chinese display name
+_TOOL_ZH_MAP = {
+    "exec":"命令执行", "process":"进程管理", "read":"文件读取", "write":"文件写入",
+    "edit":"文件编辑", "web_search":"网页搜索", "web_fetch":"网页获取",
+    "browser":"浏览器控制", "message":"消息发送", "cron":"定时任务", "nodes":"节点操作",
+    "gateway":"网关", "canvas":"画布控制", "image":"图片分析", "pdf":"PDF分析",
+    "memory_search":"记忆搜索", "memory_get":"记忆获取", "subagents":"子代理管理",
+    "sessions_spawn":"会话派生", "sessions_list":"会话列表", "sessions_send":"会话发送",
+    "sessions_history":"会话历史", "session_status":"会话状态", "sessions_yield":"会话让渡",
+    "agents_list":"代理列表", "lcm_grep":"上下文搜索", "lcm_describe":"上下文描述",
+    "lcm_expand":"上下文展开", "lcm_expand_query":"上下文查询", "tts":"语音合成",
+    "web_design_audit":"设计审计",
+}
+def _tool_zh(name: str) -> str:
+    return _TOOL_ZH_MAP.get(name, name)
+
 CAT_MAP: dict[str, str] = {
     "exec": "system", "process": "system",
     "read": "fs", "write": "fs", "edit": "fs",
@@ -70,13 +87,17 @@ def aggregate(entries: list[dict]) -> tuple[list[dict], list[dict]]:
         rels.append(_r(f"tool:{tool}", f"category:{cat}", "belongs_to", _c(cnt, N)))
         for v, vc in vbt[tool].items():
             pid = f"pattern:{v}:{tool}"
+            vmap = {'allow':'✓','block':'✗','confirm':'?'}
+            pname = f"{_tool_zh(tool)} {vmap.get(v, v)}"
             ents.append(_e(pid, "concept", [v, tool], _c(vc, cnt),
-                           {"verdict": v, "tool": tool, "count": vc}))
+                           {"verdict": v, "tool": tool, "count": vc, "name_zh": pname}))
             rels.append(_r(f"tool:{tool}", pid, "produces", _c(vc, cnt)))
         dtier = lt[tool].most_common(1)[0][0]
         lid = f"latency:{dtier}:{tool}"
+        tier_zh = {'fast':'快','normal':'正常','slow':'慢','very_slow':'极慢'}.get(dtier, dtier)
+        lname = f"{_tool_zh(tool)} [{tier_zh}]"
         ents.append(_e(lid, "concept", [dtier, tool, "latency"], _c(cnt, N),
-                       {"tier": dtier, "tool": tool}))
+                       {"tier": dtier, "tool": tool, "name_zh": lname}))
         rels.append(_r(f"tool:{tool}", lid, "has_latency", _c(cnt, N)))
 
     for cat in {CAT_MAP.get(t, "other") for t in tc}:
@@ -100,8 +121,9 @@ def aggregate(entries: list[dict]) -> tuple[list[dict], list[dict]]:
                        {"date": day, "count": dn, "tools": len(tools)}))
     for (t1, t2), cnt in co.most_common(40):
         pid = f"cooccur:{t1}:{t2}"
+        cname = f"{_tool_zh(t1)} ↔ {_tool_zh(t2)}"
         ents.append(_e(pid, "concept", [t1, t2, "cooccurrence"], _c(cnt, N),
-                       {"tool_a": t1, "tool_b": t2, "count": cnt}))
+                       {"tool_a": t1, "tool_b": t2, "count": cnt, "name_zh": cname}))
         rels.append(_r(f"tool:{t1}", pid, "co_occurs", _c(cnt, N)))
         rels.append(_r(f"tool:{t2}", pid, "co_occurs", _c(cnt, N)))
     return ents, rels
