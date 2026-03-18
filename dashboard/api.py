@@ -27,7 +27,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from nous.db import NousDB
-from nous.edge_weight import effective_confidence, rank_edges
+from nous.edge_weight import effective_confidence
 
 app = FastAPI(title="νοῦς Dashboard API", version="0.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -75,7 +75,7 @@ def _build_kg_snapshot(db: NousDB) -> dict:
     for r in relations:
         props = r.get("props", {}) or {}
         eff_conf = effective_confidence(
-            base=r.get("confidence", 1.0),
+            base_confidence=r.get("confidence", 1.0),
             created_at=r.get("created_at", now),
             now=now,
             props=props,
