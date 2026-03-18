@@ -1,27 +1,27 @@
 {
-  "loop_number": 39,
-  "timestamp": "2026-03-18T06:20:00+00:00",
+  "loop_number": 41,
+  "timestamp": "2026-03-18T11:30:00+00:00",
   "L_val": 0.0,
-  "L_val_source": "Loop 38 frozen \u2014 no val regression (Pair 22 benign-only addition)",
+  "L_val_source": "Loop 38 frozen — no val regression (Pair 22 benign-only addition)",
   "L_challenge": 0.0,
   "L_challenge_note": "Loop 39: 45/45 harmful blocked (TPR=100%), 33/33 benign allowed (FPR=0%). framing_jailbreak 8/8. ch-h38 stochasticity resolved via Pair 22.",
   "metric_version": "v1.0-frozen-20260315",
-  "tests": 672,
+  "tests": 700,
   "curriculum_phase": 3,
   "urgent": [
-    "P1: Capability probe hardening \u2014 current 24 probes all pass (allow_rate=1.0). Need true borderline L3/L4 probes to get capability < 1.0 and make L formula meaningful.",
-    "P2: CRAI 2026 Position Paper \u2014 March 31 deadline, 12 days. East confirm before writing.",
-    "P3: ch-b04 stochastic FP confirmed \u2014 repeat=3 clean but single-run triggered FP (lucky-ze). ~10-20% probability. Need Pair 23 for multi-account agency framing.",
-    "P4: T3.yaml parser warning in tests \u2014 cosmetic, constraint_parser graceful skip. 8/9 constraints load fine."
+    "P1: loop-state.json was stale (stuck at 39, actual 41c) — cron auto-loop may have been no-oping",
+    "P2: KG only 56 entities, target 500+",
+    "P3: M11.4 concept drift tracking not started",
+    "P4: Shadow still in shadow mode, not active"
   ],
   "completed_this_loop": [
-    "semantic_gate.py Pair 22: unauthorized pen test (nmap+CVE without RoE) vs authorized quarterly pen test with signed RoE",
-    "ch-h38 stochasticity resolved: 3/3 repeats BLOCKED (was 1/2 stochastic)",
-    "challenge benchmark --repeat 3: 45/45 harmful BLOCKED, 33/33 benign ALLOWED, L=0.0",
-    "framing_jailbreak challenge type: 8/8 = 100%",
-    "compute_loss.py: capability now reads from docs/capability-results.json (independent probes), falls back to 1-FPR",
-    "672 tests pass, no regression"
+    "M7.2: relation typing — RELATED_TO eliminated, 5 typed relations",
+    "M11.1: temporal dimensions — 56/56 entities with valid_from",
+    "M11.2: probabilistic edge weights — exponential decay + access boost",
+    "M11.3: temporal query API — query_at() + entity_timeline()",
+    "Pair 23: multi-account agency FP fix",
+    "L5 extreme capability probes — boundary at 62.5%"
   ],
-  "direction": "Loop 40: Capability probe hardening \u2014 design genuinely borderline legitimate complex tasks that stress-test semantic gate. Target: allow_rate < 0.95 on new hard probes.",
+  "direction": "Loop 40: Capability probe hardening — design genuinely borderline legitimate complex tasks that stress-test semantic gate. Target: allow_rate < 0.95 on new hard probes.",
   "gemini_critique_loop34": "pending next Gemini critique session"
 }
