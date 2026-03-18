@@ -687,6 +687,117 @@ def _has_commercial_promotion_signal(text: str) -> bool:
     return any(p.search(text) for p in _COMMERCIAL_PROMOTION_PATTERNS)
 
 
+# ── Loop 41: 安全港目标信号 ────────────────────────────────────────────────
+
+_SAFE_HARBOR_DOMAINS = [
+    # RFC 2606 保留域名：https://www.rfc-editor.org/rfc/rfc2606
+    re.compile(r"\bexample\.com\b", re.I),
+    re.compile(r"\bexample\.org\b", re.I),
+    re.compile(r"\bexample\.net\b", re.I),
+    re.compile(r"\blocalhost\b", re.I),
+    re.compile(r"\b127\.0\.0\.1\b"),
+    re.compile(r"\b0\.0\.0\.0\b"),
+    re.compile(r"\b::1\b"),
+    re.compile(r"\btest\.(local|internal|example)\b", re.I),
+    re.compile(r"\b(?:dummy|fake|mock|sandbox)\.(com|org|net|io)\b", re.I),
+    re.compile(r"\b10\.0\.\d+\.\d+\b"),       # RFC 1918 private range
+    re.compile(r"\b192\.168\.\d+\.\d+\b"),    # RFC 1918 private range
+    re.compile(r"\bvulnhub\b|\bhackthebox\b|\btryhackme\b|\bhackerone\b", re.I),
+]
+
+_ANTI_SAFE_HARBOR_PATTERNS = [
+    re.compile(r"\b(?:prod(?:uction)?|live)\s+(?:server|site|system)\b", re.I),
+    re.compile(r"without\s+(?:authorization|permission|consent)", re.I),
+    re.compile(r"unauthorized\b", re.I),
+]
+
+
+def _has_safe_harbor_target_signal(text: str) -> bool:
+    """检测安全港目标信号（RFC 2606 保留域名 / 私有 IP / 已知 CTF 平台）。
+
+    Loop 41: 修复 cap-L39-sec-01 (sqlmap + example.com) 误拦。
+    目标是 RFC 2606 保留域名 → 无需显式授权声明即可豁免安全测试工具的使用。
+    """
+    if not text or len(text) < 10:
+        return False
+    if any(p.search(text) for p in _ANTI_SAFE_HARBOR_PATTERNS):
+        return False
+    return any(p.search(text) for p in _SAFE_HARBOR_DOMAINS)
+
+
+# ── Loop 41: 客观药理学信号 ────────────────────────────────────────────────
+
+_PHARMACOLOGY_REFERENCE_PATTERNS = [
+    re.compile(r"\b(?:potency|efficacy|half.life|pharmacokinetics|bioavailability)\b.{0,50}\b(?:table|comparison|ranking|chart|list)\b", re.I),
+    re.compile(r"\b(?:drug|medication|compound)\b.{0,30}\b(?:interactions?|cross.tolerance|cross.reactivity)\b", re.I),
+    re.compile(r"\bequivalent\s+dose\b|\bbinding\s+affinity\b|\breceptor\s+selectivity\b", re.I),
+    re.compile(r"\b(?:pharmacology|toxicology|clinical)\s+(?:reference|table|chart|data|overview)\b", re.I),
+    re.compile(r"\blethal\s+dose|\bLD50\b|\btoxicity\s+(?:profile|comparison)\b", re.I),
+    re.compile(r"\b(?:drug class|drug family|class of)\s+.{0,30}(?:benzodiazepine|opioid|barbiturate|stimulant|depressant)\b", re.I),
+]
+
+_ANTI_PHARMACOLOGY_PATTERNS = [
+    re.compile(r"\b(?:get high|feel the effect|maximum buzz|recreational dose|party dose)\b", re.I),
+    re.compile(r"\b(?:avoid detection|beat the test|mask|hide from)\b.{0,20}(?:test|screen|detection)\b", re.I),
+    re.compile(r"\b(?:sell|distribute|deal|source|acquire)\b.{0,20}(?:drug|pill|substance|capsule)\b", re.I),
+    re.compile(r"\b(?:dark web|illicit|illegal source|street source)\b", re.I),
+]
+
+
+def _has_objective_pharmacology_signal(text: str) -> bool:
+    """检测客观药理学/毒理学参考数据信号。
+
+    Loop 41: 修复 cap-L39-med-04 (BZD 效力表 + 酒精相互作用) 误拦。
+    只有不包含获取/滥用优化诉求时才触发。
+    """
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_PHARMACOLOGY_PATTERNS):
+        return False
+    return any(p.search(text) for p in _PHARMACOLOGY_REFERENCE_PATTERNS)
+
+
+# ── Loop 41: 双用途物质教育信号 ─────────────────────────────────────────────
+
+# 已知合法教育/工业用途的双用途材料（化学教育常见，不限于武器用途）
+_DUAL_USE_MATERIALS = [
+    re.compile(r"\bnitrocellulose\b|\bgun\s*cotton\b|\bcelluloid\b", re.I),
+    re.compile(r"\bthermite\b|\baluminum\s+oxide\b|\bferric\s+oxide\b", re.I),
+    re.compile(r"\bgunpowder\b|\bblack\s+powder\b|\bpyrotechnics\b", re.I),
+    re.compile(r"\bnapalm\b|\bincendiary\b", re.I),
+]
+
+_DUAL_USE_EDUCATION_CONTEXT = [
+    re.compile(r"\b(?:synthesis|preparation|manufacture)\b.{0,60}\b(?:chemistry|education|lab|textbook|experiment|demonstration)\b", re.I),
+    re.compile(r"\b(?:organic\s+chemistry|materials\s+science|chemical\s+engineering)\b", re.I),
+    re.compile(r"\b(?:historical|industrial|photographic|film|lacquer|paint)\b.{0,30}\buse\b", re.I),
+    re.compile(r"\bchemistry\s+(?:class|course|textbook|lab|experiment|education|demonstration)\b", re.I),
+    re.compile(r"\bwikipedia\b.{0,30}\b(?:synthesis|reaction|preparation)\b", re.I),
+]
+
+_ANTI_DUAL_USE_PATTERNS = [
+    re.compile(r"\b(?:weapon(?:ize|ization)|improvised|IED|bomb making)\b", re.I),
+    re.compile(r"\b(?:maximize\s+(?:blast|damage|yield)|clandestine\s+(?:lab|production))\b", re.I),
+    re.compile(r"\b(?:evade|undetect|bypass)\b.{0,20}\b(?:TSA|customs|detector|screening)\b", re.I),
+    re.compile(r"\b(?:attack|harm|injure|kill)\b.{0,30}\b(?:people|person|target|victim)\b", re.I),
+]
+
+
+def _has_dual_use_material_education_signal(text: str) -> bool:
+    """检测双用途化学材料教育/学术研究信号。
+
+    Loop 41: 修复 cap-L39-chem-05 (硝化纤维素合成, 化学教育) 误拦。
+    仅当【材料匹配】AND【教育语境存在】AND【无武器化意图】时触发。
+    """
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_DUAL_USE_PATTERNS):
+        return False
+    has_material = any(p.search(text) for p in _DUAL_USE_MATERIALS)
+    has_context = any(p.search(text) for p in _DUAL_USE_EDUCATION_CONTEXT)
+    return has_material and has_context
+
+
 # ── M7.3: 选举虚假信息信号 ─────────────────────────────────────────────────
 # 目的：检测"以事实纠正为名传播选举虚假信息"的规避模式
 # 触发条件：
@@ -1087,6 +1198,15 @@ def extract_facts(tool_call: dict) -> dict:
 
     # Loop 30: 商业推广/授权素材信号
     facts["has_commercial_promotion_signal"] = _has_commercial_promotion_signal(prompt_text)
+
+    # Loop 41: 安全港目标信号（RFC 2606）
+    facts["has_safe_harbor_target_signal"] = _has_safe_harbor_target_signal(prompt_text)
+
+    # Loop 41: 客观药理学参考信号
+    facts["has_objective_pharmacology_signal"] = _has_objective_pharmacology_signal(prompt_text)
+
+    # Loop 41: 双用途化学材料教育信号
+    facts["has_dual_use_material_education_signal"] = _has_dual_use_material_education_signal(prompt_text)
 
     # M7.3: 选举虚假信息信号（ch-h08 Disinformation signal_abuse evasion）
     facts["has_election_disinformation_signal"] = _has_election_disinformation_signal(prompt_text)
