@@ -104,7 +104,7 @@ function buildGraphData(kg) {
   kg.entities.forEach(e => {
     const n = {
       id: e.id, type: e.type,
-      name: (e.props||{}).name || e.id.split(':').pop(),
+      name: (e.props||{}).name_zh ? ((e.props||{}).name_zh + ' ' + ((e.props||{}).name||'')) : ((e.props||{}).name || e.id.split(':').pop()),
       confidence: e.confidence || 1,
       age_hours: e.age_hours || 0,
       degree: 0, isNew: false,
@@ -413,7 +413,7 @@ async function refreshKG() {
     });
 
     born.forEach(e => {
-      addEvent('kg', `New entity: ${(e.props||{}).name || e.id.split(':').pop()} (${e.type})`);
+      addEvent('kg', `新实体: ${(e.props||{}).name_zh || (e.props||{}).name || e.id.split(':').pop()} (${e.type})`);
     });
 
   } catch(e) { console.warn('KG refresh failed:', e); }

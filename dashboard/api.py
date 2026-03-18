@@ -194,7 +194,7 @@ def get_graph_stats():
     sorted_ents = sorted(entities, key=lambda e: e.get("updated_at", 0), reverse=True)
     recent = []
     for e in sorted_ents[:5]:
-        name = (e.get("props", {}) or {}).get("name", e["id"].split(":")[-1])
+        props = (e.get("props", {}) or {}); name = props.get("name_zh", props.get("name", e["id"].split(":")[-1]))
         age_h = round((now - e.get("updated_at", now)) / 3600, 1)
         recent.append({
             "id": e["id"], "type": e.get("etype", "?"),
