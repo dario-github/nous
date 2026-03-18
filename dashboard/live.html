@@ -36,8 +36,13 @@ body::before{content:'';position:fixed;inset:0;
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 .slbl{font-size:.6rem;color:#ffd700;letter-spacing:.1em}
 #live-indicator{font-size:.55rem;color:var(--green)}
+#stats-toggle{background:none;border:1px solid var(--border);color:var(--dim);
+  padding:3px 10px;border-radius:12px;cursor:pointer;font-family:inherit;font-size:.55rem;
+  letter-spacing:.08em;transition:all .2s}
+#stats-toggle:hover{border-color:var(--cyan);color:var(--cyan)}
+#stats-toggle.active{border-color:var(--purple);color:var(--purple);background:rgba(123,47,255,.1)}
 
-/* Layout: 3 columns */
+/* Layout: graph + right panel */
 #layout{position:relative;z-index:1;display:grid;grid-template-columns:1fr 280px;
   grid-template-rows:1fr 220px;height:calc(100vh - 48px)}
 
@@ -49,6 +54,33 @@ body::before{content:'';position:fixed;inset:0;
 #legend{position:absolute;bottom:10px;left:12px;display:flex;flex-direction:column;gap:4px}
 .leg-item{display:flex;align-items:center;gap:5px;font-size:.55rem;color:var(--dim)}
 .leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* Stats Panel — slides over the graph */
+#stats-panel{position:absolute;top:0;left:0;width:260px;height:100%;background:var(--surface);
+  border-right:1px solid var(--border);backdrop-filter:blur(16px);z-index:5;
+  transform:translateX(-100%);transition:transform .35s cubic-bezier(.4,0,.2,1);
+  overflow-y:auto;padding:14px}
+#stats-panel.open{transform:translateX(0)}
+#stats-panel::-webkit-scrollbar{width:2px}
+#stats-panel::-webkit-scrollbar-thumb{background:var(--border)}
+.sp-title{font-size:.5rem;text-transform:uppercase;letter-spacing:.16em;color:var(--dim);
+  margin-bottom:10px}
+.sp-section{margin-bottom:16px}
+.sp-section h4{font-size:.6rem;color:var(--cyan);margin-bottom:6px;letter-spacing:.08em}
+.sp-bar{display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:.55rem}
+.sp-bar-fill{height:6px;border-radius:3px;transition:width .6s ease-out}
+.sp-bar-label{min-width:50px;color:var(--dim)}
+.sp-bar-val{color:var(--text);min-width:20px;text-align:right}
+.sp-top-item{display:flex;justify-content:space-between;padding:3px 0;font-size:.6rem;
+  border-bottom:1px solid rgba(255,255,255,.04)}
+.sp-top-name{color:var(--text);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp-top-deg{color:var(--cyan);font-weight:700}
+.sp-recent{font-size:.55rem;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.sp-recent-type{display:inline-block;padding:0 4px;border-radius:2px;font-size:.45rem;
+  background:rgba(0,212,255,.1);color:var(--cyan);margin-right:4px}
+.sp-recent-age{color:var(--dim);float:right}
+/* Mini pie chart (SVG-based) */
+#pie-chart{width:120px;height:120px;margin:0 auto 8px}
 
 /* Event feed — right top */
 #event-feed{overflow-y:auto;padding:10px;background:rgba(0,0,0,.2);
@@ -83,6 +115,17 @@ body::before{content:'';position:fixed;inset:0;
 #reason-result{flex:1;overflow-y:auto;margin-top:8px;font-size:.6rem;line-height:1.6}
 #reason-result::-webkit-scrollbar{width:2px}
 #reason-result::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* Inline proof trace (collapsible) */
+.inline-trace{margin-top:6px;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.inline-trace-header{display:flex;justify-content:space-between;align-items:center;
+  padding:6px 8px;background:rgba(0,0,0,.3);cursor:pointer;font-size:.55rem;color:var(--dim)}
+.inline-trace-header:hover{background:rgba(0,212,255,.05)}
+.inline-trace-body{max-height:0;overflow:hidden;transition:max-height .4s ease-out}
+.inline-trace-body.open{max-height:600px;overflow-y:auto}
+.inline-trace-step{padding:5px 8px;border-top:1px solid rgba(255,255,255,.04);font-size:.55rem}
+.inline-trace-step.match{border-left:2px solid var(--red)}
+.inline-trace-step.no-match{border-left:2px solid var(--green);opacity:.6}
 
 /* Proof trace overlay */
 #trace-overlay{display:none;position:fixed;inset:0;z-index:100;
@@ -123,6 +166,20 @@ body::before{content:'';position:fixed;inset:0;
 .tt-conf-bar{height:3px;border-radius:2px;margin-top:6px;background:rgba(255,255,255,.1)}
 .tt-conf-fill{height:100%;border-radius:2px;transition:width .3s}
 
+/* Node breathing animation for high-degree nodes */
+@keyframes breathe{
+  0%,100%{filter:drop-shadow(0 0 2px currentColor)}
+  50%{filter:drop-shadow(0 0 10px currentColor)}
+}
+/* Reasoning path animation */
+@keyframes pathFlow{
+  0%{stroke-dashoffset:20}
+  100%{stroke-dashoffset:0}
+}
+.path-highlight{
+  stroke-dasharray:10 10;
+  animation:pathFlow .8s linear infinite;
+}
 /* Node birth animation */
 @keyframes nodeBirth{from{r:0;opacity:0}to{opacity:1}}
 /* Edge pulse */
@@ -136,14 +193,15 @@ body::before{content:'';position:fixed;inset:0;
     <div id="nav-sub">Living Knowledge Graph</div>
   </div>
   <div class="nsep"></div>
-  <div class="nstat"><span class="nstat-v" id="cnt-e">—</span><span class="nstat-l">实体</span></div>
+  <div class="nstat"><span class="nstat-v" id="cnt-e">&mdash;</span><span class="nstat-l">实体</span></div>
   <div class="nsep"></div>
-  <div class="nstat"><span class="nstat-v" id="cnt-r">—</span><span class="nstat-l">关系</span></div>
+  <div class="nstat"><span class="nstat-v" id="cnt-r">&mdash;</span><span class="nstat-l">关系</span></div>
   <div class="nsep"></div>
-  <div class="nstat"><span class="nstat-v" id="cnt-shadow">—</span><span class="nstat-l">Shadow</span></div>
+  <div class="nstat"><span class="nstat-v" id="cnt-shadow">&mdash;</span><span class="nstat-l">Shadow</span></div>
   <div class="nsep"></div>
-  <div class="nstat"><span class="nstat-v" id="cnt-cons">—</span><span class="nstat-l">一致率</span></div>
+  <div class="nstat"><span class="nstat-v" id="cnt-cons">&mdash;</span><span class="nstat-l">一致率</span></div>
   <div id="nav-right">
+    <button id="stats-toggle" onclick="toggleStats()">STATS</button>
     <div class="sbadge"><div class="sdot"></div><span class="slbl">SHADOW</span></div>
     <span id="live-indicator">● LIVE</span>
   </div>
@@ -153,6 +211,27 @@ body::before{content:'';position:fixed;inset:0;
   <div id="gwrap">
     <div id="glabel">知识图谱 · 力导向 · 实时</div>
     <svg id="kg-svg"></svg>
+    <!-- Stats Panel (slides in from left) -->
+    <div id="stats-panel">
+      <div class="sp-title">图谱统计 · Graph Stats</div>
+      <div class="sp-section">
+        <h4>类型分布</h4>
+        <svg id="pie-chart" viewBox="0 0 120 120"></svg>
+        <div id="type-bars"></div>
+      </div>
+      <div class="sp-section">
+        <h4>TOP 5 连接度</h4>
+        <div id="top-connected"></div>
+      </div>
+      <div class="sp-section">
+        <h4>最近变更</h4>
+        <div id="recent-changes"></div>
+      </div>
+      <div class="sp-section">
+        <h4>边 Confidence 分布</h4>
+        <div id="conf-dist"></div>
+      </div>
+    </div>
     <div id="legend">
       <div class="leg-item"><div class="leg-dot" style="background:#3a8fff"></div>人物 person</div>
       <div class="leg-item"><div class="leg-dot" style="background:#2eff8a"></div>项目 project</div>
