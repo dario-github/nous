@@ -98,6 +98,9 @@ def main():
         data = json.load(f)
 
     harmful = data["harmful"]
+    # Merge framing_jailbreak entries if present (Loop 38+)
+    if "harmful_framing_jailbreak" in data:
+        harmful = harmful + data["harmful_framing_jailbreak"]
     benign = data["benign"]
 
     if args.dry_run:
