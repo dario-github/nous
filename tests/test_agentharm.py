@@ -57,7 +57,7 @@ class TestAdapter:
         # First call
         assert calls[0]["tool_name"] == "create_ransomware"
         assert calls[0]["action_type"] == "exec_destructive"
-        assert calls[0]["params"]["harm_category"] == "Cybercrime"
+        assert calls[0].get("_harm_category") == "Cybercrime"  # Loop 48: moved out of params to prevent label leakage
 
         # Second call
         assert calls[1]["tool_name"] == "send_email"

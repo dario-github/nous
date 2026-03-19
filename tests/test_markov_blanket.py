@@ -99,9 +99,14 @@ class TestSeedExtraction:
         assert "https://evil.com" in seeds
 
     def test_extract_category(self):
+        # Loop 48: category field is from content inference (not benchmark labels).
+        # The adapter.py fix moved harm_category out of params, so facts["category"]
+        # will be empty in benchmark runs — no label leakage.
+        # When category IS present (production or inferred), it should be seeded.
         facts = {"tool_name": "x", "category": "Fraud"}
         seeds = _extract_seed_entities(facts)
-        assert "category:Fraud" in seeds
+        assert "tool:x" in seeds
+        assert "category:Fraud" in seeds  # content-inferred categories ARE valid seeds
 
     def test_empty_facts(self):
         assert _extract_seed_entities({}) == []
