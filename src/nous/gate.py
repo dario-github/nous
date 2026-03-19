@@ -41,63 +41,51 @@ from nous.verdict import (
 
 
 def _build_kg_context(facts: dict, db) -> dict | None:
-    """从 facts 提取实体标识，查 KG 获取上下文供 semantic gate 使用。
+    """从 facts 提取实体标识，用 Markov Blanket 选择性查 KG 获取上下文。
 
-    预算：最多 3 次 DB 查询，<5ms（24 entities 量级 <1ms）。
+    E2 改造：用 compute_blanket() 替代简单查找，只注入因果相关实体。
+    预算：<5ms（24 entities 量级 <1ms）。
     失败时返回 None（不影响 gate pipeline）。
     """
     import logging as _logging
     logger = _logging.getLogger("nous.gate.kg")
 
     try:
-        context: dict = {"entities": [], "relations": [], "policies": []}
+        from nous.markov_blanket import _extract_seed_entities, compute_blanket
 
-        # 1. Tool entity lookup
-        tool_name = facts.get("tool_name") or facts.get("name")
-        if tool_name:
-            tool_entity = db.find_entity(f"tool:{tool_name}")
-            if tool_entity:
-                context["entities"].append(tool_entity)
-                rels = db.related(f"tool:{tool_name}", rtype="governed_by", direction="out")
-                context["relations"].extend(rels[:5])
+        seeds = _extract_seed_entities(facts)
+        if not seeds:
+            return None
 
-        # 2. Target entity lookup (URL, recipient, file path)
-        target_candidates = [
-            facts.get("target_url"),
-            facts.get("url"),
-            facts.get("recipient"),
-            facts.get("file_path"),
-            facts.get("target"),
-        ]
-        for candidate in target_candidates:
-            if not candidate:
-                continue
-            entity = db.find_entity(candidate)
-            if entity:
-                context["entities"].append(entity)
-                rels = db.related(candidate, direction="both")
-                context["relations"].extend(rels[:5])
-                break  # 找到一个就够，节约预算
+        blanket = compute_blanket(db, seeds, max_depth=2, max_entities=15)
 
-        # 3. Category/domain context (如果 facts 有 category)
-        category = facts.get("category") or facts.get("domain")
-        if category:
-            # Try exact entity lookup first (e.g. category:Cybercrime)
-            cat_entity = db.find_entity(f"category:{category}")
-            if cat_entity:
-                context["policies"].append(cat_entity)
-                # Also grab governed_by relations for this category
-                cat_rels = db.related(f"category:{category}", rtype="governed_by", direction="out")
-                context["relations"].extend(cat_rels[:3])
-            else:
-                # Fallback: search by etype
-                cat_entities = db.find_by_type("category")
-                for ce in cat_entities:
-                    if category.lower() in ce.get("id", "").lower():
-                        context["policies"].append(ce)
-                        break
+        if not blanket or not blanket.get("entities"):
+            return None
 
-        return context if any(context.values()) else None
+        # Convert blanket format to legacy kg_context format for compatibility
+        # with _format_kg_context_for_prompt and _emit_gate_event
+        context: dict = {
+            "entities": [],
+            "relations": [],
+            "policies": [],
+            # E2 extension fields
+            "blanket": blanket,
+        }
+
+        for ent in blanket["entities"]:
+            eid = ent.get("id", "")
+            # Resolve full entity data from DB for entities with props
+            full_ent = db.find_entity(eid)
+            if full_ent:
+                context["entities"].append(full_ent)
+                # Category entities go to policies
+                if full_ent.get("etype") == "category":
+                    context["policies"].append(full_ent)
+
+        for rel in blanket["relations"]:
+            context["relations"].append(rel)
+
+        return context if any(v for k, v in context.items() if k != "blanket") else None
 
     except Exception as e:
         logger.warning("KG context build failed (non-fatal): %s", e)
@@ -203,7 +191,7 @@ class GateResult:
     datalog_verdict: Optional[str] = None            # M7.3
     semantic_verdict: Optional[dict] = None          # M7.3
     layer_path: str = "datalog_only"                 # M7.3
-    kg_context: Optional[dict] = None                # Post-gate enrichment (not injected into semantic gate per ablation bf036b0)
+    kg_context: Optional[dict] = None                # E2: Markov Blanket selective context (injected into semantic gate)
 
     def to_dict(self) -> dict:
         d = {
@@ -306,15 +294,17 @@ def gate(
         verdict = route_verdict(match_results)
         datalog_verdict_str = verdict.action
 
-        # Step 4.5: KG Context Lookup（P1 from GPT-5.4 critique）
-        # gate() 内部主动查 KG，不再依赖调用方传 kg_context
-        # NOTE: KG context is queried but NOT injected into semantic gate prompt.
-        # Ablation bf036b0: qwen-turbo TPR -12% with KG injection.
-        # Loop 43 re-test with DeepSeek-V3.1: FPR doubled (5.6% → 11.1%).
-        # Root cause: KG noise (auto-enriched entities) causes over-blocking.
-        # KG context is preserved for post-gate enrichment (proof_trace, explanations).
+        # Step 4.5: KG Context Lookup — Markov Blanket (E2)
+        # E2 改造：用 Markov Blanket 选择性注入替代全量 KG。
+        # Loop 43 发现全量注入 FPR 从 5.6% → 11.1%（噪声过多）。
+        # Markov Blanket 只注入因果相关实体，预期恢复 FPR 到 5-6%。
         if kg_context is None and db is not None and semantic_config is not None:
             kg_context = _build_kg_context(facts, db)
+
+        # 提取 blanket-formatted context for semantic gate injection
+        _blanket_kg_for_semantic = None
+        if kg_context is not None and "blanket" in kg_context:
+            _blanket_kg_for_semantic = kg_context  # Markov Blanket context (selective)
 
         # Step 4.6: 三层路由（M7.3）
         layer_path = "datalog_only"
@@ -329,12 +319,11 @@ def gate(
             if triviality_config is not None and is_trivial(facts, triviality_config):
                 layer_path = "trivial_allow"
             elif semantic_config is not None:
-                # Layer 3: Semantic Gate
-                # kg_context=None: Loop 43 confirmed KG injection doubles FPR even with DeepSeek-V3.1
+                # Layer 3: Semantic Gate — now with Markov Blanket context (E2)
                 layer_path = "semantic"
                 sem_verdict = _run_semantic_gate(
                     tool_call, facts, datalog_verdict_str,
-                    None, semantic_config,
+                    _blanket_kg_for_semantic, semantic_config,
                 )
                 verdict = _apply_semantic_verdict(
                     verdict, datalog_verdict_str, sem_verdict, semantic_config,
@@ -347,7 +336,7 @@ def gate(
                 layer_path = "semantic"
                 sem_verdict = _run_semantic_gate(
                     tool_call, facts, datalog_verdict_str,
-                    None, semantic_config,  # kg_context=None per Loop 43 experiment
+                    _blanket_kg_for_semantic, semantic_config,
                 )
                 verdict = _apply_semantic_verdict(
                     verdict, datalog_verdict_str, sem_verdict, semantic_config,
