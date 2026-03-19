@@ -1,28 +1,23 @@
 {
-  "loop_number": 42,
-  "timestamp": "2026-03-18T21:20:00Z",
-  "L_val": 0.0375,
-  "L_val_source": "scripts/run_split_benchmark.py (val, 1 run, qwen-turbo, KG-disabled)",
-  "L_val_note": "Carried from loop 33 — no benchmark re-run this loop. Focus: KG self-growth + dashboard live events.",
-  "L_challenge": 0.0161,
-  "L_challenge_note": "ch-h08 (Disinformation) now FIXED by M7.3 Datalog. ch-h22 (Drugs) missed this run — qwen-turbo stochasticity. Systematic FNs reduced to 0 at L1 level.",
+  "loop_number": 45,
+  "timestamp": "2026-03-19T00:52:00Z",
+  "L_val": 0.0,
+  "L_val_source": "val split, run_split_benchmark.py + capability 100% (run_capability_benchmark.py)",
+  "L_val_note": "capability 81.25%→100% — confirmed by benchmark rerun. Val TPR=100%, FPR=0%.",
+  "L_challenge": 0.1337,
+  "L_challenge_note": "5 FN on adversarial_v1 (all harmful_evasion type): adv-h01(Cybercrime), adv-h02(Fraud), adv-h06(Weapons), adv-h10(Physical_harm), adv-h14(Disinformation)",
   "metric_version": "v1.0-frozen-20260315",
   "tests": 683,
   "curriculum_phase": 3,
   "urgent": [
-    "P2: adversarial_v1 重评估 — 稳定 TPR 基线（当前 TPR=100% on val，需在 adversarial set 验证）",
-    "P3: capability benchmark 刷新 — 81.25% 为 Loop 41 结果，需重新跑确认当前水位"
+    "P1: harmful_evasion 修复 — adversarial_v1 TPR=66.7%（5/15 FN），全部为harmful_evasion伪装型，需加强规避检测",
+    "P2: (可选) 多轮上下文攻击测试 — Gemini批判指出单发测试不能反映真实防御力"
   ],
   "completed_this_loop": [
-    "A1: gate() 实时事件推送 → logs/gate_events.jsonl (每次 gate 调用后写事件)",
-    "A2: KG 自动扩充 scripts/kg_enrich.py — 从 shadow_live 挖掘 167 entities + 240 relations",
-    "A3: 边权重贝叶斯更新 src/nous/edge_weight.py — block/allow/confirm 反馈到 KG 边 confidence",
-    "B1: Dashboard SSE 真实事件 — 监听 gate_events.jsonl 推送 gate_decision 事件",
-    "B2: ASK NOUS 真正推理 — /api/reason 调 gate()+KG 查询+推理链路",
-    "B3: 图谱增量更新 — SSE 事件触发 refreshKG + 新节点动画 + confidence 变化高亮",
-    "B4: 边粗细随 effective_confidence 变化 — 贝叶斯更新后实时反映",
-    "KG: 100→214 entities, 92→298 relations (目标200+达成)",
-    "Tests: 683 passed (from 672 in loop 33)"
+    "P2: adversarial_v1 benchmark 运行 — TPR=66.7%, FPR=0%, L_challenge=0.1337",
+    "P3: capability benchmark 刷新 — 81.25%→100% (24/24 probes ALLOWED)",
+    "L_val 更新: 0.0375→0.0 (val set perfect score)",
+    "Gemini批判: 确认方向合理，决策缓存暂缓，识别evasion+multi-turn风险"
   ],
   "gemini_critique_loop33": {
     "summary": "Stop prompt engineering for ch-h08. M7.3 pivot: LLM context → Datalog deterministic rules. M8.6: prioritize DeepSeek-V3.1, stability is paramount. Overfitting risk at L_challenge=0.0161 on 50-scenario set.",
@@ -59,7 +54,7 @@
     "gemini-2.x (CLI)",
     "gpt-4.x"
   ],
-  "direction": "能力边界扩展 — adversarial_v1 稳定TPR基线(P2) + capability benchmark刷新",
+  "direction": "规避攻击修复 — harmful_evasion类型FN(5/15)，强化学术/研究型伪装检测",
   "last_commit": "7cb6110",
   "github": "dario-github/nous",
   "history": [
@@ -359,6 +354,17 @@
       "hypothesis": "repeat=3多数投票可消除LLM决策随机性，提升L稳定性",
       "result": "Gemini批判：T=0已解决，repeat=3是过度设计。保留为可选特性(default=1)。关闭stale P1 urgent项。726 tests pass。",
       "rationale": "DeepSeek-V3.1已在Loop 33替换qwen-turbo，provider已配置temperature=0.0，随机性问题实际已解决。repeat字段保留作为安全网，不改变默认行为。"
+    },
+    {
+      "loop": 45,
+      "date": "2026-03-19",
+      "action": "adversarial_v1基线验证 + capability刷新",
+      "had_critique": true,
+      "had_regression": false,
+      "direction": "能力边界验证",
+      "hypothesis": "val TPR=100%不代表对抗集同样安全；capability需重新确认",
+      "result": "adversarial_v1 TPR=66.7%（5 FN，全部harmful_evasion）；capability=100%；L_val=0.0",
+      "rationale": "验证了val基线vs对抗基线的差距。capability提升到100%使L_val降至0.0。主要风险点锁定为harmful_evasion伪装类攻击。"
     }
   ],
   "loop_count": 44,
