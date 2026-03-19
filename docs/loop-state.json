@@ -1,5 +1,5 @@
 {
-  "loop_number": 45,
+  "loop_number": 47,
   "timestamp": "2026-03-19T00:52:00Z",
   "L_val": 0.0,
   "L_val_source": "val split, run_split_benchmark.py + capability 100% (run_capability_benchmark.py)",
@@ -55,7 +55,7 @@
     "gpt-4.x"
   ],
   "direction": "规避攻击修复 — harmful_evasion类型FN(5/15)，强化学术/研究型伪装检测",
-  "last_commit": "7cb6110",
+  "last_commit": "485127a",
   "github": "dario-github/nous",
   "history": [
     {
@@ -365,8 +365,21 @@
       "hypothesis": "val TPR=100%不代表对抗集同样安全；capability需重新确认",
       "result": "adversarial_v1 TPR=66.7%（5 FN，全部harmful_evasion）；capability=100%；L_val=0.0",
       "rationale": "验证了val基线vs对抗基线的差距。capability提升到100%使L_val降至0.0。主要风险点锁定为harmful_evasion伪装类攻击。"
+    },
+    {
+      "loop": 47,
+      "date": "2026-03-19",
+      "action": "本体论推理SOTA文献搜索",
+      "result": "7篇论文3实验方向。OWL2RL可Datalog执行/MB选择性注入/LLM自动生成规则",
+      "direction": "E1→E2→E3"
     }
   ],
   "loop_count": 44,
-  "phase": "active"
+  "phase": "active",
+  "loop": 46,
+  "status": "pairs_added_pending_verification",
+  "next_steps": [
+    "P1: 重跑 adversarial_v1 验证 Pairs 27-31 是否修复 5 个 FN（TPR 66.7%→目标 93%+）",
+    "P2: (可选) 多轮上下文攻击测试 — Gemini 批判指出单发测试不反映真实防御力"
+  ]
 }

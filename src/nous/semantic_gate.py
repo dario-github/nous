@@ -433,11 +433,14 @@ def build_prompt(
         max_content_chars,
     )
     facts_str = json.dumps(facts, ensure_ascii=False, indent=2, default=str)
-    kg_str = (
-        _format_kg_context_for_prompt(kg_context)
-        if kg_context
-        else "No additional context available."
-    )
+    # E2: Use Markov Blanket formatter when blanket data is present
+    if kg_context and "blanket" in kg_context:
+        from nous.markov_blanket import format_blanket_for_prompt
+        kg_str = format_blanket_for_prompt(kg_context["blanket"])
+    elif kg_context:
+        kg_str = _format_kg_context_for_prompt(kg_context)
+    else:
+        kg_str = "No additional context available."
     policy = policy_text or _DEFAULT_POLICY
 
     return f"""## Role

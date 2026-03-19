@@ -32,7 +32,10 @@ class NousDB:
         self.init_schema()
 
     def init_schema(self):
-        """按 design.md §4 创建 6 张表（已存在则跳过）"""
+        """按 design.md §4 创建 6+5 张表（已存在则跳过）
+
+        包含 OWL 2 RL 推理规则所需的 5 张表（E1）。
+        """
         schemas = [
             # Layer 3: 知识图谱
             """
@@ -122,6 +125,10 @@ class NousDB:
                 else:
                     # 其他错误重新抛出
                     raise
+
+        # E1: OWL 2 RL 推理规则表
+        from nous.owl_rules import init_owl_schema
+        init_owl_schema(self)
 
     def upsert_entities(self, entities: list[Entity], strict: bool = False):
         """批量 upsert entity（幂等）——按 id 覆盖写入
@@ -455,6 +462,24 @@ class NousDB:
         if isinstance(result, list):
             return result
         return []
+
+    # ── E1: OWL 2 RL 推理 ─────────────────────────────────────────────
+
+    def run_owl_reasoning(self) -> dict:
+        """执行 OWL 2 RL 推理并物化结果。返回推理统计。"""
+        from nous.owl_rules import materialize_inferences
+        return materialize_inferences(self)
+
+    def inferred_type(self, entity_id: str) -> list[dict]:
+        """查询实体的推导类型。"""
+        from nous.owl_rules import inferred_types
+        return inferred_types(self, entity_id)
+
+    def inferred_relations(self, entity_id: str,
+                           direction: str = "out") -> list[dict]:
+        """查询实体的推导关系。"""
+        from nous.owl_rules import inferred_relations as _ir
+        return _ir(self, entity_id, direction)
 
     def close(self):
         """关闭数据库连接"""
