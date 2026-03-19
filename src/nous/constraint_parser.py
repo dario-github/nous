@@ -113,10 +113,10 @@ def load_constraints(constraints_dir: Optional[Path] = None) -> list[Constraint]
             errors.append(f"{yaml_file.name}: {e}")
 
     if errors:
-        # 记录错误但不中断加载
-        import warnings
-        for err in errors:
-            warnings.warn(f"[constraint_parser] 解析失败，已跳过: {err}")
+        raise ConstraintLoadError(
+            f"约束文件解析失败（FAIL_CLOSED，共 {len(errors)} 个文件）: "
+            + "; ".join(errors)
+        )
 
     # 按 priority 升序（数字越小越高优先级）
     constraints.sort(key=lambda c: c.priority)

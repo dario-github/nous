@@ -41,7 +41,7 @@ def enhanced_tool_calls(scenario: dict) -> list[dict]:
 
 
 def run_config(scenarios, is_harmful, triviality_config=None,
-               semantic_config=None, enhanced=False):
+               semantic_config=None, enhanced=False, db=None):
     """Run gate on all scenarios with given config."""
     results = []
     for scenario in scenarios:
@@ -53,7 +53,7 @@ def run_config(scenarios, is_harmful, triviality_config=None,
         tc_results = []
         for tc in tool_calls:
             gr = gate(
-                tc, db=None,
+                tc, db=db,
                 constraints_dir=CONSTRAINTS_DIR,
                 triviality_config=triviality_config,
                 semantic_config=semantic_config,
@@ -194,10 +194,83 @@ def print_comparison(label, m1, m2, m1_name="L1", m2_name="L1+L2+L3"):
         print(f"  {cat:<18} {c1['h_tpr']:>7.1f}% → {c2['h_tpr']:>7.1f}%  {c1['b_fpr']:>7.1f}% → {c2['b_fpr']:>7.1f}%")
 
 
+def _load_kg_db():
+    """Load a KG database with seeded data + OWL reasoning for Markov Blanket testing."""
+    from nous.db import NousDB
+    db = NousDB(path=":memory:")
+
+    # Import seed data directly
+    try:
+        sys.path.insert(0, str(Path(__file__).parent))
+        from seed_mitre_attack import TACTICS, TECHNIQUES
+        from nous.schema import Entity, Relation
+        import time as _t
+
+        now = _t.time()
+        entities = []
+        relations = []
+
+        for tac in TACTICS:
+            entities.append(Entity(
+                id=f"tactic:{tac['id']}", etype="tactic",
+                labels=[tac["name"]], props={"desc": tac["desc"]},
+                confidence=1.0, source="mitre-attack",
+                created_at=now, updated_at=now,
+            ))
+
+        for tech in TECHNIQUES:
+            entities.append(Entity(
+                id=f"technique:{tech['id']}", etype="technique",
+                labels=[tech["name"]], props={"desc": tech.get("desc", "")},
+                confidence=1.0, source="mitre-attack",
+                created_at=now, updated_at=now,
+            ))
+            tac_ids = tech.get("tactics", [])
+            if not tac_ids and tech.get("tactic"):
+                tac_ids = [tech["tactic"]]
+            for tac_id in tac_ids:
+                relations.append(Relation(
+                    from_id=f"technique:{tech['id']}", to_id=f"tactic:{tac_id}",
+                    rtype="BELONGS_TO", props={},
+                    confidence=1.0, source="mitre-attack", created_at=now,
+                ))
+
+        db.upsert_entities(entities)
+        db.upsert_relations(relations)
+        print(f"  Seeded {len(entities)} entities, {len(relations)} relations")
+    except Exception as e:
+        print(f"  [warn] seed failed: {e}")
+
+    # Run OWL reasoning
+    try:
+        from nous.owl_rules import add_subclass, materialize_inferences
+        # Add subclass axioms: technique subtypes
+        add_subclass(db, "technique", "cyber_operation")
+        add_subclass(db, "cyber_operation", "harmful_action")
+        add_subclass(db, "tactic", "attack_phase")
+        stats = materialize_inferences(db)
+        print(f"  OWL: {stats}")
+    except Exception as e:
+        print(f"  [warn] OWL reasoning: {e}")
+
+    return db
+
+
 def main():
     print("="*60)
     print("  AgentHarm Three-Layer Benchmark")
     print("="*60)
+
+    # Load KG if --with-kg flag
+    kg_db = None
+    if "--with-kg" in sys.argv:
+        print("\n[KG] Loading knowledge graph with Markov Blanket support...")
+        kg_db = _load_kg_db()
+        entity_result = kg_db.query("?[id] := *entity{id}")
+        entity_count = len(entity_result) if isinstance(entity_result, list) else len(entity_result.get("rows", []))
+        rel_result = kg_db.query("?[f,t,r] := *relation{from_id: f, to_id: t, rtype: r}")
+        rel_count = len(rel_result) if isinstance(rel_result, list) else len(rel_result.get("rows", []))
+        print(f"  KG loaded: {entity_count} entities, {rel_count} relations")
 
     harmful = load_harmful()
     benign = load_benign()
@@ -240,9 +313,9 @@ def main():
         )
         t0 = time.perf_counter()
         h3 = run_config(harmful, True, triviality_config=triv,
-                        semantic_config=sem_config, enhanced=True)
+                        semantic_config=sem_config, enhanced=True, db=kg_db)
         b3 = run_config(benign, False, triviality_config=triv,
-                        semantic_config=sem_config, enhanced=True)
+                        semantic_config=sem_config, enhanced=True, db=kg_db)
         elapsed = time.perf_counter() - t0
         m3 = analyze(h3, b3)
         print(f"  TPR={m3['overall']['tpr']}% FPR={m3['overall']['fpr']}% "
