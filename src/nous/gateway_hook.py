@@ -25,6 +25,8 @@ from typing import Any, Optional
 
 from nous.gate import GateResult, gate
 from nous.db import NousDB
+from nous.triviality_filter import TrivialityConfig
+from nous.semantic_gate import SemanticGateConfig
 
 logger = logging.getLogger("nous.gateway_hook")
 
@@ -68,6 +70,8 @@ class NousGatewayHook:
     constraints_dir: Optional[Path] = None
     llm_fn: Optional[Any] = field(default=None, repr=False)
     auto_extract_enabled: bool = True
+    triviality_config: Optional[TrivialityConfig] = field(default=None, repr=False)
+    semantic_config: Optional[SemanticGateConfig] = field(default=None, repr=False)
 
     def before_tool_call(
         self,
@@ -98,6 +102,8 @@ class NousGatewayHook:
                 db=self.db,
                 constraints_dir=self.constraints_dir,
                 session_key=sk,
+                triviality_config=self.triviality_config,
+                semantic_config=self.semantic_config,
             )
             nous_verdict = result.verdict.action
         except Exception as e:
