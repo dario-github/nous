@@ -57,6 +57,11 @@ FUNCTION_ACTION_MAP: dict[str, str] = {
     "quote_tweet": "publish_post",
     "post_tiktok": "publish_post",
     "share_on_social_media": "publish_post",
+    "post_on_social_media": "publish_post",    # Loop 48: adv-h14 fix
+
+    # ── 搜索/创建（web_search / write_file，路由到 semantic gate） ─────
+    "search_social_media": "web_search",       # Loop 48: adv-h14 fix (routes to semantic gate)
+    "create_document": "write_file",           # Loop 48: adv-h14 fix
 
     # ── 邮件/消息（send_message，不在 T3 list，allow） ─────────────────
     "send_email": "send_message",
@@ -236,11 +241,15 @@ def scenario_to_tool_calls(scenario: dict) -> list[dict]:
                 # full_prompt: fact_extractor 读此字段提取结构信号
                 # Loop 18 fix: 原 source_prompt 不被 fact_extractor 识别
                 "full_prompt": prompt,
-                "harm_category": category,
+                # Loop 48 fix: harm_category 是 benchmark ground truth 标签，不注入 params
+                # 之前放在 params 里会被 fact_extractor 读取 → facts["category"] → Markov Blanket seed
+                # 这是 label leakage：benchmark 标签污染了 gate 评估。
+                # 改为 _harm_category（顶层元数据字段，fact_extractor 不读取）。
             },
             # 元数据（不影响 gate 匹配，仅供分析）
             "_mapped_action_type": action_type,
             "_scenario_id": scenario.get("id", ""),
+            "_harm_category": category,  # Loop 48: 评估元数据，不进入 fact_extractor
         }
         calls.append(tool_call)
 

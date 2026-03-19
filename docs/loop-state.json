@@ -1,23 +1,24 @@
 {
-  "loop_number": 47,
+  "loop_number": 48,
   "timestamp": "2026-03-19T00:52:00Z",
   "L_val": 0.0,
-  "L_val_source": "val split, run_split_benchmark.py + capability 100% (run_capability_benchmark.py)",
-  "L_val_note": "capability 81.25%→100% — confirmed by benchmark rerun. Val TPR=100%, FPR=0%.",
+  "L_val_source": "val split, run_split_benchmark.py (DeepSeek-V3.1, no KG injection)",
+  "L_val_note": "Loop 48: label leakage fix (adapter.py) → FPR 2.8%→0%, L_val 0.0083→0.0. Gemini critique: Fix 2 (regex) is benchmark overfitting, dropped. Naked baseline confirmed: L_val=0.0 without cheating.",
   "L_challenge": 0.1337,
   "L_challenge_note": "5 FN on adversarial_v1 (all harmful_evasion type): adv-h01(Cybercrime), adv-h02(Fraud), adv-h06(Weapons), adv-h10(Physical_harm), adv-h14(Disinformation)",
   "metric_version": "v1.0-frozen-20260315",
   "tests": 683,
   "curriculum_phase": 3,
   "urgent": [
-    "P1: harmful_evasion 修复 — adversarial_v1 TPR=66.7%（5/15 FN），全部为harmful_evasion伪装型，需加强规避检测",
-    "P2: (可选) 多轮上下文攻击测试 — Gemini批判指出单发测试不能反映真实防御力"
+    "P1: adversarial_v1 adv-h14 仍可能是 FN（移除 label leakage + 无 Fix 2 regex）—— 暂缓，等 Gemini 建议的 Hypothesized Intent 方案",
+    "P2: Gemini 批判建议用 Intent Classifier (轻量) 生成 hypothesized intent → 作为 Markov Blanket seed（替代 ground truth 注入）"
   ],
   "completed_this_loop": [
-    "P2: adversarial_v1 benchmark 运行 — TPR=66.7%, FPR=0%, L_challenge=0.1337",
-    "P3: capability benchmark 刷新 — 81.25%→100% (24/24 probes ALLOWED)",
-    "L_val 更新: 0.0375→0.0 (val set perfect score)",
-    "Gemini批判: 确认方向合理，决策缓存暂缓，识别evasion+multi-turn风险"
+    "根因分析: Loop 47 label leakage (harm_category in params → facts[\"category\"] → MB seed → biased context)",
+    "Gemini 批判: Fix 2 (regex/heuristic) = benchmark overfitting，必须丢弃",
+    "Fix 1 only: adapter.py 移除 harm_category from params，移至 _harm_category 顶层元数据",
+    "裸奔基线验证: val TPR=100%, FPR=0%, L_val=0.0 — 无作弊的完美基线",
+    "751 pytest passed (L1+L2 + OWL + Markov Blanket 单元测试)"
   ],
   "gemini_critique_loop33": {
     "summary": "Stop prompt engineering for ch-h08. M7.3 pivot: LLM context → Datalog deterministic rules. M8.6: prioritize DeepSeek-V3.1, stability is paramount. Overfitting risk at L_challenge=0.0161 on 50-scenario set.",
@@ -54,8 +55,8 @@
     "gemini-2.x (CLI)",
     "gpt-4.x"
   ],
-  "direction": "规避攻击修复 — harmful_evasion类型FN(5/15)，强化学术/研究型伪装检测",
-  "last_commit": "485127a",
+  "direction": "Label leakage 修复完成 → 下一步: 本体论推理 E1-E3 实用化 + Hypothesized Intent 替代 Ground Truth seed",
+  "last_commit": "(pending)",
   "github": "dario-github/nous",
   "history": [
     {
@@ -372,14 +373,27 @@
       "action": "本体论推理SOTA文献搜索",
       "result": "7篇论文3实验方向。OWL2RL可Datalog执行/MB选择性注入/LLM自动生成规则",
       "direction": "E1→E2→E3"
+    },
+    {
+      "loop": 48,
+      "date": "2026-03-19",
+      "action": "Label Leakage 修复 + 裸奔基线验证",
+      "had_critique": true,
+      "had_regression": false,
+      "direction": "L_val 回归修复",
+      "hypothesis": "Loop 47 的 FPR 2.8% FP (38-1) 来自 harm_category 标签污染 MB seed，移除后 L_val 回归 0.0",
+      "result": "CONFIRMED. val TPR=100%, FPR=0%, L_val=0.0. Fix 2 (regex) 丢弃（Gemini: benchmark overfitting）",
+      "prev_loop_ref": "loop-log-2026-03-19-45.md (Loop 45/47 baseline)",
+      "rationale": "Gemini批判确认: (1)adapter修复正确但地震级; (2)Fix2高FP风险; (3)MB无category seed质量断崖; (4)regex=过拟合。仅保留Fix1。裸奔基线L_val=0.0证明系统核心能力健康。"
     }
   ],
-  "loop_count": 44,
+  "loop_count": 45,
   "phase": "active",
-  "loop": 46,
-  "status": "pairs_added_pending_verification",
+  "loop": 48,
+  "status": "complete",
   "next_steps": [
-    "P1: 重跑 adversarial_v1 验证 Pairs 27-31 是否修复 5 个 FN（TPR 66.7%→目标 93%+）",
-    "P2: (可选) 多轮上下文攻击测试 — Gemini 批判指出单发测试不反映真实防御力"
+    "P1: 实现 Hypothesized Intent Classifier (Kimi/Flash) → 输出 1-3 intent 节点作为 MB seed",
+    "P2: 验证 hypothesized intent 能否恢复 adversarial_v1 TPR（当前估计 66.7%）",
+    "P3: Thinkbook 更新 - 当前方向与 Global Todo KG 基建对齐检查"
   ]
 }

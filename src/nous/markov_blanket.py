@@ -32,7 +32,10 @@ def _extract_seed_entities(facts: dict) -> list[str]:
     Seeds 来源：
     1. tool_name → "tool:{name}"
     2. args 中的可识别实体（URL、recipient、file_path、target）
-    3. category/domain → "category:{value}"
+    3. category/domain → "category:{value}"（仅内容推断的类别，非 benchmark 标签）
+
+    注意：Loop 48 将 benchmark 的 harm_category 移出了 params dict（adapter 层修复），
+    所以 facts["category"] 现在只反映内容推断的类别，不再有 label leakage 风险。
     """
     seeds: list[str] = []
 
@@ -47,7 +50,7 @@ def _extract_seed_entities(facts: dict) -> list[str]:
         if val and isinstance(val, str) and val.strip():
             seeds.append(val.strip())
 
-    # Category/domain
+    # Category/domain (only from content inference, not benchmark labels)
     category = facts.get("category") or facts.get("domain")
     if category:
         seeds.append(f"category:{category}")
