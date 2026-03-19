@@ -23,6 +23,7 @@ from typing import Optional
 from nous.constraint_parser import ConstraintLoadError, load_constraints
 from nous.decision_log import CostBreakdown
 from nous.fact_extractor import extract_facts
+from nous.intent_extractor import extract_intents
 from nous.observability import SamplingPolicy, log_decision
 from nous.proof_trace import ProofStep, ProofTrace
 from nous.resource_budget import load_resource_budget, check_budget
@@ -40,10 +41,12 @@ from nous.verdict import (
 # ── KG Context Builder (P1 from GPT-5.4 critique) ─────────────────────────
 
 
-def _build_kg_context(facts: dict, db) -> dict | None:
+def _build_kg_context(facts: dict, db, extra_seeds: Optional[list] = None) -> dict | None:
     """从 facts 提取实体标识，用 Markov Blanket 选择性查 KG 获取上下文。
 
     E2 改造：用 compute_blanket() 替代简单查找，只注入因果相关实体。
+    Loop 49 改造：接受 extra_seeds 参数（如 hypothesized intent 节点），
+    避免将 intent 节点写入 facts dict（= 会被 semantic gate 序列化进 LLM prompt）。
     预算：<5ms（24 entities 量级 <1ms）。
     失败时返回 None（不影响 gate pipeline）。
     """
@@ -54,6 +57,13 @@ def _build_kg_context(facts: dict, db) -> dict | None:
         from nous.markov_blanket import _extract_seed_entities, compute_blanket
 
         seeds = _extract_seed_entities(facts)
+
+        # Loop 49: 合并 hypothesized intent seeds（单独传入，不经过 facts dict）
+        if extra_seeds:
+            for s in extra_seeds:
+                if s and s not in seeds:
+                    seeds.append(s)
+
         if not seeds:
             return None
 
@@ -282,6 +292,18 @@ def gate(
         facts = extract_facts(tool_call)
         fact_extraction_us = (time.perf_counter_ns() - t1_start) // 1000
 
+        # Step 1.5: Hypothesized Intent Extraction (Loop 49)
+        # 从 prompt + tool_name 推断意图节点，作为 Markov Blanket seed
+        # 替代 Loop 48 移除的 category seed（label leakage 修复后的空缺）
+        # 注意：intent seeds 单独保存，不写入 facts dict，
+        #        避免 semantic gate 将其序列化进 LLM prompt（= 新的 label leakage）
+        _intent_prompt = (
+            facts.get("full_prompt") or facts.get("content") or
+            facts.get("message") or facts.get("query") or ""
+        )
+        _intent_tool = facts.get("tool_name") or ""
+        _intent_seeds = extract_intents(_intent_prompt, _intent_tool)
+
         # Step 2: 加载约束
         constraints = load_constraints(constraints_dir)
 
@@ -299,7 +321,7 @@ def gate(
         # Loop 43 发现全量注入 FPR 从 5.6% → 11.1%（噪声过多）。
         # Markov Blanket 只注入因果相关实体，预期恢复 FPR 到 5-6%。
         if kg_context is None and db is not None and semantic_config is not None:
-            kg_context = _build_kg_context(facts, db)
+            kg_context = _build_kg_context(facts, db, extra_seeds=_intent_seeds)
 
         # 提取 blanket-formatted context for semantic gate injection
         _blanket_kg_for_semantic = None
