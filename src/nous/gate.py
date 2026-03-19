@@ -346,6 +346,7 @@ def gate(
                 sem_verdict = _run_semantic_gate(
                     tool_call, facts, datalog_verdict_str,
                     _blanket_kg_for_semantic, semantic_config,
+                    intent_seeds=_intent_seeds,
                 )
                 verdict = _apply_semantic_verdict(
                     verdict, datalog_verdict_str, sem_verdict, semantic_config,
@@ -359,6 +360,7 @@ def gate(
                 sem_verdict = _run_semantic_gate(
                     tool_call, facts, datalog_verdict_str,
                     _blanket_kg_for_semantic, semantic_config,
+                    intent_seeds=_intent_seeds,
                 )
                 verdict = _apply_semantic_verdict(
                     verdict, datalog_verdict_str, sem_verdict, semantic_config,
@@ -529,6 +531,7 @@ def _run_semantic_gate(
     datalog_verdict: str,
     kg_context: Optional[dict],
     config: SemanticGateConfig,
+    intent_seeds: Optional[list] = None,
 ) -> Optional[dict]:
     """调用 Semantic Gate，返回 SemanticVerdict dict 或 None。"""
     result = semantic_gate(
@@ -537,6 +540,7 @@ def _run_semantic_gate(
         datalog_verdict=datalog_verdict,
         kg_context=kg_context,
         config=config,
+        intent_seeds=intent_seeds,
     )
     return dict(result) if result is not None else None
 

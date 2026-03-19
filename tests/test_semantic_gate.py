@@ -277,3 +277,129 @@ class TestSemanticGate:
         )
         assert result is not None
         assert result["action"] == "block"
+
+
+# ── Loop 51: Intent Hints Injection Tests ────────────────────────────────
+
+
+class TestIntentHints:
+    """Loop 51: intent_seeds 注入 Semantic Gate prompt 的测试。"""
+
+    def test_build_prompt_with_intent_seeds_includes_section(self):
+        """intent_seeds 非空时 prompt 应包含 Intent Hypotheses 章节。"""
+        prompt = build_prompt(
+            tool_call={"tool_name": "exec", "params": {"command": "nmap scan"}},
+            facts={"action_type": "exec"},
+            datalog_verdict="confirm",
+            kg_context=None,
+            policy_text=None,
+            max_content_chars=8000,
+            intent_seeds=["intent:unauthorized_access", "intent:malware_deployment"],
+        )
+        assert "System-Detected Intent Hypotheses" in prompt
+        assert "Unauthorized Access" in prompt
+        assert "Malware Deployment" in prompt
+        assert "Hypothesis:" in prompt
+
+    def test_build_prompt_without_intent_seeds_no_section(self):
+        """intent_seeds 为 None 时 prompt 不应包含 Intent Hypotheses 章节。"""
+        prompt = build_prompt(
+            tool_call={"tool_name": "exec", "params": {"command": "ls"}},
+            facts={"action_type": "exec"},
+            datalog_verdict="allow",
+            kg_context=None,
+            policy_text=None,
+            max_content_chars=8000,
+            intent_seeds=None,
+        )
+        assert "System-Detected Intent Hypotheses" not in prompt
+
+    def test_build_prompt_with_empty_intent_seeds_no_section(self):
+        """intent_seeds 为空列表时不应包含 Intent Hypotheses 章节。"""
+        prompt = build_prompt(
+            tool_call={"tool_name": "exec", "params": {"command": "ls"}},
+            facts={"action_type": "exec"},
+            datalog_verdict="allow",
+            kg_context=None,
+            policy_text=None,
+            max_content_chars=8000,
+            intent_seeds=[],
+        )
+        assert "System-Detected Intent Hypotheses" not in prompt
+
+    def test_intent_hints_placement_before_decision(self):
+        """Intent Hypotheses 章节应该在 Decision 章节之前。"""
+        prompt = build_prompt(
+            tool_call={"tool_name": "exec", "params": {}},
+            facts={},
+            datalog_verdict="confirm",
+            kg_context=None,
+            policy_text=None,
+            max_content_chars=8000,
+            intent_seeds=["intent:credential_theft"],
+        )
+        hypotheses_pos = prompt.find("System-Detected Intent Hypotheses")
+        decision_pos = prompt.find("Decision — Intent Decomposition")
+        assert hypotheses_pos != -1
+        assert decision_pos != -1
+        assert hypotheses_pos < decision_pos, "Intent Hypotheses section must appear before Decision section"
+
+    def test_semantic_gate_passes_intent_seeds_to_prompt(self):
+        """semantic_gate() 传入 intent_seeds 时 prompt 应包含 hints。"""
+        captured_prompts: list[str] = []
+
+        def capturing_provider(prompt: str, timeout_ms: int, model: str) -> str:
+            captured_prompts.append(prompt)
+            return '{"action": "block", "reason": "harmful", "confidence": 0.95}'
+
+        config = SemanticGateConfig(
+            mode="active",
+            provider=capturing_provider,
+        )
+        result = semantic_gate(
+            tool_call={"tool_name": "exec", "params": {"command": "steal passwords"}},
+            facts={"action_type": "exec"},
+            datalog_verdict="confirm",
+            config=config,
+            intent_seeds=["intent:credential_theft", "intent:phishing"],
+        )
+        assert result is not None
+        assert len(captured_prompts) == 1
+        assert "System-Detected Intent Hypotheses" in captured_prompts[0]
+        assert "Credential Theft" in captured_prompts[0]
+        assert "Phishing" in captured_prompts[0]
+
+    def test_semantic_gate_without_intent_seeds_backward_compat(self):
+        """不传 intent_seeds 时 semantic_gate 行为与旧版一致（向后兼容）。"""
+        response = '{"action": "allow", "reason": "safe", "confidence": 0.9}'
+        config = SemanticGateConfig(
+            mode="active",
+            provider=make_mock_provider(response),
+        )
+        result = semantic_gate(
+            tool_call={"tool_name": "web_search", "params": {"query": "weather today"}},
+            facts={"action_type": "web_search"},
+            datalog_verdict="allow",
+            config=config,
+            # 不传 intent_seeds → 向后兼容
+        )
+        assert result is not None
+        assert result["action"] == "allow"
+
+    def test_format_intent_hints_known_intents(self):
+        """_format_intent_hints 应为已知 intent_id 输出可读标签（假设检验格式）。"""
+        from nous.semantic_gate import _format_intent_hints
+        output = _format_intent_hints(["intent:credential_theft", "intent:ransomware"])
+        assert "Credential Theft" in output
+        assert "Ransomware" in output
+        assert "Hypothesis:" in output
+        # 新格式：标签展示，不暴露 intent:X 原始 ID（减少权威感）
+        assert "verify" in output.lower()
+
+    def test_format_intent_hints_unknown_intent_fallback(self):
+        """未知 intent_id 应回退到驼峰转空格标签。"""
+        from nous.semantic_gate import _format_intent_hints
+        output = _format_intent_hints(["intent:some_new_category"])
+        # fallback label: "Some New Category"
+        assert "Some New Category" in output
+        assert "Hypothesis:" in output
