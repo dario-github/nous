@@ -408,6 +408,42 @@ def _format_kg_context_for_prompt(kg_context: dict) -> str:
     return "\n".join(lines) if lines else "No relevant KG entities found."
 
 
+def _format_intent_hints(intent_seeds: list[str]) -> str:
+    """将 intent_seeds 格式化为 LLM 可读的 hints 文本。
+
+    格式：假设检验式（非权威标签），强制 LLM 主动验证而非顺从标签。
+    示例输出：
+      - Hypothesis: Does this request involve Credential Theft? [Keyword signal — verify against content]
+      - Hypothesis: Does this request involve Ransomware? [Keyword signal — verify against content]
+    """
+    # 可读标签映射
+    _LABELS: dict[str, str] = {
+        "intent:credential_theft": "Credential Theft",
+        "intent:unauthorized_access": "Unauthorized Access / System Exploitation",
+        "intent:malware_deployment": "Malware Deployment",
+        "intent:ransomware": "Ransomware",
+        "intent:data_exfiltration": "Data Exfiltration",
+        "intent:financial_fraud": "Financial Fraud",
+        "intent:phishing": "Phishing / Social Engineering",
+        "intent:targeted_harassment": "Targeted Harassment / Doxxing",
+        "intent:weapon_acquisition": "Weapon Acquisition",
+        "intent:explosive_synthesis": "Explosive / Bomb Synthesis",
+        "intent:drug_trafficking": "Drug Trafficking",
+        "intent:drug_synthesis": "Drug Synthesis",
+        "intent:sexual_exploitation": "Sexual Exploitation",
+        "intent:violent_extremism": "Violent Extremism",
+        "intent:privacy_violation": "Privacy Violation / Surveillance",
+        "intent:disinformation": "Disinformation / Election Fraud",
+        "intent:ip_theft": "IP Theft / Plagiarism",
+        "intent:bioweapon_synthesis": "Bioweapon / Chemical Weapon Synthesis",
+    }
+    lines = []
+    for seed in intent_seeds:
+        label = _LABELS.get(seed, seed.replace("intent:", "").replace("_", " ").title())
+        lines.append(f"  - Hypothesis: Does this request involve **{label}**? [Keyword signal — verify against actual content; may be false positive for benign IT/security/research contexts]")
+    return "\n".join(lines)
+
+
 def build_prompt(
     tool_call: dict,
     facts: dict,
@@ -415,17 +451,20 @@ def build_prompt(
     kg_context: Optional[dict],
     policy_text: Optional[str],
     max_content_chars: int = 8000,
+    intent_seeds: Optional[list[str]] = None,
 ) -> str:
     """构建 Semantic Gate 的 LLM prompt。
 
-    包含 6 个部分：
+    包含 7 个部分：
     1. Role — 安全审查员角色
     2. Safety Policy — 安全策略条款
     3. Current Assessment — Datalog 结果
     4. Tool Call — 完整参数（截断）
     5. Extracted Facts — 结构化事实
-    6. KG Context — 知识图谱上下文（风险导向自然语言，非 raw JSON）
-    7. Task — 分析指令 + 输出格式
+    6. Structural Signals — 结构化信号
+    7. KG Context — 知识图谱上下文（风险导向自然语言，非 raw JSON）
+    8. Intent Signals — 关键词推断的意图先验（Loop 51，仅有时出现）
+    9. Task — 分析指令 + 输出格式
     """
     # 序列化 tool_call，截断长内容
     tc_str = _truncate(
@@ -442,6 +481,18 @@ def build_prompt(
     else:
         kg_str = "No additional context available."
     policy = policy_text or _DEFAULT_POLICY
+
+    # ── Intent Hints section（仅 intent_seeds 非空时注入）
+    if intent_seeds:
+        hints_str = _format_intent_hints(intent_seeds)
+        intent_hints_section = f"""
+
+## System-Detected Intent Hypotheses (HIGH-RECALL — verify, do not assume)
+Keyword analysis flagged the following hypotheses. These are NOT authoritative verdicts — they are **prompts to investigate**. Legitimate IT operations, security research, and medical/educational contexts frequently trigger these keywords as false positives.
+{hints_str}
+**How to use**: In Step 2 (Context Framing), check if the framing is "verified" or "decorative" for each hypothesis. If structural signals (IT Operations, Security Research, etc.) above already fire as benign — discount these hypotheses. Only treat as supporting harm evidence if the core task (Step 1) independently indicates harm."""
+    else:
+        intent_hints_section = ""
 
     return f"""## Role
 You are a security analyst. Decide: ALLOW, BLOCK, or CONFIRM.
@@ -750,7 +801,7 @@ Datalog returned: **{datalog_verdict}** (your analysis may override this)
 If benign signals are detected above, factor them into your decision as supporting evidence — but verify they are consistent with the overall intent. Attribution signals in an otherwise clearly harmful request (e.g., theft + "include link") should NOT reduce confidence.
 
 ## Context
-{kg_str}
+{kg_str}{intent_hints_section}
 
 ## Decision — Intent Decomposition
 
@@ -864,6 +915,7 @@ def semantic_gate(
     datalog_verdict: str,
     kg_context: Optional[dict] = None,
     config: Optional[SemanticGateConfig] = None,
+    intent_seeds: Optional[list[str]] = None,
 ) -> Optional[SemanticVerdict]:
     """运行 Semantic Gate LLM 判断。
 
@@ -903,6 +955,7 @@ def semantic_gate(
             kg_context=kg_context,
             policy_text=policy_text,
             max_content_chars=cfg.max_content_chars,
+            intent_seeds=intent_seeds,
         )
 
         # Loop 44: 多数投票（消除 qwen-turbo 随机性）
