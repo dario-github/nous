@@ -292,6 +292,21 @@ def gate(
         facts = extract_facts(tool_call)
         fact_extraction_us = (time.perf_counter_ns() - t1_start) // 1000
 
+        # Step 1.2: Action Layer Resolution (Phase A)
+        # Resolve tool_call against action patterns in KG Action Layer.
+        # Enriches facts with action_harmful_score/action_benign_score/action_risk_level.
+        # This gives semantic gate pre-classified intent context.
+        try:
+            from nous.action_layer import resolve_action, enrich_facts_with_actions
+            _action_matches = resolve_action(tool_call, facts)
+            if _action_matches:
+                facts = enrich_facts_with_actions(facts, _action_matches)
+        except Exception as _action_err:
+            # FAIL_OPEN: action layer errors don't break the pipeline
+            _gate_logging.getLogger("nous.gate").debug(
+                "Action layer error (fail-open): %s", _action_err
+            )
+
         # Step 1.5: Hypothesized Intent Extraction (Loop 49)
         # 从 prompt + tool_name 推断意图节点，作为 Markov Blanket seed
         # 替代 Loop 48 移除的 category seed（label leakage 修复后的空缺）

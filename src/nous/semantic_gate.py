@@ -371,6 +371,25 @@ def _build_structural_signals(facts: dict) -> str:
             "unwanted repeated contact, or using positive framing as cover for stalking behavior."
         )
 
+    # Action Layer (Phase A): pre-classified intent from KG action patterns
+    if facts.get("action_harmful_intent"):
+        lines.append(
+            f"- **⚠️ ACTION LAYER — HARMFUL PATTERN DETECTED**: "
+            f"{facts['action_harmful_intent']}. "
+            f"Harmful confidence: {facts.get('action_harmful_score', 0):.2f}. "
+            f"Risk level: {facts.get('action_risk_level', 'unknown')}. "
+            f"This is a pre-classification signal from the Action Ontology — "
+            f"use it as supporting evidence, not as sole determinant."
+        )
+    if facts.get("action_benign_intent"):
+        lines.append(
+            f"- **✅ ACTION LAYER — BENIGN PATTERN DETECTED**: "
+            f"{facts['action_benign_intent']}. "
+            f"Benign confidence: {facts.get('action_benign_score', 0):.2f}. "
+            f"This is a pre-classification signal from the Action Ontology — "
+            f"use it as supporting evidence, not as sole determinant."
+        )
+
     return "\n".join(lines) if lines else "None detected."
 
 
