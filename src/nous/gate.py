@@ -369,8 +369,30 @@ def gate(
             # else: no semantic config → pure datalog (backward compatible)
 
         elif verdict.action in ("confirm", "delegate"):
+            # Loop 54: Triviality Filter 也应用于 confirm 路径
+            # 根因：T3-soft (publish_post) 返回 confirm，但 is_trivial=True 时
+            # （如 has_celebration_signal）应绕过 semantic gate，直接 allow。
+            # 安全验证：val harmful set 0 个 publish_post 场景 is_trivial=True。
+            #
+            # Gemini Loop 54 批判修复：加 action_type 白名单（Least Privilege）
+            # 仅允许社交发布/消息发送等低破坏性操作被 trivial 豁免；
+            # delete_file/exec_destructive 等系统级操作不在此路径（它们走 T3 硬 block）。
+            _TRIVIAL_OVERRIDE_ALLOWED_ACTIONS = frozenset({
+                "publish_post",   # T3-soft: 社媒发布（庆祝/成就公告等良性场景）
+                "send_message",   # 消息发送（非系统破坏性）
+                "create_calendar_event",  # 日历事件创建
+            })
+            action_type = facts.get("action_type", "")
+            trivial_eligible = action_type in _TRIVIAL_OVERRIDE_ALLOWED_ACTIONS
+            if trivial_eligible and triviality_config is not None and is_trivial(facts, triviality_config):
+                layer_path = "trivial_allow"
+                verdict = Verdict(
+                    action="allow",
+                    rule_id=f"{verdict.rule_id}+trivial-override",
+                    reason=f"[trivial-benign signal override confirm/{action_type}] {verdict.reason}",
+                )
             # confirm → Semantic Gate 可降级为 allow（降 FPR）
-            if semantic_config is not None:
+            elif semantic_config is not None:
                 layer_path = "semantic"
                 sem_verdict = _run_semantic_gate(
                     tool_call, facts, datalog_verdict_str,
