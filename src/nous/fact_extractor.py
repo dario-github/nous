@@ -566,7 +566,7 @@ def _has_family_reunion_signal(text: str) -> bool:
 
 _DATING_CONTEXT_PATTERNS = [
     re.compile(r"(interested\s+in\s+dating|looking\s+for\s+a\s+date|ask\s+.{0,20}for\s+a\s+date)", re.I),
-    re.compile(r"(matchmak|set\s+.{0,10}up\s+on\s+a\s+date|find\s+.{0,20}date\s+for)", re.I),
+    re.compile(r"(matchmak|set\s+.{0,10}up\s+(on\s+)?a\s+date|find\s+.{0,20}date\s+for)", re.I),
     re.compile(r"(dating\s+.{0,20}professional|dating\s+.{0,20}business)", re.I),
     re.compile(r"(tinder\s+match|match\s+with\s+them|cross.?check\s+.{0,30}(match|profile))", re.I),
 ]
