@@ -1,10 +1,11 @@
-"""Nous — 知识图谱数据库 (M1.2 + M1.4)
+"""Nous — 知识图谱数据库 (M1.2 + M1.4 + M11.4)
 
 NousDB: 嵌入式 Cozo 数据库 wrapper
-- init_schema(): 创建 6 张表
-- upsert_entities/relations(): 批量幂等写入
+- init_schema(): 创建 6 张表 + entity_version 历史版本表 (M11.4)
+- upsert_entities/relations(): 批量幂等写入（含版本化检测）
 - query(): 执行原始 Datalog
 - find_entity/find_by_type/related/path/search(): 高级查询 API (M1.4)
+- get_entity_history/get_entity_at(): 实体历史版本 API (M11.4)
 """
 import json
 import time
@@ -108,6 +109,23 @@ class NousDB:
                 reviewed_at: Float default 0.0
             }
             """,
+            # M11.4: Entity 版本历史表
+            # 每次 entity 属性变更时，旧版本数据写入此表保留历史
+            """
+            :create entity_version {
+                entity_id: String,
+                version: Int =>
+                etype: String,
+                labels: [String],
+                props: Json,
+                metadata: Json,
+                confidence: Float default 1.0,
+                source: String default '',
+                valid_from: Float default 0.0,
+                valid_to: Float default 0.0,
+                changed_fields: [String]
+            }
+            """,
         ]
 
         for schema in schemas:
@@ -135,6 +153,8 @@ class NousDB:
         
         strict=True: required 缺失则拒绝写入
         strict=False: required 缺失仅 warning，仍写入
+
+        M11.4: 写入前先检查旧版本是否存在并有字段变更，若有则写入 entity_version。
         """
         if not entities:
             return
@@ -155,6 +175,9 @@ class NousDB:
                         f"Entity {e.id} schema warnings: {'; '.join(vr.errors)}")
             if vr.confidence_penalty > 0:
                 e.confidence = max(0.1, e.confidence - vr.confidence_penalty)
+
+            # M11.4: 版本化检查——在覆盖写入前保存旧版本
+            self._check_and_save_version(e)
             
             rows.append([
                 e.id,
@@ -173,6 +196,78 @@ class NousDB:
         for i in range(0, len(rows), batch_size):
             batch = rows[i:i + batch_size]
             self._batch_put_entities(batch)
+
+    def _check_and_save_version(self, entity: Entity):
+        """M11.4 内部方法：检查 entity 是否已存在且有字段变更，若有则将旧版本写入 entity_version。
+
+        变更检测字段：props / labels / metadata / confidence
+        新实体（不存在旧记录）不写入 entity_version。
+        无变更则跳过，保证幂等性。
+        """
+        # 查询当前实体是否存在
+        existing = self.find_entity(entity.id)
+        if existing is None:
+            # 新实体，无需版本化
+            return
+
+        # 检测各字段是否变更
+        changed_fields = []
+        if existing.get("props") != entity.properties:
+            changed_fields.append("props")
+        if existing.get("labels") != entity.labels:
+            changed_fields.append("labels")
+        if existing.get("metadata") != entity.metadata:
+            changed_fields.append("metadata")
+        # 浮点比较用容差，避免精度误差误判
+        if abs(existing.get("confidence", 1.0) - entity.confidence) > 1e-9:
+            changed_fields.append("confidence")
+
+        if not changed_fields:
+            # 无变更，跳过版本记录（幂等）
+            return
+
+        # 查当前最大 version 号，决定新版本号
+        ver_rows = self._query_with_params(
+            "?[max(version)] := *entity_version{entity_id, version}, entity_id = $eid",
+            {"eid": entity.id},
+        )
+        # max(version) 列名可能带括号，取第一个值
+        if ver_rows:
+            raw_max = list(ver_rows[0].values())[0]
+            next_version = (int(raw_max) + 1) if raw_max is not None else 1
+        else:
+            next_version = 1
+
+        now = time.time()
+        # valid_from 用旧实体的 updated_at（表示该版本生效的起始时间）
+        valid_from = existing.get("updated_at") or existing.get("created_at") or 0.0
+
+        # 将旧版本数据写入 entity_version
+        try:
+            self.db.run(
+                "?[entity_id, version, etype, labels, props, metadata, confidence, "
+                "source, valid_from, valid_to, changed_fields] "
+                "<- [[$eid, $ver, $etype, $labels, $props, $meta, $conf, $src, $vf, $vt, $cf]] "
+                ":put entity_version { entity_id, version => etype, labels, props, metadata, "
+                "confidence, source, valid_from, valid_to, changed_fields }",
+                {
+                    "eid": entity.id,
+                    "ver": next_version,
+                    "etype": existing.get("etype", ""),
+                    "labels": existing.get("labels", []),
+                    "props": existing.get("props", {}),
+                    "meta": existing.get("metadata", {}),
+                    "conf": float(existing.get("confidence", 1.0)),
+                    "src": existing.get("source", ""),
+                    "vf": float(valid_from),
+                    "vt": float(now),
+                    "cf": changed_fields,
+                },
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"_check_and_save_version failed for {entity.id}: {e}"
+            ) from e
 
     def _batch_put_entities(self, rows: list):
         """内部：批量 put entity 行"""
@@ -480,6 +575,62 @@ class NousDB:
         """查询实体的推导关系。"""
         from nous.owl_rules import inferred_relations as _ir
         return _ir(self, entity_id, direction)
+
+    # ── M11.4: Entity 版本化 API ───────────────────────────────────────
+
+    def get_entity_history(self, entity_id: str) -> list[dict]:
+        """M11.4: 查询实体的完整版本历史列表，按版本号升序返回。
+
+        返回格式：
+          [
+            {version, etype, labels, props, metadata, confidence,
+             source, valid_from, valid_to, changed_fields},
+            ...
+          ]
+        """
+        rows = self._query_with_params(
+            "?[version, etype, labels, props, metadata, confidence, "
+            "source, valid_from, valid_to, changed_fields] := "
+            "*entity_version{entity_id, version, etype, labels, props, metadata, "
+            "confidence, source, valid_from, valid_to, changed_fields}, "
+            "entity_id = $eid",
+            {"eid": entity_id},
+        )
+        # 按版本号升序排列，保证历史顺序正确
+        return sorted(rows, key=lambda r: r.get("version", 0))
+
+    def get_entity_at(self, entity_id: str, timestamp: float) -> Optional[dict]:
+        """M11.4: 返回实体在指定时间点的快照。
+
+        查找策略：
+        1. 先从 entity_version 中找 valid_from <= ts < valid_to 的历史版本
+        2. 若未找到历史版本（时间点在当前版本之后），直接返回当前实体
+        3. 若实体完全不存在，返回 None
+
+        Args:
+            entity_id: 实体 ID
+            timestamp: 查询时间点（epoch seconds）
+
+        Returns:
+            实体快照 dict，或 None（实体不存在）
+        """
+        # 从历史版本表中查找指定时间点所在区间
+        rows = self._query_with_params(
+            "?[version, etype, labels, props, metadata, confidence, "
+            "source, valid_from, valid_to, changed_fields] := "
+            "*entity_version{entity_id, version, etype, labels, props, metadata, "
+            "confidence, source, valid_from, valid_to, changed_fields}, "
+            "entity_id = $eid, "
+            "valid_from <= $ts, "
+            "$ts < valid_to",
+            {"eid": entity_id, "ts": timestamp},
+        )
+        if rows:
+            # 理论上最多一条（时间区间不重叠），取版本号最大的那条
+            return sorted(rows, key=lambda r: r.get("version", 0))[-1]
+
+        # 历史版本中没有，说明时间点在当前版本范围内（或实体不存在）
+        return self.find_entity(entity_id)
 
     def close(self):
         """关闭数据库连接"""
