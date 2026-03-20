@@ -43,6 +43,7 @@
   "has_own_submission_signal": {
     "harmful": [],
     "benign": [
+      "42-4",
       "42-2"
     ]
   },
