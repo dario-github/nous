@@ -240,6 +240,7 @@ def _has_celebration_signal(text: str) -> bool:
 _OWN_SUBMISSION_PATTERNS = [
     # "find [person]'s personal page" + "submit ... using [person]'s name"
     re.compile(r"(personal\s+page|own\s+page)\s+of\s+\w+", re.I),
+    re.compile(r"\w+'s\s+personal\s+page", re.I),  # KG Loop 1: "Brown's personal page"
     re.compile(r"find\s+.{0,30}page\s+.{0,30}(assignment|homework)\s+link", re.I),
     re.compile(r"submit\s+.{0,20}(assignment|homework)\s+using\s+\w+", re.I),
     re.compile(r"on\s+behalf\s+of\s+\w+", re.I),
@@ -925,6 +926,106 @@ def _has_election_disinformation_signal(text: str) -> bool:
     return False
 
 
+# ── KG Loop 1: 医疗咨询计费信号 ────────────────────────────────────────────
+# 目的：检测合法医疗咨询+计费工作流（医生检查邮件+确认支付+回复预约）
+# 关键区分：
+#   - benign: 医生确认咨询付款后确认预约 → 正常医疗工作流
+#   - harmful: 收钱后开假处方 → 医疗欺诈
+
+_MEDICAL_CONSULTATION_BILLING_PATTERNS = [
+    re.compile(r"(dr\.?|doctor)\s+\w+.{0,40}(email|inbox|message)", re.I),
+    re.compile(r"(wellness|health)\s+(advice|consult)", re.I),
+    re.compile(r"(paid|payment|paypal|transaction).{0,40}(consult|service|appointment)", re.I),
+    re.compile(r"confirm.{0,30}(consult|appointment)", re.I),
+    re.compile(r"patient.{0,30}(asking|request).{0,30}(advice|consult)", re.I),
+]
+
+_ANTI_MEDICAL_BILLING_PATTERNS = [
+    re.compile(r"(fake|forged?|fabricat)\s+(prescri|certif|document)", re.I),
+    re.compile(r"(controlled\s+substance|opioid|narcotic)", re.I),
+    re.compile(r"without\s+(prescri|licen|authoriz)", re.I),
+]
+
+
+def _has_medical_consultation_billing_signal(text: str) -> bool:
+    """检测合法医疗咨询+计费信号。KG Loop 1。"""
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_MEDICAL_BILLING_PATTERNS):
+        return False
+    # Need at least 2 patterns to match (compound signal)
+    matches = sum(1 for p in _MEDICAL_CONSULTATION_BILLING_PATTERNS if p.search(text))
+    return matches >= 2
+
+
+# ── KG Loop 1: 开源贡献信号 ──────────────────────────────────────────────
+# 目的：检测合法开源软件增强+分享工作流
+# 关键区分：
+#   - benign: 下载开源→增强功能→分享→写文档 → 正常开源贡献
+#   - harmful: 下载软件→注入恶意代码→分发 → 恶意软件分发
+
+_OPEN_SOURCE_CONTRIBUTION_PATTERNS = [
+    re.compile(r"(legitimate|open.?source)\s+(software|application|app|tool|program)", re.I),
+    re.compile(r"add\s+.{0,30}(feature|plugin|functionality|improvement|enhancement)", re.I),
+    re.compile(r"(improve|enhance|extend)\s+.{0,20}(functionality|feature|capability)", re.I),
+    re.compile(r"(FAQ|frequently\s+asked|documentation|explain.{0,20}feature)", re.I),
+    re.compile(r"(forum\s+post|blog\s+post).{0,30}(explain|descri|announc)", re.I),
+    re.compile(r"(video\s+filter|export\s+option|additional\s+.{0,20}feature)", re.I),
+]
+
+_ANTI_OPEN_SOURCE_PATTERNS = [
+    re.compile(r"(inject|embed|hide|conceal)\s+.{0,20}(malware|trojan|backdoor|keylogger|payload|virus)", re.I),
+    re.compile(r"(steal|exfiltrate|harvest)\s+.{0,20}(credential|password|data|cookie)", re.I),
+    re.compile(r"(reverse.?engineer|decompil|crack|bypass\s+licen)", re.I),
+    re.compile(r"(phishing|social\s+engineer|pretend\s+to\s+be)", re.I),
+]
+
+
+def _has_open_source_contribution_signal(text: str) -> bool:
+    """检测合法开源软件贡献信号。KG Loop 1。"""
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_OPEN_SOURCE_PATTERNS):
+        return False
+    # Need at least 2 positive patterns (legitimate + features/docs)
+    matches = sum(1 for p in _OPEN_SOURCE_CONTRIBUTION_PATTERNS if p.search(text))
+    return matches >= 2
+
+
+# ── KG Loop 1: 正面社交互动信号 ──────────────────────────────────────────
+# 目的：检测感恩/正面评价/支持他人工作的社交互动
+# 关键区分：
+#   - benign: 发感谢邮件+正面评论+推荐作品 → 正常社交
+#   - harmful: 跟踪+骚扰+在多平台纠缠 → 在线跟踪
+
+_POSITIVE_SOCIAL_PATTERNS = [
+    re.compile(r"(thank.?you|gratitude|grateful)\s+(email|message|note|letter)", re.I),
+    re.compile(r"(send|write)\s+.{0,20}(thank.?you|appreciation)", re.I),
+    re.compile(r"(positive|supportive|encouraging)\s+(repl|comment|post|review|feedback)", re.I),
+    re.compile(r"(support|promote|encourage).{0,30}(project|work|effort|initiative)", re.I),
+    re.compile(r"encouraging\s+others\s+to\s+(support|follow|check\s+out)", re.I),
+    re.compile(r"post\s+about\s+.{0,30}work.{0,20}(encouraging|support|positive)", re.I),
+]
+
+_ANTI_POSITIVE_SOCIAL_PATTERNS = [
+    re.compile(r"(stalk|harass|threaten|intimidat|dox|doxx)", re.I),
+    re.compile(r"(obsessi|compulsi|monitor.{0,10}every|track.{0,10}movement)", re.I),
+    re.compile(r"(negative|hostile|aggressive|hateful)\s+(comment|post|reply|message)", re.I),
+    re.compile(r"(fake\s+account|impersonat|catfish)", re.I),
+    re.compile(r"(unwanted|uninvited|unsolicited).{0,20}(contact|message|approach)", re.I),
+]
+
+
+def _has_positive_social_engagement_signal(text: str) -> bool:
+    """检测正面社交互动信号。KG Loop 1。"""
+    if not text or len(text) < 20:
+        return False
+    if any(p.search(text) for p in _ANTI_POSITIVE_SOCIAL_PATTERNS):
+        return False
+    matches = sum(1 for p in _POSITIVE_SOCIAL_PATTERNS if p.search(text))
+    return matches >= 2
+
+
 def _extract_url(tool_call: dict) -> Optional[str]:
     """从 tool_call 提取 URL（多层查找）"""
     # 直接字段
@@ -1251,6 +1352,15 @@ def extract_facts(tool_call: dict) -> dict:
 
     # M7.3: 选举虚假信息信号（ch-h08 Disinformation signal_abuse evasion）
     facts["has_election_disinformation_signal"] = _has_election_disinformation_signal(prompt_text)
+
+    # KG Loop 1: 医疗咨询计费信号
+    facts["has_medical_consultation_billing_signal"] = _has_medical_consultation_billing_signal(prompt_text)
+
+    # KG Loop 1: 开源贡献信号
+    facts["has_open_source_contribution_signal"] = _has_open_source_contribution_signal(prompt_text)
+
+    # KG Loop 1: 正面社交互动信号
+    facts["has_positive_social_engagement_signal"] = _has_positive_social_engagement_signal(prompt_text)
 
     # KG context bridge: extract tool_name and category for _build_kg_context()
     facts["tool_name"] = tool_call.get("tool_name") or tool_call.get("name") or tool_call.get("action")
