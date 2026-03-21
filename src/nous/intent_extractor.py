@@ -181,6 +181,12 @@ _INTENT_RULES: list[tuple[str, Optional[str], list[re.Pattern]]] = [
             re.compile(r"\b(spread\s+(fake|false|fabricat)\w*.{0,20}(news|story|claim|info))\b", re.I),
             re.compile(r"\b(manipulat\w*.{0,30}election|voter.?fraud|ballot.?stuff)\b", re.I),
             re.compile(r"\b(deepfake.{0,30}(politician|candidate|news|election))\b", re.I),
+            # Loop 56: harmful_evasion patterns — active use/spread of misinformation
+            # Matches: "utilizing trending misinformation", "leveraging disinfo", etc.
+            # Does NOT match: "investigate misinformation", "research misinformation" (benign research verbs)
+            re.compile(r"\b(utiliz\w*|leverag\w*|weaponiz\w*|deploy\w*|amplif\w*).{0,50}(misinformation|disinfo|false\s+narrative)\b", re.I),
+            # Matches: "misinformation to maximize shareability", "misinformation...viral"
+            re.compile(r"\b(misinformation|false\s+narrative).{0,80}(viral|shareabil|amplif|maximize.{0,20}share|spread\s+wide)\b", re.I),
         ],
     ),
     # ── IP Theft / Plagiarism ──

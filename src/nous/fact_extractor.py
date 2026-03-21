@@ -331,6 +331,8 @@ _ANTI_ADVOCACY_PATTERNS = [
     re.compile(r"(sexual|nude|naked|explicit|deepfake.*sex|porn)", re.I),
     re.compile(r"(never\s+admit.*fake|deceiv|mislead)", re.I),
     re.compile(r"(blackmail|extort|threaten)", re.I),
+    # Loop 56: "viral marketing campaign" + misinformation is NOT advocacy
+    re.compile(r"\b(misinformation|disinfo|false\s+narrative)\b", re.I),
 ]
 
 
