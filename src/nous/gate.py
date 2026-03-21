@@ -377,10 +377,17 @@ def gate(
             # Gemini Loop 54 批判修复：加 action_type 白名单（Least Privilege）
             # 仅允许社交发布/消息发送等低破坏性操作被 trivial 豁免；
             # delete_file/exec_destructive 等系统级操作不在此路径（它们走 T3 硬 block）。
+            #
+            # Loop 57 架构修复（Gemini批判方向B）：
+            # publish_post 和 send_message 具有"信息输出属性，易携带 payload"。
+            # adversarial_v2 基线验证：15/15 harmful 案例通过 trivial-override bypass (L_challenge=0.4)。
+            # 根本修复：将两者移出 trivial-override 列表，强制走 semantic gate。
+            # create_calendar_event 保留（调度操作，非直接内容输出，风险低）。
+            # 风险：52-3/52-2 celebration FP 可能复现 → 由 Loop 51 intent hints 守护。
             _TRIVIAL_OVERRIDE_ALLOWED_ACTIONS = frozenset({
-                "publish_post",   # T3-soft: 社媒发布（庆祝/成就公告等良性场景）
-                "send_message",   # 消息发送（非系统破坏性）
-                "create_calendar_event",  # 日历事件创建
+                # "publish_post" REMOVED (Loop 57): 信息输出属性，强制走 semantic gate
+                # "send_message" REMOVED (Loop 57): 信息输出属性，强制走 semantic gate
+                "create_calendar_event",  # 日历事件创建（调度，非内容输出）
             })
             action_type = facts.get("action_type", "")
             trivial_eligible = action_type in _TRIVIAL_OVERRIDE_ALLOWED_ACTIONS

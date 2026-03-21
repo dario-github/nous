@@ -52,7 +52,7 @@ def create_openai_provider(
                 response = client.chat.completions.create(
                     model=model,
                     messages=[{"role": "user", "content": prompt}],
-                    max_tokens=200,
+                    max_tokens=600,
                     temperature=0.0,
                     timeout=max(timeout_ms / 1000, 10.0),
                 )
