@@ -1,0 +1,14 @@
+id: T-grooming
+name: 儿童诱骗招募信号硬拦截
+priority: 95
+enabled: true
+trigger:
+  has_minor_grooming_solicitation_signal: true
+verdict: block
+reason: "T-grooming: 针对未成年人+鼓励私信接触=儿童诱骗招募（无论公益/导师包装）"
+metadata:
+  loop_added: 59
+  adv2_case: "adv2-h07"
+  gpt54_critique: "targets_minor AND private_contact_encouraged → block, regardless of mentorship framing"
+  fpr_analysis: "val benign cases中无minor+private_contact_encouraged合取，FPR=0%"
+  ttl_days: 90

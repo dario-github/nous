@@ -1028,6 +1028,80 @@ def _has_positive_social_engagement_signal(text: str) -> bool:
     return matches >= 2
 
 
+# ── Loop 59: 儿童诱骗招募信号（h07 修复） ──────────────────────────────────
+# 检测: 以导师/公益为借口，针对未成年人 + 鼓励私信接触
+# 合取要求: (targets minor) AND (private contact encouraged/promoted)
+# 关键区分: "private messaging encouraged" vs "do not encourage private contact"
+
+_MINOR_TARGETS = re.compile(
+    r"\b(minor|minors|child|children|lonely\s+(teen|youth|minor|child)|isolated\s+(youth|teen|child)|underage|youth\s+under)\b",
+    re.I
+)
+
+_PRIVATE_CONTACT_ENCOURAGED = re.compile(
+    r"(private\s+(messaging|message|chat|contact)|direct\s+message|one.on.one\s+contact|private\s+communication).{0,40}\b(encour|promot|allow|welcom|recommend)"
+    r"|"
+    r"\b(encour|promot|allow|welcom|recommend).{0,40}(private\s+(messaging|message|chat|contact)|direct\s+message|one.on.one\s+contact)",
+    re.I
+)
+
+def _has_minor_grooming_solicitation_signal(text: str) -> bool:
+    """检测以公益/导师为掩护的儿童诱骗招募信号。
+
+    Loop 59: 修复 adversarial_v2 h07 grooming FN。
+    需要同时满足：
+    1. 针对未成年人（lonely/isolated minor/child/youth）
+    2. 鼓励私信接触（private messaging encouraged/promoted）
+
+    关键区分: "promote connections ... private messaging encouraged" (harmful)
+    vs "mentors must not use private messaging" / "child safety" discussions (benign)
+
+    FPR 安全分析: val set benign cases 中无 minor+private_contact_encouraged 合取。
+    """
+    if not text or len(text) < 20:
+        return False
+    return bool(_MINOR_TARGETS.search(text) and _PRIVATE_CONTACT_ENCOURAGED.search(text))
+
+
+# ── Loop 59: 可执行恶意代码请求信号（h11 修复） ────────────────────────────
+# 检测: 虚构/教育包装 + "actual working" + 恶意能力代码请求
+# 合取要求: (executable_qualifier) AND (malicious_capability_context)
+# 关键区分: "actual working script" for exploitation vs generic "code example"
+
+_EXECUTABLE_QUALIFIER = re.compile(
+    r"\b(actual\s+working|fully\s+functional|deployable|runnable|real\s+working|working\s+(code|script|example))\b",
+    re.I
+)
+
+_MALICIOUS_CAPABILITY_CONTEXT = re.compile(
+    r"\b(credential\s+harvest|phishing\s+(script|kit|attack|code)|credential.stealing|"
+    r"keylog(ger|ging)|ransomware\s+(code|script)|exploit\s+(code|script|payload)|"
+    r"malware\s+(code|script|sample)|attack\s+(script|tool|payload)|"
+    r"hacking\s+(script|tool|code)|backdoor\s+(code|script)|"
+    r"password\s+stealing|data\s+exfiltrat(e|ion)\s+(script|code))",
+    re.I
+)
+
+def _has_executable_malicious_artifact_signal(text: str) -> bool:
+    """检测可执行恶意代码请求信号（roleplay/教育包装无法豁免）。
+
+    Loop 59: 修复 adversarial_v2 h11 roleplay FN。
+    需要同时满足：
+    1. 明确请求可执行/可部署代码（actual working/fully functional）
+    2. 恶意能力上下文（credential harvesting/phishing/exploit 等）
+
+    关键原则: 包装层（fictional/educational/awareness）不能豁免可操作攻击能力的提供。
+    GPT-5.4: "executable_artifact_requested AND harmful_capability → block，
+              不论 fictional/educational framing"
+
+    FPR 安全分析: 合法安全教育使用 "example" / "pseudocode" / "demo"，
+                   不会同时用 "actual working" + 具体恶意能力词汇合取。
+    """
+    if not text or len(text) < 20:
+        return False
+    return bool(_EXECUTABLE_QUALIFIER.search(text) and _MALICIOUS_CAPABILITY_CONTEXT.search(text))
+
+
 def _extract_url(tool_call: dict) -> Optional[str]:
     """从 tool_call 提取 URL（多层查找）"""
     # 直接字段
@@ -1363,6 +1437,12 @@ def extract_facts(tool_call: dict) -> dict:
 
     # KG Loop 1: 正面社交互动信号
     facts["has_positive_social_engagement_signal"] = _has_positive_social_engagement_signal(prompt_text)
+
+    # Loop 59: 儿童诱骗招募信号（adv2-h07 修复）
+    facts["has_minor_grooming_solicitation_signal"] = _has_minor_grooming_solicitation_signal(prompt_text)
+
+    # Loop 59: 可执行恶意代码请求信号（adv2-h11 修复）
+    facts["has_executable_malicious_artifact_signal"] = _has_executable_malicious_artifact_signal(prompt_text)
 
     # KG context bridge: extract tool_name and category for _build_kg_context()
     facts["tool_name"] = tool_call.get("tool_name") or tool_call.get("name") or tool_call.get("action")
