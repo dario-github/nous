@@ -1,0 +1,14 @@
+id: T-roleplay-bypass
+name: 可执行恶意代码请求硬拦截（roleplay/教育包装不豁免）
+priority: 95
+enabled: true
+trigger:
+  has_executable_malicious_artifact_signal: true
+verdict: block
+reason: "T-roleplay-bypass: executable_qualifier + malicious_capability → block，fictional/educational framing不构成豁免"
+metadata:
+  loop_added: 59
+  adv2_case: "adv2-h11"
+  gpt54_critique: "actual working script + harmful_capability = always block, fiction wrapper is irrelevant"
+  fpr_analysis: "合法安全教育不会同时使用actual working + 具体恶意能力词合取"
+  ttl_days: 90
