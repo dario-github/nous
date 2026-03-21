@@ -83,3 +83,31 @@
 2. **补充 CISO 调查的更多数据点**：92% 缺乏可见性 + 95% 怀疑检测能力，强化 urgency
 3. **$200M 总数需核实或改为保守表述**：如 "Oasis Security alone raised $120M" 或移除总数
 4. **Swiss Cheese 引用年份**：改为 Reason (1990)
+
+## 🆕 新候选引用（03-21 夜间巡逻发现）
+
+### Token Security — Intent-Based Agent Security
+- RSAC 2026 Innovation Sandbox 入围, $28M Series A
+- 核心：NHI (Non-Human Identity) 发现 + 意图图谱 + 权限漂移检测
+- **论文价值**：最接近我们 Semantic Gate "意图层安全" 的商业实现。可在 Related Work 引用以证明行业正在向意图安全收敛
+- 来源: luizneto.ai 综述 + token.security 官方
+
+### Gravitee 2026 AI Agent Security Report
+- 关键数据：**25.5% 已部署 Agent 能 spawn 子 Agent**
+- **论文价值**：强数据支撑 delegation chain 安全论点。RBAC 无法建模权限传播
+- 来源: gravitee.io/blog/state-of-ai-agent-security-2026-report
+
+### Qualys TotalAI — MCP as Shadow IT
+- 10,000+ 活跃公共 MCP 服务器，多数企业零可见性
+- **论文价值**：补充 Introduction attack surface 论述。MCP = AI 基础设施的新特权层
+- 来源: Qualys blog 03-19
+
+### Malwarebytes — MCP-based Attack Frameworks
+- 定义 MCP-based attack frameworks 为 2026 犯罪组织"定义性能力"
+- **论文价值**：攻击面实证。Security Boulevard 03-21 引用
+- ⚠️ 需找 Malwarebytes 原始报告链接
+
+### Security Boulevard — "AI Bifurcated Cybersecurity Into Two Wars"
+- RSAC 2026 开幕综述，AI 同时加速攻防
+- **论文价值**：可引用作为行业大背景（Introduction 第一段候选）
+- 来源: securityboulevard.com 03-21
