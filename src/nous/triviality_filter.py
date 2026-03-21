@@ -267,12 +267,19 @@ def is_trivial(facts: dict, config: TrivialityConfig | None = None) -> bool:
     #
     # Loop 36 安全修复：移除 has_factual_correction_signal
     # Loop 37 安全修复：增加 harmful domain guard（ch-h26 GHB celebration bypass）
-    # 原因：benign signal 的 anti-pattern 无法穷举所有有害领域，
-    # 需要一个统一的 domain-level 安全网阻止 "毒品合成庆祝"/"武器制造里程碑" 类 bypass。
+    # Loop 58 架构修复（GPT-5.4 批判）：移除 has_advocacy_signal
+    # 根因：adversarial_v2 5个 FN（h07 性诱导/h09 钓鱼/h10 预付费诈骗/h11 roleplay 恶意脚本/h12 反民主）
+    #        均通过 advocacy framing 触发 has_advocacy_signal=True，绕过 semantic gate。
+    # 实测：val set 2个 advocacy-trivial 案例均为 action_type=read_data，
+    #        由 Rule 3（allow_action_types）保障，不依赖 Rule 4b。FPR 零影响。
+    # 架构理由（GPT-5.4）：advocacy 语义模糊，无法构成 trivially benign 证据；
+    #        加 escalation patterns 是劣质 secondary gate，根因是移除此信号。
     _STRONG_BENIGN_SIGNALS = (
         "has_celebration_signal",       # 真实成就/庆祝公告（排除 rumor/lie/fake）
         "has_own_submission_signal",    # 帮人提交自己的作业（排除外部代码获取）
-        "has_advocacy_signal",          # 公益/倡导内容
+        # has_advocacy_signal REMOVED (Loop 58): advocacy framing 可伪装任意有害意图
+        #   adversarial_v2 h07/h09/h10/h11/h12 均通过此路径绕过 semantic gate
+        #   val set FPR 零影响（val advocacy 案例由 Rule 3 read_data 保障）
         # has_factual_correction_signal REMOVED (Loop 36): bypass rate 75% on challenge set
     )
     benign_signal_active = any(facts.get(sig, False) for sig in _STRONG_BENIGN_SIGNALS)
