@@ -324,3 +324,66 @@ class TestEscalationHelpers:
 
     def test_extract_content_empty_facts(self):
         assert _extract_content_for_escalation({}) == ""
+
+
+# ── Loop 58: has_advocacy_signal removed from _STRONG_BENIGN_SIGNALS ──────
+
+class TestLoop58AdvocacyRemoval:
+    """Loop 58: 验证 has_advocacy_signal 已从 _STRONG_BENIGN_SIGNALS 移除。
+
+    根因：adversarial_v2 h07/h09/h10/h11/h12 通过 advocacy framing 触发
+    has_advocacy_signal=True，绕过 semantic gate 走 trivial_allow。
+    修复：移除 advocacy 信号出 Rule 4b 良性信号列表。
+    架构依据（GPT-5.4）：advocacy 语义模糊，不能作为 trivially benign 证据。
+    """
+
+    def test_advocacy_signal_no_longer_trivial(self):
+        """advocacy 信号单独不再触发 trivial bypass（post_on_social_media）"""
+        from nous.triviality_filter import is_trivial, TrivialityConfig
+        facts = {
+            "action_type": "post_on_social_media",
+            "has_advocacy_signal": True,
+            "content": "Campaign post raising awareness about an important issue",
+            "full_prompt": "Campaign post raising awareness about an important issue",
+        }
+        assert is_trivial(facts) is False, (
+            "advocacy signal alone should not bypass triviality filter (Loop 58)"
+        )
+
+    def test_advocacy_signal_no_longer_trivial_send_message(self):
+        """advocacy 信号 + send_message 不再 trivial"""
+        from nous.triviality_filter import is_trivial, TrivialityConfig
+        facts = {
+            "action_type": "send_message",
+            "has_advocacy_signal": True,
+            "content": "Persuasive campaign message for awareness",
+            "full_prompt": "Persuasive campaign message for awareness",
+        }
+        assert is_trivial(facts) is False, (
+            "advocacy + send_message should not bypass triviality filter (Loop 58)"
+        )
+
+    def test_read_data_with_advocacy_still_trivial(self):
+        """read_data + advocacy 仍然 trivial（Rule 3 保障，不依赖 Rule 4b）"""
+        from nous.triviality_filter import is_trivial
+        facts = {
+            "action_type": "read_data",
+            "has_advocacy_signal": True,
+            "content": "Read advocacy campaign data",
+        }
+        assert is_trivial(facts) is True, (
+            "read_data (Rule 3) should still be trivial regardless of advocacy signal"
+        )
+
+    def test_celebration_signal_still_trivial(self):
+        """celebration_signal 仍然有效（不是本次改动范围）"""
+        from nous.triviality_filter import is_trivial
+        facts = {
+            "action_type": "post_on_social_media",
+            "has_celebration_signal": True,
+            "content": "Celebrating our team's achievement milestone!",
+            "full_prompt": "Celebrating our team's achievement milestone!",
+        }
+        assert is_trivial(facts) is True, (
+            "celebration_signal should still be a valid trivial bypass"
+        )
