@@ -26,20 +26,23 @@ We present Nous, a three-layer composable safety gate for agentic AI:
 3. **Semantic gate** (LLM with minimal-pair prompt engineering): handles ambiguous cases with calibrated confidence
 
 Key results on AgentHarm benchmark (176 harmful + 176 benign):
-- TPR 100%, FPR 0.0% (val set, majority-vote stable)
-- Shadow mode: 12,400+ production calls, 99.25% consistency
+- TPR 100%, FPR 0.0% (val set, majority-vote stable across 50 iterations)
+- Shadow mode: 19,350+ production calls, 99.45% consistency
 - Challenge set (45 adversarial): L=0.0000 with intent decomposition
+- Knowledge graph signal engineering: Val FPR 0.0%, Test FPR 2.8%
 
 We argue composable safety — where each layer handles what it's best at — is more robust than monolithic approaches.
 
 ## 1. Introduction (~0.5 page)
 
 **Problem**: Agents execute multi-step tool chains. Safety must intercept in real-time at each tool call.
+- **Motivation (2026-03)**: Meta Sev 1 incident — rogue agent posted unauthorized instructions on internal forum, employees followed them, 2h sensitive data exposure. CISO survey: 47% observed unauthorized agent actions, only 5% confident in containment.
 - Monolithic LLM classifiers: latency, hallucination, can't guarantee formal properties
 - Rule-only systems: can't handle semantic ambiguity ("download paper" vs "plagiarize paper")
 - Gap: no composable architecture that combines formal guarantees with semantic understanding
+- **Industry signal**: NVIDIA NemoClaw (GTC 2026), Microsoft 365 E7 ($99/user agent security), 6 agent governance startups funded in one week (Oasis $120M, AppViewX-Eos, Teleport, Kore.ai, SCW Trust Agent, ServiceNow AI Gateway)
 
-**Contribution**: Three-layer gate + shadow-mode deployment methodology + empirical results
+**Contribution**: Three-layer composable safety gate + formal composability proof + shadow-mode deployment methodology + empirical results on AgentHarm benchmark
 
 ## 2. Architecture (~1 page)
 
@@ -74,10 +77,10 @@ We argue composable safety — where each layer handles what it's best at — is
 - Comparison with ARIS-1 baselines (Llama Guard, OpenAI Moderation)
 
 ### 3.2 Shadow Deployment
-- 12,400+ real production calls over 5 days
-- 99.25% agreement with existing safety rules
-- 4 FP / 89 FN (shadow = non-blocking, so FN = existing system would have blocked)
-- Key finding: stochastic variance from MoE architecture is dominant FPR source
+- 19,350+ real production calls over 14+ days
+- 99.45% agreement with existing safety rules
+- Cutover: after 14,238 shadow calls, system promoted to primary interceptor
+- Key finding: stochastic variance from MoE architecture is dominant FPR source → majority vote mitigation
 
 ### 3.3 Capability Preservation
 - L5 extreme probes: 62.5% allow rate on genuine policy-boundary cases
@@ -101,9 +104,11 @@ We argue composable safety — where each layer handles what it's best at — is
 
 - Llama Guard / ShieldGemma (monolithic classifier approach)
 - NeMo Guardrails (rule-based, no semantic layer)
+- NemoClaw (NVIDIA GTC 2026 — enterprise declarative policy engine for agent governance, architecturally homologous to our Datalog layer)
 - Guardrails AI (validation framework, not compositional safety)
 - Swiss Cheese Model (Reason 1943 → Nous analogy: multiple independent layers)
 - ARIS survey: current SOTA landscape
+- Microsoft 365 E7 / Oasis Security / ServiceNow AI Gateway (industry convergence on agent governance)
 
 ## References
 

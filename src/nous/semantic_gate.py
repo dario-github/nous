@@ -891,8 +891,38 @@ Respond with ONLY a JSON object:
 
 # ── LLM 响应解析 ──────────────────────────────────────────────────────────
 
-_JSON_PATTERN = re.compile(r'\{[^{}]*"action"\s*:\s*"[^"]*"[^{}]*\}', re.DOTALL)
+_JSON_FLAT_PATTERN = re.compile(r'\{[^{}]*"action"\s*:\s*"[^"]*"[^{}]*\}', re.DOTALL)
 _VALID_ACTIONS = frozenset({"allow", "block", "confirm"})
+
+
+def _find_balanced_json(text: str) -> Optional[str]:
+    """Find the first balanced JSON object in text (handles nested braces)."""
+    start = text.find('{')
+    if start < 0:
+        return None
+    depth = 0
+    in_string = False
+    escape = False
+    for i in range(start, len(text)):
+        c = text[i]
+        if escape:
+            escape = False
+            continue
+        if c == '\\':
+            escape = True
+            continue
+        if c == '"' and not escape:
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if c == '{':
+            depth += 1
+        elif c == '}':
+            depth -= 1
+            if depth == 0:
+                return text[start:i+1]
+    return None
 
 
 def parse_llm_response(raw: str) -> Optional[dict]:
@@ -901,7 +931,8 @@ def parse_llm_response(raw: str) -> Optional[dict]:
     支持：
     - 纯 JSON 响应
     - Markdown 代码块中的 JSON
-    - 混合文本中的 JSON 片段
+    - 混合文本中的 JSON 片段（含嵌套大括号）
+    - 带推理链前缀的响应
 
     Returns:
         dict with action/reason/confidence, or None if parsing fails.
@@ -927,8 +958,18 @@ def parse_llm_response(raw: str) -> Optional[dict]:
         except json.JSONDecodeError:
             continue
 
-    # 最后尝试正则提取
-    match = _JSON_PATTERN.search(raw)
+    # 尝试平衡括号提取（支持嵌套 JSON）
+    balanced = _find_balanced_json(raw)
+    if balanced:
+        try:
+            obj = json.loads(balanced)
+            if isinstance(obj, dict) and obj.get("action") in _VALID_ACTIONS:
+                return _normalize_verdict(obj)
+        except json.JSONDecodeError:
+            pass
+
+    # 最后尝试简单正则提取（flat JSON only）
+    match = _JSON_FLAT_PATTERN.search(raw)
     if match:
         try:
             obj = json.loads(match.group())
