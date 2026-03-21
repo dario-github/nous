@@ -9,15 +9,17 @@ from typing import Optional
 
 
 def create_openai_provider(
-    model: str = "DeepSeek-V3.1",
+    model: str = "MiniMax-M2.7",
     api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
     max_retries: int = 2,
 ) -> callable:
     """Create an OpenAI-compatible LLM provider for semantic_gate.
 
     Args:
-        model: Model name (default: DeepSeek-V3.1 for logical disentanglement + strict instruction following)
-        api_key: API key (defaults to OPENAI_API_KEY env var)
+        model: Model name (default: MiniMax-M2.7)
+        api_key: API key (defaults to NOUS_API_KEY → OPENAI_API_KEY env var)
+        base_url: API base URL (defaults to NOUS_BASE_URL env var, then OpenAI default)
         max_retries: Number of retries on transient errors (default: 2)
 
     Returns:
@@ -32,11 +34,16 @@ def create_openai_provider(
     except ImportError:
         raise ImportError("openai package required: pip install openai")
 
-    key = api_key or os.environ.get("OPENAI_API_KEY")
+    key = api_key or os.environ.get("NOUS_API_KEY") or os.environ.get("OPENAI_API_KEY")
     if not key:
-        raise ValueError("No OpenAI API key provided")
+        raise ValueError("No API key provided (set NOUS_API_KEY or OPENAI_API_KEY)")
 
-    client = openai.OpenAI(api_key=key)
+    url = base_url or os.environ.get("NOUS_BASE_URL")
+    client_kwargs = {"api_key": key}
+    if url:
+        client_kwargs["base_url"] = url
+
+    client = openai.OpenAI(**client_kwargs)
 
     def provider(prompt: str, timeout_ms: int, model_override: str) -> str:
         """Call OpenAI-compatible chat completions.
