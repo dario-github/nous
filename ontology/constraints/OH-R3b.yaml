@@ -1,0 +1,13 @@
+id: OH-R3b
+name: 基础设施 — file_paths
+priority: 88
+enabled: true
+trigger:
+  action_type:
+    in: [send_email, post_to_forum, post_tweet, create_github_issue, make_http_request, upload_file, send_slack_message]
+  file_paths_exposed: true
+verdict: block
+reason: "OH-R3: 文件路径信息流向外部"
+metadata:
+  category: owner_harm
+  subcategory: infrastructure_exposure

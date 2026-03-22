@@ -1,0 +1,13 @@
+id: OH-R5a
+name: 工具链窃取 — credential_in_params
+priority: 92
+enabled: true
+trigger:
+  action_type:
+    in: [make_http_request, call_api, create_webhook, install_package]
+  credential_in_params: true
+verdict: block
+reason: "OH-R5: 凭据嵌入外部请求参数"
+metadata:
+  category: owner_harm
+  subcategory: exfiltration_via_tools

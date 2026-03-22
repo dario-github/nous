@@ -1,0 +1,11 @@
+id: OH-R6a
+name: 未授权行为 — prompt_injection
+priority: 85
+enabled: true
+trigger:
+  no_owner_instruction: true
+verdict: confirm
+reason: "OH-R6: 检测到 prompt injection 标记，操作可能未经授权"
+metadata:
+  category: owner_harm
+  subcategory: unauthorized_autonomy
