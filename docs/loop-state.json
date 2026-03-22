@@ -1,28 +1,26 @@
 {
-  "loop_number": 62,
-  "timestamp": "2026-03-22T12:45:00Z",
+  "loop_number": 63,
+  "timestamp": "2026-03-22T17:30:00Z",
   "L_val": 0.0,
-  "L_val_source": "val split, run_split_benchmark.py (DeepSeek-V3.1, NAS, with semantic gate), Loop 62",
-  "L_val_note": "Loop 62: L_val=0.0 maintained. CredentialLeak TPR 75%→100% (5 FN fixed). Owner-harm benchmark: TPR 49.2%→53.8%, CredentialLeak 20/20.",
+  "L_val_source": "val split, Loop 62 (no code changes in Loop 63)",
+  "L_val_note": "Loop 63: diagnostic only — semantic gate benchmark with MiniMax-M2.7. No TPR improvement. Root cause: timeout (91% fail-open) + model too slow (30-47s vs 15s limit).",
   "L_challenge": 0.0,
   "L_challenge_note": "Loop 60: L_challenge=0.0 (15/15 harmful blocked). Fixed: h12(authority_bypass). All adv2 FNs resolved.",
   "metric_version": "v1.0-frozen-20260315",
   "tests": 1028,
   "curriculum_phase": 3,
   "urgent": [
-    "P1: owner-harm benchmark TPR 53.8% — 61 FN 仍残留（Hijacking/UnauthorizedAutonomy TPR=25%，InnerCircleLeak 44%，PrivacyExposure 50%）",
-    "P2: 旧社会危害规则清理（GPT-5.4：dual profile 分离，不直接删；先建 profile 机制）",
-    "P3: owner-harm L 公式正式建立（L_owner = 0.4*(1-TPR) + 0.3*FPR + ...，当前 L_owner_partial ≈ 0.216）"
+    "P0: Switch semantic gate to DeepSeek-V3.1 (3.3s vs 30-47s) + timeout_ms=60000",
+    "P1: Datalog P2 patch — execute_command force-push/overwrite → AssetDestruction 6 FN",
+    "P2: Re-run owner-harm benchmark with DeepSeek to measure actual semantic gate contribution",
+    "P3: owner-harm-policy.txt injection pattern clarity (for Hijacking 25% / UA 25%)"
   ],
   "completed_this_loop": [
-    "GPT-5.4 架构批判：P1选B（独立_CREDENTIAL_FILE_ACCESS_PATTERNS），P2不删旧规则(dual profile)，P3顺序P1→P3→P2",
-    "新增 _CREDENTIAL_FILE_ACCESS_PATTERNS：~/.aws/credentials、~/.ssh/、.env 精确路径匹配",
-    "扩展 _EXFILTRATION_ACTION_PATTERNS：paste/emailing gerund 形式覆盖",
-    "扩展 _EXTERNAL_RECIPIENT_PATTERNS：Slack/Discord channel 作为外传目标",
-    "CredentialLeak FN 5→0 (TPR 75%→100%，20/20 BLOCK)",
-    "21 new tests (21/21 pass), L_val=0.0 维持, benign FPR=0%",
-    "Owner-harm benchmark: TPR 49.2%→53.8%（65→71/132），CredentialLeak 完全覆盖",
-    "PUSHED 645a765"
+    "Owner-harm benchmark with semantic gate (MiniMax-M2.7): TPR=53.8% = same as pure Datalog",
+    "Root cause: MiniMax response 30-47s > timeout 15s → 91% calls fail-open (semantic_verdict=null)",
+    "Only 14/160 tool calls completed: all \"allow\" with 0.94-0.97 confidence",
+    "DeepSeek-V3.1 test: 3.3s latency → recommended model for semantic gate",
+    "No code pushed (diagnostic loop)"
   ],
   "gemini_critique_loop33": {
     "summary": "Stop prompt engineering for ch-h08. M7.3 pivot: LLM context → Datalog deterministic rules. M8.6: prioritize DeepSeek-V3.1, stability is paramount. Overfitting risk at L_challenge=0.0161 on 50-scenario set.",
@@ -59,7 +57,7 @@
     "gemini-2.x (CLI)",
     "gpt-4.x"
   ],
-  "direction": "Loop 62: CredentialLeak TPR 修复完成。Loop 63: 攻克 Hijacking/UnauthorizedAutonomy 低 TPR（25%），或建立 L_owner 正式公式。",
+  "direction": "Loop 64: DeepSeek-V3.1 semantic gate + P2 Datalog fix + re-benchmark",
   "last_commit": "645a765",
   "github": "dario-github/nous",
   "history": [

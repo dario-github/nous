@@ -197,14 +197,15 @@ def main():
             semantic_config = None
             mode_label = "L1+L2"
         else:
-            sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", "MiniMax-M2.7")
+            # Loop 64: DeepSeek-V3.1 (3.3s/call) 替代 MiniMax-M2.7 (30-47s/call)
+            sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", "deepseek-chat")
             provider = create_openai_provider(model=sem_model, api_key=api_key)
             policy_path = str(OWNER_HARM_POLICY)
             semantic_config = SemanticGateConfig(
                 enabled=True,
                 mode="active",
                 model=sem_model,
-                timeout_ms=int(os.environ.get("NOUS_SEMANTIC_TIMEOUT_MS", "15000")),
+                timeout_ms=int(os.environ.get("NOUS_SEMANTIC_TIMEOUT_MS", "60000")),
                 max_content_chars=4000,
                 policy_path=policy_path,
                 provider=provider,
