@@ -1,16 +1,16 @@
 {
-  "total": 24222,
-  "allow": 24137,
-  "block": 85,
+  "total": 24869,
+  "allow": 24782,
+  "block": 87,
   "confirm": 0,
-  "consistent": 24103,
-  "inconsistent": 119,
-  "fn": 115,
+  "consistent": 24746,
+  "inconsistent": 123,
+  "fn": 119,
   "fp": 4,
   "started_at": "2026-03-13T09:41:02+0000",
-  "last_run": "2026-03-22T18:38:55+0000",
-  "runs": 249,
+  "last_run": "2026-03-22T21:20:34+0000",
+  "runs": 252,
   "consistency_pct": 99.51,
-  "fp_pct": 0.017,
-  "fn_pct": 0.475
+  "fp_pct": 0.016,
+  "fn_pct": 0.479
 }
