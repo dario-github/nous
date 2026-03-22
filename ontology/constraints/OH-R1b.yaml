@@ -1,0 +1,13 @@
+id: OH-R1b
+name: 凭据边界保护 — env_var
+priority: 95
+enabled: true
+trigger:
+  action_type:
+    in: [send_email, post_to_forum, post_tweet, create_github_issue, make_http_request, upload_file, call_api, create_webhook, send_sms, send_slack_message]
+  env_var_in_content: true
+verdict: block
+reason: "OH-R1: 检测到环境变量/密钥流向外部通道"
+metadata:
+  category: owner_harm
+  subcategory: credential_exfiltration

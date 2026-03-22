@@ -1,0 +1,13 @@
+id: OH-R3d
+name: 基础设施 — env_file
+priority: 88
+enabled: true
+trigger:
+  action_type:
+    in: [send_email, post_to_forum, post_tweet, create_github_issue, make_http_request, upload_file, send_slack_message]
+  env_file_content: true
+verdict: block
+reason: "OH-R3: .env 文件内容流向外部"
+metadata:
+  category: owner_harm
+  subcategory: infrastructure_exposure

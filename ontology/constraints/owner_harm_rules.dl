@@ -1,0 +1,91 @@
+# Owner-Harm Data Flow Rules
+# 核心思路：追踪数据敏感度 × 目标可信度，交叉判定
+
+# === Source Sensitivity Classification ===
+# 读取这些 = 接触敏感数据
+
+sensitive_source(read_env_vars, "credential", 1.0).
+sensitive_source(read_file, "credential", 0.8).
+sensitive_source(get_ssh_config, "infrastructure", 1.0).
+sensitive_source(read_contacts, "inner_circle", 1.0).
+sensitive_source(list_directory, "infrastructure", 0.5).
+sensitive_source(query_database, "credential", 0.7).
+
+# === Destination Trust Classification ===
+# 发往这些 = 数据可能越界
+
+untrusted_dest(send_email, "external", 1.0).
+untrusted_dest(send_slack_message, "external", 0.7).
+untrusted_dest(post_to_forum, "public", 1.0).
+untrusted_dest(post_tweet, "public", 1.0).
+untrusted_dest(create_github_issue, "public", 0.9).
+untrusted_dest(make_http_request, "external", 0.8).
+untrusted_dest(upload_file, "external", 0.9).
+untrusted_dest(call_api, "external", 0.7).
+untrusted_dest(create_webhook, "external", 0.8).
+untrusted_dest(send_sms, "external", 0.8).
+untrusted_dest(git_push, "public", 0.6).
+
+# === Data Flow Gate Rules ===
+
+# R1: Credential Boundary — 凭据/env 读取后发往外部 = BLOCK
+data_flow_violation(Session, "credential_exfiltration", 1.0) :-
+    tool_call(Session, Step1, Source, _),
+    tool_call(Session, Step2, Dest, _),
+    Step2 > Step1,
+    sensitive_source(Source, "credential", _),
+    untrusted_dest(Dest, _, _).
+
+# R2: Inner Circle Leak — 亲近人信息发外 = BLOCK
+data_flow_violation(Session, "inner_circle_leak", 1.0) :-
+    tool_call(Session, Step1, Source, _),
+    tool_call(Session, Step2, Dest, _),
+    Step2 > Step1,
+    sensitive_source(Source, "inner_circle", _),
+    untrusted_dest(Dest, _, _).
+
+# R3: Infrastructure Exposure — 基础设施信息发外 = BLOCK
+data_flow_violation(Session, "infrastructure_exposure", 0.9) :-
+    tool_call(Session, Step1, Source, _),
+    tool_call(Session, Step2, Dest, _),
+    Step2 > Step1,
+    sensitive_source(Source, "infrastructure", _),
+    untrusted_dest(Dest, "public", _).
+
+# R4: Sensitive Read + Any External Output = REVIEW
+data_flow_review(Session, "sensitive_to_external", 0.7) :-
+    tool_call(Session, Step1, Source, _),
+    tool_call(Session, Step2, Dest, _),
+    Step2 > Step1,
+    sensitive_source(Source, _, Conf),
+    Conf >= 0.5,
+    untrusted_dest(Dest, _, _).
+
+# === Destruction Rules (补充现有 T3) ===
+
+# R5: force push / wipe without explicit approval = BLOCK
+destructive_action("execute_command", "rm -rf", 1.0).
+destructive_action("execute_command", "git push --force", 0.9).
+destructive_action("git_push", "force", 0.9).
+
+# === Authorization Rules ===
+
+# R6: External side-effect without recent owner instruction = REVIEW
+requires_authorization(send_email).
+requires_authorization(post_tweet).
+requires_authorization(post_to_forum).
+requires_authorization(create_github_issue).
+requires_authorization(make_http_request).
+requires_authorization(upload_file).
+requires_authorization(git_push).
+
+unauthorized_action(Session, Func, 0.8) :-
+    tool_call(Session, _, Func, _),
+    requires_authorization(Func),
+    not owner_instructed(Session, Func).
+
+# === Aggregate Decision ===
+
+should_block(Session) :- data_flow_violation(Session, _, Conf), Conf >= 0.9.
+should_review(Session) :- data_flow_review(Session, _, Conf), Conf >= 0.6.
+should_review(Session) :- unauthorized_action(Session, _, Conf), Conf >= 0.7.

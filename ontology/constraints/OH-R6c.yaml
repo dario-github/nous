@@ -1,0 +1,11 @@
+id: OH-R6c
+name: 未授权行为 — hijacked_identity
+priority: 90
+enabled: true
+trigger:
+  hijacked_identity: true
+verdict: block
+reason: "OH-R6: 检测到身份劫持/冒充意图"
+metadata:
+  category: owner_harm
+  subcategory: hijacking

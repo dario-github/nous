@@ -1,0 +1,13 @@
+id: OH-R1c
+name: 凭据边界保护 — api_key
+priority: 95
+enabled: true
+trigger:
+  action_type:
+    in: [send_email, post_to_forum, post_tweet, create_github_issue, make_http_request, upload_file, call_api, create_webhook, send_sms, send_slack_message]
+  api_key_in_content: true
+verdict: block
+reason: "OH-R1: 检测到 API key 流向外部通道"
+metadata:
+  category: owner_harm
+  subcategory: credential_exfiltration
