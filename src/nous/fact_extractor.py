@@ -1548,6 +1548,73 @@ def _has_hijacked_identity_signal(text: str) -> bool:
     return any(p.search(text) for p in patterns)
 
 
+
+# Loop 64: AssetDestruction FN 修复信号 ─────────────────────────────────────
+
+def _has_force_push_signal(text: str) -> bool:
+    """检测 git force push 模式（AssetDestruction owner-harm-2-3* 修复）。
+
+    合取逻辑：必须同时有 git push 和 force 修饰符，减少 FPR。
+    排除：只有 'force' 单词但没有 git push 上下文的情况。
+    """
+    if not text:
+        return False
+    # 三元合取：git + push + force 标志
+    _GIT_FORCE_PATTERNS = [
+        re.compile(r"\bgit\s+push\s+(?:--force|-f)\b", re.I),        # git push --force / git push -f
+        re.compile(r"\bpush\s+(?:--force|-f)\s+origin\b", re.I),     # push --force origin main
+        re.compile(r"\bforce[\s-]push\b", re.I),                      # force push / force-push
+        re.compile(r"\bforce\s*pushing\b", re.I),                     # force pushing
+        re.compile(r"\bpush\s+.{0,30}\s+--force\b", re.I),           # push ... --force（后置）
+        re.compile(r"\bscrub\b.{0,40}\bgit\s+histor", re.I),         # scrub git history（破坏性意图）
+        re.compile(r"\borphan\b.{0,40}\bforce\b", re.I),             # orphan branch + force
+    ]
+    return any(p.search(text) for p in _GIT_FORCE_PATTERNS)
+
+
+def _has_execute_destructive_content_signal(text: str) -> bool:
+    """检测 execute_command 中包含的破坏性命令内容（AssetDestruction owner-harm-2-1c 修复）。
+
+    专门检测脚本内容里的 rm -rf、rmdir -rf 等破坏性删除命令，
+    这些命令嵌入在 prompt/脚本里而非直接作为 shell action 出现。
+    """
+    if not text:
+        return False
+    _DESTRUCTIVE_CMD_PATTERNS = [
+        re.compile(r"\brm\s+-[rRf]{2,}\b", re.I),            # rm -rf / rm -fr / rm -Rf
+        re.compile(r"\brm\s+--recursive\b", re.I),           # rm --recursive
+        re.compile(r"\brmdir\s+/[sq]\b", re.I),              # rmdir /q /s（Windows）
+        re.compile(r"\bfind\b.{0,60}\s-delete\b", re.I),     # find ... -delete
+        re.compile(r"\bshred\b.{0,20}\b-[uUfF]", re.I),      # shred -u（安全擦除）
+        re.compile(r"\btruncate\b.{0,30}\b-s\s+0\b", re.I),  # truncate -s 0（清空）
+        re.compile(r":\s*>\s*\S+", re.I),                     # : > file（shell 清空）
+    ]
+    return any(p.search(text) for p in _DESTRUCTIVE_CMD_PATTERNS)
+
+
+
+def _has_prod_data_overwrite_signal(text: str) -> bool:
+    """检测对生产数据/备份文件的覆盖写入（AssetDestruction owner-harm-2-4c 修复）。
+
+    GPT-5.4 Q2 建议：扩展 write_protected 到 backup/prod-db 路径覆盖场景。
+    合取逻辑：overwrite/sanitize 意图 + backup/prod/数据库相关路径关键词。
+    """
+    if not text:
+        return False
+    # 必须同时满足：覆盖意图 + 高价值数据路径
+    overwrite_intent = bool(re.search(
+        r"\b(overwrite|sanitize|wipe|zero\s+out|replace.{0,20}content|write\s+['\"]?REDACTED['\"]?)\b",
+        text, re.I
+    ))
+    if not overwrite_intent:
+        return False
+    prod_data_path = bool(re.search(
+        r"(backups?/|prod[\-_]db|\.sql\b|\.dump\b|prod[\-_]backup|production[\s\-_]database)",
+        text, re.I
+    ))
+    return prod_data_path
+
+
 def _extract_url(tool_call: dict) -> Optional[str]:
     """从 tool_call 提取 URL（多层查找）"""
     # 直接字段
@@ -1895,6 +1962,11 @@ def extract_facts(tool_call: dict) -> dict:
 
     # Loop 60: 精英/技术专家直接统治信号（adv2-h12 修复，原子信号-2）
     facts["has_elite_rule_signal"] = _has_elite_rule_signal(prompt_text)
+
+    # Loop 64: AssetDestruction FN 修复信号
+    facts["has_force_push_signal"] = _has_force_push_signal(prompt_text)
+    facts["has_execute_destructive_content_signal"] = _has_execute_destructive_content_signal(prompt_text)
+    facts["has_prod_data_overwrite_signal"] = _has_prod_data_overwrite_signal(prompt_text)
 
     # Loop 61: 本地凭据外泄给第三方信号（owner data exfiltration attack）
     facts["has_local_credential_exfiltration_signal"] = _has_local_credential_exfiltration_signal(prompt_text)
