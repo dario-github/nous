@@ -62,7 +62,7 @@ class TestConstraintParser:
         assert "T10" in ids
         assert "T11" in ids
         assert "T12" in ids
-        assert len(constraints) == 10  # T3 + T3-soft + T3-upload + T5 + T10 + T11 + T12 + T-disinformation-election + T-grooming + T-roleplay-bypass
+        assert len(constraints) == 11  # T3 + T3-soft + T3-upload + T5 + T10 + T11 + T12 + T-disinformation-election + T-grooming + T-roleplay-bypass + T-antidemocratic-incitement
 
     def test_t3_parsed_correctly(self, constraints):
         """T3: 不可逆操作 → block，priority=100"""
@@ -537,7 +537,7 @@ class TestVerdictRouter:
                  "estimated_lines": 10, "search_lang": "en",
                  "output_target": "discord", "content_is_structured": False}
         results = match_all_constraints(constraints, facts)
-        assert len(results) == 10  # T3 + T3-soft + T3-upload + T5 + T10 + T11 + T12 + T-disinformation-election + T-grooming + T-roleplay-bypass
+        assert len(results) == 11  # T3 + T3-soft + T3-upload + T5 + T10 + T11 + T12 + T-disinformation-election + T-grooming + T-roleplay-bypass + T-antidemocratic-incitement
         # 所有约束都不匹配
         assert all(not r.matched for r in results)
 
@@ -627,7 +627,7 @@ class TestGateAPI:
         result = gate(tool_call, db=db, constraints_dir=CONSTRAINTS_DIR)
         assert result.proof_trace is not None
         assert result.proof_trace.final_verdict == result.verdict.action
-        assert len(result.proof_trace.steps) == 10  # T3 + T3-soft + T3-upload + T5 + T10 + T11 + T12 + T-disinformation-election + T-grooming + T-roleplay-bypass
+        assert len(result.proof_trace.steps) == 11  # T3 + T3-soft + T3-upload + T5 + T10 + T11 + T12 + T-disinformation-election + T-grooming + T-roleplay-bypass + T-antidemocratic-incitement
 
     def test_gate_logs_decision_to_db(self, db):
         """block verdict 应写入 decision_log"""

@@ -1102,6 +1102,66 @@ def _has_executable_malicious_artifact_signal(text: str) -> bool:
     return bool(_EXECUTABLE_QUALIFIER.search(text) and _MALICIOUS_CAPABILITY_CONTEXT.search(text))
 
 
+# ── Loop 60: 反民主煽动信号（adv2-h12 修复） ─────────────────────────────
+# GPT-5.4 批判（Loop 60）: 三元合取更稳健——不靠单一 regex 直 block，
+# 而是拆成两个原子信号，在 Datalog 中与已有 advocacy signal 三元合取。
+# 原因：让 "分析/批判反民主运动" 的新闻/学术文本不被误伤（前两项 true 但 advocacy false）。
+# 只有"明确治理替换 + 精英统治 + 动员宣传"同时成立才 block。
+
+_GOVERNANCE_REPLACEMENT_PATTERNS = re.compile(
+    r"\b("
+    r"replac\w*\s+(?:(?:the|of|our|this|an?)\s+)?(?:democratic\s+(?:governance|government|system)|democracy)"
+    r"|abolish\s+(?:democracy|democratic\s+(?:governance|government))"
+    r"|end\s+(?:democracy|democratic\s+(?:governance|government|rule|system))"
+    r"|dismantle\s+democratic\s+(?:governance|government|system|institutions)"
+    r"|overthrow\s+(?:democracy|democratic\s+(?:governance|government))"
+    r"|direct\s+rule\s+(?:instead\s+of|in\s+place\s+of|replacing)\s+(?:democracy|democratic)"
+    r")\b",
+    re.I,
+)
+
+_ELITE_RULE_PATTERNS = re.compile(
+    r"\b("
+    r"elite\s+(?:group|rule|leadership|class|tier)\b"
+    r"|(?:direct\s+)?rule\s+by\s+(?:an?\s+)?(?:elite|technocrats?|technology\s+leaders?|tech\s+leaders?|top\s+technology\s+leaders?)"
+    r"|authoritarian\s+rule\s+by\s+.{0,30}(?:technology|tech)\s+leaders?"
+    r"|technocrat(?:ic)?\s+(?:rule|governance|authority|control)"
+    r"|oligarch(?:ic|y|s)?\s+(?:rule|control|governance)"
+    r"|authoritarian\s+(?:elite|technocrats?|group)"
+    r"|tech(?:nology)?\s+leaders?\s+(?:in\s+(?:direct\s+)?(?:control|power|charge|command)|directly\s+(?:rule|govern|control))"
+    r"|(?:put\s+)?tech(?:nology)?\s+leaders?\s+(?:directly\s+)?in\s+(?:direct\s+)?control\s+of"
+    r")\b",
+    re.I,
+)
+
+
+def _has_governance_replacement_signal(text: str) -> bool:
+    """检测明确的民主治理替换意图（Atom-1 of Loop 60 三元合取）。
+
+    Loop 60: adv2-h12 authority_bypass 修复（GPT-5.4 批判方向 B）。
+    检测"明确废除/替换民主治理"类表述。
+    合取 _has_elite_rule_signal + has_advocacy_signal 才触发 hard block。
+
+    FPR 分析：单独"replace governance"在新闻/学术批判语境常见，
+    但不会同时满足 elite rule + advocacy 三元合取。
+    """
+    if not text or len(text) < 20:
+        return False
+    return bool(_GOVERNANCE_REPLACEMENT_PATTERNS.search(text))
+
+
+def _has_elite_rule_signal(text: str) -> bool:
+    """检测精英/技术专家直接统治意图（Atom-2 of Loop 60 三元合取）。
+
+    Loop 60: adv2-h12 authority_bypass 修复（GPT-5.4 批判方向 B）。
+    检测"以精英/技术领袖直接掌权"类表述。
+    合取 _has_governance_replacement_signal + has_advocacy_signal 才触发 hard block。
+    """
+    if not text or len(text) < 20:
+        return False
+    return bool(_ELITE_RULE_PATTERNS.search(text))
+
+
 def _extract_url(tool_call: dict) -> Optional[str]:
     """从 tool_call 提取 URL（多层查找）"""
     # 直接字段
@@ -1443,6 +1503,12 @@ def extract_facts(tool_call: dict) -> dict:
 
     # Loop 59: 可执行恶意代码请求信号（adv2-h11 修复）
     facts["has_executable_malicious_artifact_signal"] = _has_executable_malicious_artifact_signal(prompt_text)
+
+    # Loop 60: 反民主治理替换信号（adv2-h12 修复，原子信号-1）
+    facts["has_governance_replacement_signal"] = _has_governance_replacement_signal(prompt_text)
+
+    # Loop 60: 精英/技术专家直接统治信号（adv2-h12 修复，原子信号-2）
+    facts["has_elite_rule_signal"] = _has_elite_rule_signal(prompt_text)
 
     # KG context bridge: extract tool_name and category for _build_kg_context()
     facts["tool_name"] = tool_call.get("tool_name") or tool_call.get("name") or tool_call.get("action")
