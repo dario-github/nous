@@ -1,30 +1,30 @@
 {
-  "loop_number": 60,
-  "timestamp": "2026-03-22T00:20:00Z",
+  "loop_number": 61,
+  "timestamp": "2026-03-22T04:15:00Z",
   "L_val": 0.0,
-  "L_val_source": "val split, run_split_benchmark.py (DeepSeek-V3.1), Loop 60, Mac node",
-  "L_val_note": "Loop 60: L_val=0.0 maintained. TPR=100%, FPR=0%, all categories. adv2-h12 authority_bypass fixed. L_challenge=0.0 (15/15 blocked).",
+  "L_val_source": "val split, run_split_benchmark.py (DeepSeek-V3.1, Mac node, no semantic gate), Loop 61",
+  "L_val_note": "Loop 61: L_val=0.0 maintained (old AgentHarm labels). Owner-protection pivot completed. New owner-harm benchmark: TPR=8.3% baseline (datalog-only, no semantic gate).",
   "L_challenge": 0.0,
   "L_challenge_note": "Loop 60: L_challenge=0.0 (15/15 harmful blocked). Fixed: h12(authority_bypass). All adv2 FNs resolved.",
   "metric_version": "v1.0-frozen-20260315",
-  "tests": 991,
+  "tests": 1007,
   "curriculum_phase": 3,
   "urgent": [
-    "P1: capability benchmark (GPT-5.4 judge) — L formula 仍缺 0.2*(1-capability) 项，当前 capability=1.0 固定值。GPT-5.4 批判：本轮必须完成 capability benchmark，不能再延后",
-    "P2: adversarial_v1 baseline re-run — 验证 Loop 57-60 改动后 adversarial_v1 TPR 仍 ≥66.7%（Loop 45 基线）",
-    "P3: 考虑 Phase 4 方向 — adversarial_v2 全部清零后，探索更复杂的多轮对话 / multi-step 攻击向量"
+    "P1: CredentialLeak 间接注入 — doc-injection/cred-verify-email/debug-token-public 类型 TPR=0%，需要新的信号或 semantic gate 强化（间接注入不同于直接命令型）",
+    "P2: 旧社会危害规则清理 — grooming/anti-democratic/disinformation/election 等规则在 owner-centric 模型下应为 ALLOW，考虑移除或降级为 review-only",
+    "P3: owner-harm benchmark 升级 — 加入语义 gate 评估，建立有意义的 L_owner 公式"
   ],
   "completed_this_loop": [
-    "GPT-5.4 架构批判: 推荐 B+A（三元合取），不做 C。capability benchmark 本轮做",
-    "新信号: has_governance_replacement_signal（明确废除/替换民主治理）",
-    "新信号: has_elite_rule_signal（精英/技术专家直接统治）",
-    "新约束: T-antidemocratic-incitement.yaml（priority=95, 三元合取 hard block）",
-    "semantic gate: 新增 Pair 35（反民主动员 vs 正当政治评论）+ HARMFUL 描述补充",
-    "991 tests pass（含 30 个新 loop60 测试）",
-    "L_val=0.0 维持（TPR=100%, FPR=0%, val split DeepSeek-V3.1, Mac node）",
-    "L_challenge: 0.0270→0.0 (-100%). h12 authority_bypass FN 全部修复",
-    "adversarial_v2: 15/15 blocked (TPR=100%, FPR=0%)",
-    "PUSHED f18554e"
+    "GPT-5.4 架构批判：capability=1.0 不可信（Loop 57-60 重大变更），Phase 4=B>A>C（adversarial_v3>adv_v1 FN>quality judge）",
+    "东丞 03-22 owner-protection directive 已被发现并处理：完全重新定向",
+    "22 个边界测试案例校准：BLOCK=4/review=56/allow=116，owner-harm 模型确立",
+    "has_local_credential_exfiltration_signal + T-data-exfiltration.yaml（priority=99）",
+    "Steal Local Data 4/4 BLOCK 案例现全部被检测 (TPR 0%→100%)",
+    "新 owner-harm benchmark 基础设施（scripts/run_owner_harm_benchmark.py + 132 harmful + 33 benign）",
+    "owner-harm benchmark 基线：TPR=8.3%（11/132，AssetDestruction），FPR=0%",
+    "L_val=0.0 维持（旧 AgentHarm val split，无退化）",
+    "1007 tests pass（NAS）+ 998 pass（Mac，排除 scallop/KG 已知问题）",
+    "PUSHED 3bff7eb"
   ],
   "gemini_critique_loop33": {
     "summary": "Stop prompt engineering for ch-h08. M7.3 pivot: LLM context → Datalog deterministic rules. M8.6: prioritize DeepSeek-V3.1, stability is paramount. Overfitting risk at L_challenge=0.0161 on 50-scenario set.",
@@ -61,8 +61,8 @@
     "gemini-2.x (CLI)",
     "gpt-4.x"
   ],
-  "direction": "Loop 60: adv2全清零。Loop 61: 运行 capability benchmark 完成 L 公式，adversarial_v1 基线确认，规划 Phase 4。",
-  "last_commit": "f18554e",
+  "direction": "Loop 61: owner-protection pivot完成，建立 T-data-exfiltration 信号。Loop 62: 攻克 CredentialLeak 间接注入类型，提升 owner-harm benchmark TPR。",
+  "last_commit": "3bff7eb",
   "github": "dario-github/nous",
   "history": [
     {
@@ -304,6 +304,18 @@
       "had_regression": false,
       "prev_loop_ref": "loop-log-2026-03-21-59.md",
       "direction": "Loop 61: capability benchmark (GPT-5.4 judge) + adversarial_v1 re-run + Phase 4规划"
+    },
+    {
+      "loop": 61,
+      "timestamp": "2026-03-22T04:15:00Z",
+      "action": "东丞 owner-protection pivot + T-data-exfiltration 信号（直接凭据外泄检测）",
+      "rationale": "东丞 03-22 确认：只拦会伤害 owner 的操作。旧 AgentHarm 社会危害框架失效。BLOCK=4（凭据泄露），review=56（法律风险），allow=116（其他）。",
+      "hypothesis": "has_local_credential_exfiltration_signal（本地凭据读取+外部接收者合取）可覆盖 Steal Local Data 4 个 BLOCK 案例",
+      "result": "CONFIRMED: Steal Local Data 4/4 BLOCK（TPR 0→100%）。L_val=0.0 维持。owner-harm benchmark 建立，TPR=8.3%（baseline）。",
+      "had_critique": true,
+      "had_regression": false,
+      "prev_loop_ref": "loop-log-2026-03-22-60.md",
+      "direction": "Loop 62: CredentialLeak 间接注入攻克 + 旧社会危害规则清理"
     }
   ],
   "loop_count": 47,
