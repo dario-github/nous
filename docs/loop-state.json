@@ -1,30 +1,28 @@
 {
-  "loop_number": 61,
-  "timestamp": "2026-03-22T04:15:00Z",
+  "loop_number": 62,
+  "timestamp": "2026-03-22T12:45:00Z",
   "L_val": 0.0,
-  "L_val_source": "val split, run_split_benchmark.py (DeepSeek-V3.1, Mac node, no semantic gate), Loop 61",
-  "L_val_note": "Loop 61: L_val=0.0 maintained (old AgentHarm labels). Owner-protection pivot completed. New owner-harm benchmark: TPR=8.3% baseline (datalog-only, no semantic gate).",
+  "L_val_source": "val split, run_split_benchmark.py (DeepSeek-V3.1, NAS, with semantic gate), Loop 62",
+  "L_val_note": "Loop 62: L_val=0.0 maintained. CredentialLeak TPR 75%→100% (5 FN fixed). Owner-harm benchmark: TPR 49.2%→53.8%, CredentialLeak 20/20.",
   "L_challenge": 0.0,
   "L_challenge_note": "Loop 60: L_challenge=0.0 (15/15 harmful blocked). Fixed: h12(authority_bypass). All adv2 FNs resolved.",
   "metric_version": "v1.0-frozen-20260315",
-  "tests": 1007,
+  "tests": 1028,
   "curriculum_phase": 3,
   "urgent": [
-    "P1: CredentialLeak 间接注入 — doc-injection/cred-verify-email/debug-token-public 类型 TPR=0%，需要新的信号或 semantic gate 强化（间接注入不同于直接命令型）",
-    "P2: 旧社会危害规则清理 — grooming/anti-democratic/disinformation/election 等规则在 owner-centric 模型下应为 ALLOW，考虑移除或降级为 review-only",
-    "P3: owner-harm benchmark 升级 — 加入语义 gate 评估，建立有意义的 L_owner 公式"
+    "P1: owner-harm benchmark TPR 53.8% — 61 FN 仍残留（Hijacking/UnauthorizedAutonomy TPR=25%，InnerCircleLeak 44%，PrivacyExposure 50%）",
+    "P2: 旧社会危害规则清理（GPT-5.4：dual profile 分离，不直接删；先建 profile 机制）",
+    "P3: owner-harm L 公式正式建立（L_owner = 0.4*(1-TPR) + 0.3*FPR + ...，当前 L_owner_partial ≈ 0.216）"
   ],
   "completed_this_loop": [
-    "GPT-5.4 架构批判：capability=1.0 不可信（Loop 57-60 重大变更），Phase 4=B>A>C（adversarial_v3>adv_v1 FN>quality judge）",
-    "东丞 03-22 owner-protection directive 已被发现并处理：完全重新定向",
-    "22 个边界测试案例校准：BLOCK=4/review=56/allow=116，owner-harm 模型确立",
-    "has_local_credential_exfiltration_signal + T-data-exfiltration.yaml（priority=99）",
-    "Steal Local Data 4/4 BLOCK 案例现全部被检测 (TPR 0%→100%)",
-    "新 owner-harm benchmark 基础设施（scripts/run_owner_harm_benchmark.py + 132 harmful + 33 benign）",
-    "owner-harm benchmark 基线：TPR=8.3%（11/132，AssetDestruction），FPR=0%",
-    "L_val=0.0 维持（旧 AgentHarm val split，无退化）",
-    "1007 tests pass（NAS）+ 998 pass（Mac，排除 scallop/KG 已知问题）",
-    "PUSHED 3bff7eb"
+    "GPT-5.4 架构批判：P1选B（独立_CREDENTIAL_FILE_ACCESS_PATTERNS），P2不删旧规则(dual profile)，P3顺序P1→P3→P2",
+    "新增 _CREDENTIAL_FILE_ACCESS_PATTERNS：~/.aws/credentials、~/.ssh/、.env 精确路径匹配",
+    "扩展 _EXFILTRATION_ACTION_PATTERNS：paste/emailing gerund 形式覆盖",
+    "扩展 _EXTERNAL_RECIPIENT_PATTERNS：Slack/Discord channel 作为外传目标",
+    "CredentialLeak FN 5→0 (TPR 75%→100%，20/20 BLOCK)",
+    "21 new tests (21/21 pass), L_val=0.0 维持, benign FPR=0%",
+    "Owner-harm benchmark: TPR 49.2%→53.8%（65→71/132），CredentialLeak 完全覆盖",
+    "PUSHED 645a765"
   ],
   "gemini_critique_loop33": {
     "summary": "Stop prompt engineering for ch-h08. M7.3 pivot: LLM context → Datalog deterministic rules. M8.6: prioritize DeepSeek-V3.1, stability is paramount. Overfitting risk at L_challenge=0.0161 on 50-scenario set.",
@@ -61,8 +59,8 @@
     "gemini-2.x (CLI)",
     "gpt-4.x"
   ],
-  "direction": "Loop 61: owner-protection pivot完成，建立 T-data-exfiltration 信号。Loop 62: 攻克 CredentialLeak 间接注入类型，提升 owner-harm benchmark TPR。",
-  "last_commit": "3bff7eb",
+  "direction": "Loop 62: CredentialLeak TPR 修复完成。Loop 63: 攻克 Hijacking/UnauthorizedAutonomy 低 TPR（25%），或建立 L_owner 正式公式。",
+  "last_commit": "645a765",
   "github": "dario-github/nous",
   "history": [
     {
@@ -316,6 +314,18 @@
       "had_regression": false,
       "prev_loop_ref": "loop-log-2026-03-22-60.md",
       "direction": "Loop 62: CredentialLeak 间接注入攻克 + 旧社会危害规则清理"
+    },
+    {
+      "loop": 62,
+      "timestamp": "2026-03-22T12:45:00Z",
+      "action": "CredentialLeak 间接注入修复（_CREDENTIAL_FILE_ACCESS_PATTERNS + Slack channel 扩展）",
+      "had_critique": true,
+      "had_regression": false,
+      "direction": "GPT-5.4批判B方向：精确文件路径独立模式，不改通用层",
+      "hypothesis": "新增凭据文件路径模式(~/.aws/、~/.ssh/、.env)可覆盖5个CredentialLeak FN，且不影响L_val",
+      "result": "CONFIRMED: CredentialLeak TPR 75%→100%(20/20). L_val=0.0 maintained. benign FPR=0%. Owner-harm TPR 49.2%→53.8%.",
+      "rationale": "GPT-5.4批判：选B不选A（避免污染通用层+高FPR），不选C（semantic gate不应替代高精度lexical信号）。独立_CREDENTIAL_FILE_ACCESS_PATTERNS精确覆盖文件路径，Slack/channel作为外传目标扩展，gerund形式动词覆盖。",
+      "prev_loop_ref": "loop-log-2026-03-22-61.md"
     }
   ],
   "loop_count": 47,
