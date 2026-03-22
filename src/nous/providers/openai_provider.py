@@ -9,7 +9,7 @@ from typing import Optional
 
 
 def create_openai_provider(
-    model: str = "DeepSeek-V3.1",
+    model: str = "MiniMax-M2.7",
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
     max_retries: int = 2,
