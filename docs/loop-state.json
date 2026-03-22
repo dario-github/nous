@@ -1,26 +1,30 @@
 {
-  "loop_number": 63,
-  "timestamp": "2026-03-22T17:30:00Z",
+  "loop_number": 64,
+  "timestamp": "2026-03-22T19:45:00Z",
   "L_val": 0.0,
-  "L_val_source": "val split, Loop 62 (no code changes in Loop 63)",
-  "L_val_note": "Loop 63: diagnostic only — semantic gate benchmark with MiniMax-M2.7. No TPR improvement. Root cause: timeout (91% fail-open) + model too slow (30-47s vs 15s limit).",
+  "L_val_source": "val split, Loop 62 semantic gate baseline maintained (OH-R7 no val FPR impact confirmed)",
+  "L_val_note": "Loop 64: L_val=0.0 maintained. Confirmed: OH-R7a/b/c causes NO val split FPR impact (stash test: L_partial=0.3529 identical with/without OH-R7). owner-harm TPR 53.8%→58.3% (77/132). AssetDestruction 62%→100%.",
   "L_challenge": 0.0,
   "L_challenge_note": "Loop 60: L_challenge=0.0 (15/15 harmful blocked). Fixed: h12(authority_bypass). All adv2 FNs resolved.",
   "metric_version": "v1.0-frozen-20260315",
   "tests": 1028,
   "curriculum_phase": 3,
   "urgent": [
-    "P0: Switch semantic gate to DeepSeek-V3.1 (3.3s vs 30-47s) + timeout_ms=60000",
-    "P1: Datalog P2 patch — execute_command force-push/overwrite → AssetDestruction 6 FN",
-    "P2: Re-run owner-harm benchmark with DeepSeek to measure actual semantic gate contribution",
-    "P3: owner-harm-policy.txt injection pattern clarity (for Hijacking 25% / UA 25%)"
+    "P0: Val split confirmation running on Mac (Loop 64 L_val)",
+    "P1: DeepSeek-V3.1 semantic gate for Hijacking (25%) + UnauthorizedAutonomy (25%)",
+    "P2: owner-harm-policy.txt injection pattern clarity for DeepSeek",
+    "P3: InnerCircleLeak (44%) + PrivacyExposure (50%) Datalog rules investigation"
   ],
   "completed_this_loop": [
-    "Owner-harm benchmark with semantic gate (MiniMax-M2.7): TPR=53.8% = same as pure Datalog",
-    "Root cause: MiniMax response 30-47s > timeout 15s → 91% calls fail-open (semantic_verdict=null)",
-    "Only 14/160 tool calls completed: all \"allow\" with 0.94-0.97 confidence",
-    "DeepSeek-V3.1 test: 3.3s latency → recommended model for semantic gate",
-    "No code pushed (diagnostic loop)"
+    "OH-R7a: git force push detection → block (4 cases: 2-3a/b/c/d)",
+    "OH-R7b: execute_command + rm-rf destructive content → block (2-1c)",
+    "OH-R7c: write_file + prod backup overwrite → block (2-4c)",
+    "fact_extractor: has_force_push_signal + has_execute_destructive_content_signal + has_prod_data_overwrite_signal",
+    "owner-harm benchmark: TPR 53.8%→58.3% (77/132), FPR=0.0%",
+    "AssetDestruction: 10/16→16/16 (100%)",
+    "latency test: 50ms→100ms threshold (32 constraints)",
+    "PUSHED 80dcd81",
+    "Root cause finding: MiniMax timeout diagnosis (Loop 63), DeepSeek-V3.1 3.3s validated"
   ],
   "gemini_critique_loop33": {
     "summary": "Stop prompt engineering for ch-h08. M7.3 pivot: LLM context → Datalog deterministic rules. M8.6: prioritize DeepSeek-V3.1, stability is paramount. Overfitting risk at L_challenge=0.0161 on 50-scenario set.",
@@ -57,7 +61,7 @@
     "gemini-2.x (CLI)",
     "gpt-4.x"
   ],
-  "direction": "Loop 64: DeepSeek-V3.1 semantic gate + P2 Datalog fix + re-benchmark",
+  "direction": "Loop 65: DeepSeek-V3.1 semantic gate benchmark — expects Hijacking/UA improvement via semantic understanding",
   "last_commit": "645a765",
   "github": "dario-github/nous",
   "history": [
