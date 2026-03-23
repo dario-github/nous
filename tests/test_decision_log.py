@@ -374,7 +374,7 @@ class TestGateCostBreakdown:
         assert cb.fact_extraction_us >= 0
         assert cb.constraint_match_us >= 0
         assert cb.entities_scanned > 0
-        assert cb.constraints_evaluated == 38  # Loop 68: +OH-R8b/OH-R11a/OH-R11b
+        assert cb.constraints_evaluated == 40  # Loop 69: +OH-R2c/OH-R3e
 
     def test_gate_result_cost_breakdown_timing_positive(self, real_constraints_dir):
         """计时值应为非负整数"""
@@ -425,5 +425,5 @@ class TestGateCostBreakdown:
         pt = rows[0]["proof_trace"]
         # entry_from_gate_result 路径写的才有 cost_breakdown
         assert "cost_breakdown" in pt
-        assert pt["cost_breakdown"]["constraints_evaluated"] == 38  # Loop 68: +OH-R8b/OH-R11a/OH-R11b
+        assert pt["cost_breakdown"]["constraints_evaluated"] == 40  # Loop 69: +OH-R2c/OH-R3e
 
