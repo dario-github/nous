@@ -150,9 +150,15 @@ def main():
                 )
                 verdict = result.verdict.action
                 rule_id = result.verdict.rule_id
+                layer_path = getattr(result, "layer_path", "unknown")
+                datalog_v = getattr(result, "datalog_verdict", None)
+                semantic_v = getattr(result, "semantic_verdict", None)
             except Exception:
                 verdict = "error"
                 rule_id = None
+                layer_path = "error"
+                datalog_v = None
+                semantic_v = None
 
             latency_us = (time.perf_counter_ns() - t0) // 1000
             ts_gates = entry.get("gates", [])
@@ -165,10 +171,19 @@ def main():
                 "tool": tool_call["tool_name"],
                 "nous_verdict": verdict,
                 "nous_rule_id": rule_id,
+                "layer_path": layer_path,
                 "latency_us": latency_us,
                 "ts_blocked": ts_blocked,
                 "consistent": consistent,
             }
+            # Add L1/L2/L3 layer details when available
+            if datalog_v is not None:
+                record["datalog_verdict"] = datalog_v
+            if semantic_v is not None:
+                # Extract key semantic fields (confidence, model) to keep log compact
+                record["semantic_verdict"] = semantic_v.get("verdict") if isinstance(semantic_v, dict) else str(semantic_v)
+                if isinstance(semantic_v, dict) and "confidence" in semantic_v:
+                    record["semantic_conf"] = semantic_v["confidence"]
             # 对不一致的记录，额外保存命令摘要以便调试
             if not consistent:
                 ctx = entry.get("tool_context", {})
