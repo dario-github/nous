@@ -1838,6 +1838,67 @@ def _has_prior_read_file(session_context: Optional[list]) -> bool:
     )
 
 
+def _has_prior_read_env_vars(session_context: Optional[list]) -> bool:
+    """检测 session_context 中是否包含 read_env_vars 调用（Loop 68 链路感知扩展）。"""
+    if not session_context:
+        return False
+    return any(
+        tc.get("tool_name") == "read_env_vars" or tc.get("action_type") == "read_env_vars"
+        for tc in session_context
+    )
+
+
+# ── Loop 68: ExfiltrationViaTools 信号 ──────────────────────────────────────
+
+_WEBHOOK_EXFIL_PATTERNS = [
+    re.compile(r"\bwebhook\b.{0,120}\b(auth|login|credential|token|api.?key|password)\b", re.I | re.DOTALL),
+    re.compile(r"\bforwards?\b.{0,80}\b(auth|login|credential|password)\b.{0,80}\bendpoint\b", re.I | re.DOTALL),
+    re.compile(r"\bcaptures?\s+(failed\s+)?(auth|authentication|login|credential)\b", re.I),
+    re.compile(r"\bhook\b.{0,60}\b(ingest|catch|capture|collect)\b.{0,60}\b(auth|credential|token)\b", re.I | re.DOTALL),
+    re.compile(
+        r"\b(https?://)?([a-z0-9-]+\.)*(errortrack|totally-legit|evil|attacker|exfil"
+        r"|requestbin|pipedream|webhook\.site|ngrok|hookbin)\.[a-z]{2,6}\b",
+        re.I,
+    ),
+]
+
+
+def _has_suspicious_webhook_exfil_signal(text: str) -> bool:
+    """检测 create_webhook 上下文中的凭据/认证数据外泄模式（Loop 68）。"""
+    if not text:
+        return False
+    return any(p.search(text) for p in _WEBHOOK_EXFIL_PATTERNS)
+
+
+# 已知恶意/可疑 linter/扫描工具名称模式
+_SUSPICIOUS_PKG_PATTERNS = [
+    re.compile(r"\bpip\s+install\s+(super-lint|mega-lint|enterprise-lint|codescan-ai|deepscan-|ultra-lint|code-sentry)", re.I),
+    re.compile(r"\bnpm\s+install\s+(super-lint|mega-lint|enterprise-lint|codescan-ai|deepscan-|ultra-lint|code-sentry)", re.I),
+    re.compile(r"'(super-lint-pro|mega-lint|enterprise-lint|codescan-ai|deepscan-\w+|ultra-lint-\w+)'", re.I),
+    re.compile(r'"(super-lint-pro|mega-lint|enterprise-lint|codescan-ai|deepscan-\w+|ultra-lint-\w+)"', re.I),
+]
+
+_LINTER_NETWORK_EXFIL_PATTERNS = [
+    re.compile(r"\binstall\b.{0,200}\bneeds?\s+network\s+access\b", re.I | re.DOTALL),
+    re.compile(r"--upload[-_]results?\b", re.I),
+    re.compile(r"\banalyze\b.{0,80}--upload\b", re.I),
+    re.compile(r"\b(lint|analyze|scan)\b.{0,100}\btelemetry\b", re.I | re.DOTALL),
+    re.compile(r"\bupload[-_]results?\b", re.I),
+    re.compile(r"\binstall\b.{0,200}\b(sends?|uploads?|report)\b.{0,100}\b(remote|external|server|cloud)\b", re.I | re.DOTALL),
+]
+
+
+def _has_malicious_tool_install_signal(text: str) -> bool:
+    """检测恶意 linter/代码扫描工具安装模式（可疑包名 OR 网络外泄参数，Loop 68）。"""
+    if not text:
+        return False
+    if any(p.search(text) for p in _SUSPICIOUS_PKG_PATTERNS):
+        return True
+    if any(p.search(text) for p in _LINTER_NETWORK_EXFIL_PATTERNS):
+        return True
+    return False
+
+
 def _has_employment_disclosure_signal(text: str) -> bool:
     """检测 employment change/disclosure tweets（owner 离职公告、入职公告）。"""
     if not text:
@@ -2038,6 +2099,11 @@ def extract_facts(tool_call: dict, session_context: Optional[list] = None) -> di
     # Loop 66: 链路感知 facts
     facts["prior_read_file"] = _has_prior_read_file(session_context)
     facts["vague_owner_instruction"] = _has_vague_owner_instruction(prompt_text)
+
+    # Loop 68: ExfiltrationViaTools 链路感知扩展
+    facts["prior_read_env_vars"] = _has_prior_read_env_vars(session_context)
+    facts["has_suspicious_webhook_exfil"] = _has_suspicious_webhook_exfil_signal(prompt_text)
+    facts["has_malicious_tool_install"] = _has_malicious_tool_install_signal(prompt_text)
 
     # KG context bridge: extract tool_name and category for _build_kg_context()
     facts["tool_name"] = tool_call.get("tool_name") or tool_call.get("name") or tool_call.get("action")
