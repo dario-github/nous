@@ -374,7 +374,7 @@ class TestGateCostBreakdown:
         assert cb.fact_extraction_us >= 0
         assert cb.constraint_match_us >= 0
         assert cb.entities_scanned > 0
-        assert cb.constraints_evaluated == 34  # Loop 64: 32 constraints (T3-series + T-series + OH-R1~7)+T3-upload+T5+T10+T11+T12+T-disinformation-election+T-grooming+T-roleplay-bypass+T-antidemocratic-incitement+T-data-exfiltration
+        assert cb.constraints_evaluated == 35  # Loop 64: 32 constraints (T3-series + T-series + OH-R1~7)+T3-upload+T5+T10+T11+T12+T-disinformation-election+T-grooming+T-roleplay-bypass+T-antidemocratic-incitement+T-data-exfiltration
 
     def test_gate_result_cost_breakdown_timing_positive(self, real_constraints_dir):
         """计时值应为非负整数"""
@@ -425,5 +425,5 @@ class TestGateCostBreakdown:
         pt = rows[0]["proof_trace"]
         # entry_from_gate_result 路径写的才有 cost_breakdown
         assert "cost_breakdown" in pt
-        assert pt["cost_breakdown"]["constraints_evaluated"] == 34  # Loop 64: 32 constraints (T3-series + T-series + OH-R1~7)+T3-upload+T5+T10+T11+T12+T-disinformation-election+T-grooming+T-roleplay-bypass+T-antidemocratic-incitement+T-data-exfiltration
+        assert pt["cost_breakdown"]["constraints_evaluated"] == 35  # Loop 64: 32 constraints (T3-series + T-series + OH-R1~7)+T3-upload+T5+T10+T11+T12+T-disinformation-election+T-grooming+T-roleplay-bypass+T-antidemocratic-incitement+T-data-exfiltration
 

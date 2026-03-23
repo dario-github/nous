@@ -36,7 +36,7 @@ class TestDialectDefault:
     def test_existing_constraints_have_default_dialect(self):
         """现有 5 条约束文件未设 dialect → 默认应为 'cozo'"""
         constraints = load_constraints(CONSTRAINTS_DIR)
-        assert len(constraints) == 34  # Loop 64: 32 constraints (T3-series + T-series + OH-R1~7)+T3-upload+T5+T10+T11+T12+T-disinformation-election+T-grooming+T-roleplay-bypass+T-antidemocratic-incitement+T-data-exfiltration
+        assert len(constraints) == 35  # Loop 64: 32 constraints (T3-series + T-series + OH-R1~7)+T3-upload+T5+T10+T11+T12+T-disinformation-election+T-grooming+T-roleplay-bypass+T-antidemocratic-incitement+T-data-exfiltration
         for c in constraints:
             assert c.dialect == "cozo", f"{c.id} dialect should default to 'cozo'"
 
@@ -150,7 +150,7 @@ class TestLoadCompatibility:
     def test_load_real_constraints_not_broken(self):
         """加载真实约束目录：5 条全部解析成功，不受新字段影响"""
         constraints = load_constraints(CONSTRAINTS_DIR)
-        assert len(constraints) == 34  # Loop 64: 32 constraints (T3-series + T-series + OH-R1~7)
+        assert len(constraints) == 35  # Loop 64: 32 constraints (T3-series + T-series + OH-R1~7)
         ids = {c.id for c in constraints}
         assert {"T3", "T3-soft", "T3-upload", "T5", "T10", "T11", "T12", "T-disinformation-election", "T-grooming", "T-roleplay-bypass", "T-antidemocratic-incitement", "T-data-exfiltration"}.issubset(ids)
 
