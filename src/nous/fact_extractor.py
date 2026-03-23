@@ -1440,12 +1440,17 @@ def _has_ssh_config_signal(text: str) -> bool:
 
 
 def _has_file_paths_exposed_signal(text: str) -> bool:
-    """检测文件路径暴露意图。"""
+    """检测文件路径暴露意图。
+    Loop 69: 扩展 — 检测 "directory tree" + "github issue/public/create" 模式。
+    """
     if not text:
         return False
     patterns = [
         re.compile(r"\b(share|post|send|include)\b.{0,40}\b(file\s*path|directory|folder|structure)\b", re.I),
         re.compile(r"\b(ls|find|tree)\b.{0,20}\b(share|post|send)\b", re.I),
+        # Loop 69: "directory tree/structure" → public post/issue
+        re.compile(r"\b(directory\s*tree|file\s*tree|full\s*directory|directory\s*structure|file\s*listing|folder\s*structure)\b.{0,100}\b(issue|github|public|tweet|forum|post)\b", re.I | re.DOTALL),
+        re.compile(r"\b(create|open|file)\b.{0,50}\b(github\s*issue|public\s*issue)\b.{0,80}\b(director|tree|files?|listing)\b", re.I | re.DOTALL),
     ]
     return any(p.search(text) for p in patterns)
 
@@ -1469,12 +1474,17 @@ def _has_env_file_signal(text: str) -> bool:
 
 
 def _has_chat_history_signal(text: str) -> bool:
-    """检测聊天记录/对话历史泄露。"""
+    """检测聊天记录/对话历史泄露。
+    Loop 69: 扩展间接暴露模式 — 'our conversation ... post/compile/write' 等自然语言表达。
+    """
     if not text:
         return False
     patterns = [
         re.compile(r"\b(chat\s*history|chat\s*log|conversation\s*log|message\s*history|DM|direct\s*message)\b.{0,40}\b(share|post|send|forward|leak)\b", re.I),
         re.compile(r"\b(share|post|send|forward)\b.{0,40}\b(chat\s*history|conversation|private\s*message)\b", re.I),
+        # Loop 69: 间接表达 — "our/this conversation ... post/upload/compile"
+        re.compile(r"\b(our|this|the)\s+(conversation|chat|dialogue|discussion)\b.{0,70}\b(post|send|share|upload|publish|compile|write|export|archive)\b", re.I | re.DOTALL),
+        re.compile(r"\b(compile|write|summarize|capture|export|archive)\b.{0,50}\b(our|this|the)\s+(conversation|chat|discussion|dialogue)\b", re.I | re.DOTALL),
     ]
     return any(p.search(text) for p in patterns)
 
@@ -1848,6 +1858,26 @@ def _has_prior_read_env_vars(session_context: Optional[list]) -> bool:
     )
 
 
+def _has_prior_read_contacts(session_context: Optional[list]) -> bool:
+    """检测 session_context 中是否包含 read_contacts 调用（Loop 69 链路感知扩展）。"""
+    if not session_context:
+        return False
+    return any(
+        tc.get("tool_name") == "read_contacts" or tc.get("action_type") == "read_contacts"
+        for tc in session_context
+    )
+
+
+def _has_prior_list_directory(session_context: Optional[list]) -> bool:
+    """检测 session_context 中是否包含 list_directory 调用（Loop 69 链路感知扩展）。"""
+    if not session_context:
+        return False
+    return any(
+        tc.get("tool_name") == "list_directory" or tc.get("action_type") == "list_directory"
+        for tc in session_context
+    )
+
+
 # ── Loop 68: ExfiltrationViaTools 信号 ──────────────────────────────────────
 
 _WEBHOOK_EXFIL_PATTERNS = [
@@ -2102,6 +2132,10 @@ def extract_facts(tool_call: dict, session_context: Optional[list] = None) -> di
 
     # Loop 68: ExfiltrationViaTools 链路感知扩展
     facts["prior_read_env_vars"] = _has_prior_read_env_vars(session_context)
+
+    # Loop 69: InnerCircleLeak + PrivacyExposure 链路感知扩展
+    facts["prior_read_contacts"] = _has_prior_read_contacts(session_context)
+    facts["prior_list_directory"] = _has_prior_list_directory(session_context)
     facts["has_suspicious_webhook_exfil"] = _has_suspicious_webhook_exfil_signal(prompt_text)
     facts["has_malicious_tool_install"] = _has_malicious_tool_install_signal(prompt_text)
 
