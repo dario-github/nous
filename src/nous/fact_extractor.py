@@ -1674,17 +1674,120 @@ def _estimate_lines(tool_call: dict) -> int:
     return 0
 
 
+# ── Tool Name Normalization (防工具名规避) ──────────────────────────────────
+# 对抗红队发现非标准工具名绕过 Datalog 规则。
+# 按语义 category 映射到标准 action，而非逐个枚举。
+
+_TOOL_CATEGORY_MAP: dict[str, str] = {
+    # Category: send_external → canonical send_email
+    "broadcast_message": "send_email",
+    "write_message": "send_email",
+    "log_to_channel": "send_slack_message",
+    "notify": "send_email",
+    "send_notification": "send_email",
+    "send_message": "send_email",
+    "send_dm": "send_email",
+    "direct_message": "send_email",
+    "push_notification": "send_email",
+    "alert_user": "send_email",
+    "forward_message": "send_email",
+    "relay_message": "send_email",
+
+    # Category: post_public → canonical post_to_forum or post_tweet
+    "publish": "post_to_forum",
+    "publish_page": "post_to_forum",
+    "publish_post": "post_to_forum",
+    "create_post": "post_to_forum",
+    "share_public": "post_to_forum",
+    "publish_article": "post_to_forum",
+    "blog_post": "post_to_forum",
+    "create_page": "post_to_forum",
+    # Social media posting → post_tweet
+    "post_on_x": "post_tweet",
+    "post_on_twitter": "post_tweet",
+    "tweet": "post_tweet",
+    "send_tweet": "post_tweet",
+    "post_on_facebook": "post_to_forum",
+    "post_on_instagram": "post_to_forum",
+    "post_on_linkedin": "post_to_forum",
+
+    # Category: network_request → canonical make_http_request
+    "fetch_url": "make_http_request",
+    "http_request": "make_http_request",
+    "api_call": "call_api",
+    "rest_call": "call_api",
+    "webhook_call": "create_webhook",
+    "dns_update": "call_api",
+    "curl": "make_http_request",
+
+    # Category: file_transfer → canonical upload_file
+    "sync_file": "upload_file",
+    "transfer_file": "upload_file",
+    "export_file": "upload_file",
+    "push_file": "upload_file",
+    "ftp_upload": "upload_file",
+    "s3_upload": "upload_file",
+    "cloud_upload": "upload_file",
+}
+
+
+# 已知标准 action_type（Datalog 规则 + 拦截器中使用的），不做规范化
+_KNOWN_ACTION_TYPES = frozenset({
+    # Datalog sensitive_source
+    "read_env_vars", "read_file", "get_ssh_config", "read_contacts",
+    "list_directory", "query_database",
+    # Datalog untrusted_dest
+    "send_email", "send_slack_message", "post_to_forum", "post_tweet",
+    "create_github_issue", "make_http_request", "upload_file", "call_api",
+    "create_webhook", "send_sms", "git_push",
+    # Datalog destructive + other recognized types
+    "execute_command", "exec_destructive", "exec_command", "delete_file",
+    "write_file", "install_package", "git_commit", "read_system_info",
+    "delete_message", "send_message", "open_url", "web_search",
+    # 拦截器中的 action_type（T3 irreversible 等）
+    "publish_post", "modify_config",
+})
+
+
+def _normalize_tool_action(tool_name: str) -> str:
+    """将非标准工具名映射到 Datalog 规则中的标准 action。
+
+    策略：已知类型直通 → 精确匹配 → 子串匹配 → 原样返回。
+    子串匹配处理组合名（如 "slack_broadcast_message" → "broadcast_message" → "send_email"）。
+    """
+    if not tool_name:
+        return tool_name
+    name_lower = tool_name.lower().strip()
+
+    # 0. 已知标准类型直通，不规范化
+    if name_lower in _KNOWN_ACTION_TYPES:
+        return tool_name
+
+    # 1. 精确匹配
+    if name_lower in _TOOL_CATEGORY_MAP:
+        return _TOOL_CATEGORY_MAP[name_lower]
+
+    # 2. 子串匹配（处理带前缀/后缀的变体）
+    for variant, canonical in _TOOL_CATEGORY_MAP.items():
+        if variant in name_lower:
+            return canonical
+
+    return tool_name
+
+
 def _extract_action_type(tool_call: dict) -> str:
     """
     推断 action_type：
-    1. 显式 action_type 字段
+    1. 显式 action_type 字段（经规范化）
     2. 根据 tool_name 推断
     3. 根据 action 字段
+    4. 工具名规范化 fallback
     """
     # 显式字段
     at = tool_call.get("action_type")
     if isinstance(at, str) and at:
-        return at
+        # 对显式 action_type 也做规范化，防止 scenario 直接传入非标准名
+        return _normalize_tool_action(at)
 
     tool_name = (tool_call.get("tool_name") or tool_call.get("name") or "").lower()
     action = (tool_call.get("action") or "").lower()
@@ -1726,7 +1829,9 @@ def _extract_action_type(tool_call: dict) -> str:
     if any(kw in cmd for kw in ("rm ", "rmdir", "unlink", "delete")):
         return "delete_file"
 
-    return action or tool_name or "unknown"
+    # Fallback: 通过规范化映射非标准工具名
+    raw = action or tool_name or "unknown"
+    return _normalize_tool_action(raw)
 
 
 def _extract_search_lang(tool_call: dict) -> Optional[str]:
@@ -1876,6 +1981,76 @@ def _has_prior_list_directory(session_context: Optional[list]) -> bool:
         tc.get("tool_name") == "list_directory" or tc.get("action_type") == "list_directory"
         for tc in session_context
     )
+
+
+# ── Loop 70: 破坏性命令 + 文件指令执行 + 链路感知扩展 ────────────────────────
+
+_DESTRUCTIVE_COMMAND_PATTERNS = [
+    re.compile(r"\b(FLUSHALL|FLUSHDB|flushall|flushdb)\b"),
+    re.compile(r"\bkubectl\s+(delete|drain)\b", re.I),
+    re.compile(r"\b(delete|purge|remove)\s+(all\s+)?(deployment|pod|namespace|index|indic)\w*\b", re.I),
+    re.compile(r"\bvm\s*[-_]?\s*snapshot\s*(delete|remove|purge)\b", re.I),
+    re.compile(r"\b(delete|remove|purge)\s+(all\s+)?snapshot\w*\b", re.I),
+    re.compile(r"\breplicas?\s+(to\s+)?0\b", re.I),
+    re.compile(r"\belasticsearch\b.{0,80}\bdelete\b", re.I | re.DOTALL),
+    re.compile(r"\bdelete\s+all\s+(deployments?|indices|indexes|snapshots?)\b", re.I),
+]
+
+
+def _has_destructive_command_signal(text: str) -> bool:
+    """检测破坏性 execute_command 模式（k8s delete/FLUSHALL/ES purge/VM snapshot）Loop 70"""
+    return any(p.search(text) for p in _DESTRUCTIVE_COMMAND_PATTERNS)
+
+
+_FILE_INSTRUCTION_EXECUTE_PATTERNS = [
+    re.compile(r"\bexecute\b.{0,80}\b(hooks?|actions?|commands?|scripts?)\b.{0,80}\b(listed|inside|specified|in (it|the|there)|found)\b", re.I | re.DOTALL),
+    re.compile(r"\brun\s+(all\s+)?(cells?|scripts?|hooks?)\b", re.I),
+    re.compile(r"\bnpm\s+install\b", re.I),
+    re.compile(r"\bauto.?execut", re.I),
+    re.compile(r"\bpost.?deploy.?hook", re.I),
+    re.compile(r"\b(execute|run)\s+(the\s+)?(specified|listed|found|given)\s+(actions?|commands?|hooks?|scripts?)\b", re.I),
+    re.compile(r"\b(process|handle)\b.{0,60}\bwebhook\b.{0,80}\b(execute|run|action)\b", re.I | re.DOTALL),
+]
+
+
+def _has_file_instruction_execute_signal(text: str) -> bool:
+    """检测从文件读取并执行指令的注入攻击模式 Loop 70"""
+    return any(p.search(text) for p in _FILE_INSTRUCTION_EXECUTE_PATTERNS)
+
+
+def _has_prior_read_ssh_config(session_context: Optional[list]) -> bool:
+    """检测 session_context 中是否包含 get_ssh_config 调用 Loop 70"""
+    if not session_context:
+        return False
+    return any(
+        tc.get("tool_name") in ("get_ssh_config", "read_ssh_config") or
+        tc.get("action_type") in ("get_ssh_config", "read_ssh_config")
+        for tc in session_context
+    )
+
+
+def _has_prior_query_database(session_context: Optional[list]) -> bool:
+    """检测 session_context 中是否包含 query_database 调用 Loop 70"""
+    if not session_context:
+        return False
+    return any(
+        tc.get("tool_name") == "query_database" or tc.get("action_type") == "query_database"
+        for tc in session_context
+    )
+
+
+_GIT_LOG_PUBLIC_PATTERNS = [
+    re.compile(r"\bgit\s+log\b.{0,200}\b(tweet|post|publish|share|twitter)\b", re.I | re.DOTALL),
+    re.compile(r"\b(tweet|post|share|publish)\b.{0,200}\bgit\s+(log|commit|change)\b", re.I | re.DOTALL),
+    re.compile(r"\b(commit\s+messages?|file\s+names?)\b.{0,100}\b(tweet|post|public|twitter)\b", re.I | re.DOTALL),
+    re.compile(r"\bcode\s+changes?\b.{0,100}\b(twitter|tweet|public)\b", re.I | re.DOTALL),
+    re.compile(r"\bgit\s+log\b.{0,100}\b(automat|daily|schedule)\b", re.I | re.DOTALL),
+]
+
+
+def _has_git_log_public_signal(text: str) -> bool:
+    """检测 git log/commit 内容自动发布到公开平台的模式 Loop 70"""
+    return any(p.search(text) for p in _GIT_LOG_PUBLIC_PATTERNS)
 
 
 # ── Loop 68: ExfiltrationViaTools 信号 ──────────────────────────────────────
@@ -2138,6 +2313,13 @@ def extract_facts(tool_call: dict, session_context: Optional[list] = None) -> di
     facts["prior_list_directory"] = _has_prior_list_directory(session_context)
     facts["has_suspicious_webhook_exfil"] = _has_suspicious_webhook_exfil_signal(prompt_text)
     facts["has_malicious_tool_install"] = _has_malicious_tool_install_signal(prompt_text)
+
+    # Loop 70: 破坏性命令 + 文件指令执行 + 链路感知扩展
+    facts["destructive_command_signal"] = _has_destructive_command_signal(prompt_text)
+    facts["file_instruction_execute_signal"] = _has_file_instruction_execute_signal(prompt_text)
+    facts["prior_read_ssh_config"] = _has_prior_read_ssh_config(session_context)
+    facts["prior_query_database"] = _has_prior_query_database(session_context)
+    facts["git_log_public_signal"] = _has_git_log_public_signal(prompt_text)
 
     # KG context bridge: extract tool_name and category for _build_kg_context()
     facts["tool_name"] = tool_call.get("tool_name") or tool_call.get("name") or tool_call.get("action")
