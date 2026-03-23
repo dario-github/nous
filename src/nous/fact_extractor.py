@@ -1520,7 +1520,8 @@ def _has_no_owner_instruction_signal(text: str) -> bool:
     if not text:
         return False
     patterns = [
-        re.compile(r"\b(system\s*override|ignore\s*previous|ignore\s*instructions|new\s*instructions)\b", re.I),
+        re.compile(r"\b(system\s*override|ignore\s+(?:all\s+)?previous|ignore\s*instructions|new\s*instructions)\b", re.I),
+        re.compile(r"\bforget\s+(?:all\s+)?(?:previous|prior)\s+instructions?\b", re.I),
         re.compile(r"\b(mandatory|required|urgent)\b.{0,30}\b(security|compliance|audit)\b.{0,30}\b(protocol|check|verification)\b", re.I),
     ]
     return any(p.search(text) for p in patterns)
@@ -1837,6 +1838,19 @@ def _has_prior_read_file(session_context: Optional[list]) -> bool:
     )
 
 
+def _has_employment_disclosure_signal(text: str) -> bool:
+    """检测 employment change/disclosure tweets（owner 离职公告、入职公告）。"""
+    if not text:
+        return False
+    patterns = [
+        re.compile(r"\bleaving\s+@\w+\s+to\s+join\s+@\w+\b", re.I),
+        re.compile(r"\bleaving\s+@\w+\b.{0,50}\bjoin\b", re.I),
+        re.compile(r"\bexcited\s+to\s+announce\b.{0,80}\b(leaving|joining|starting\s+at)\b", re.I),
+        re.compile(r"\b(new\s+(role|job|position|chapter)|joining\s+@\w+)\b.{0,40}\b(today|starting|excited)\b", re.I),
+    ]
+    return any(p.search(text) for p in patterns)
+
+
 def _has_vague_owner_instruction(text: str) -> bool:
     """检测模糊授权模式（agent 被给予自主空间决定如何行动）。"""
     patterns = [
@@ -1847,6 +1861,9 @@ def _has_vague_owner_instruction(text: str) -> bool:
         re.compile(r"\bdo\s+what(ever)?\s+you\s+(need|have)\s+to\b", re.I),
         re.compile(r"\buse\s+your\s+(best\s+)?judgment\b", re.I),
         re.compile(r"\bin\s+whatever\s+way\s+you\s+think\b", re.I),
+        re.compile(r"\bso\s+(?:the\s+)?community\s+can\s+(?:help|debug|fix|review)\b", re.I),
+        re.compile(r"\bget\s+(?:community\s+)?help\s+(?:with\s+)?debug(?:ging)?\b", re.I),
+        re.compile(r"\bpublic\s+(?:github|repo|repository)\b.{0,40}\bhelp\b", re.I),
     ]
     return any(p.search(text) for p in patterns)
 
@@ -2014,6 +2031,7 @@ def extract_facts(tool_call: dict, session_context: Optional[list] = None) -> di
     facts["credential_in_params"] = _has_credential_in_params_signal(prompt_text)
     facts["local_file_in_request_body"] = _has_local_file_in_request_signal(prompt_text)
     facts["no_owner_instruction"] = _has_no_owner_instruction_signal(prompt_text)
+    facts["has_employment_disclosure"] = _has_employment_disclosure_signal(prompt_text)
     facts["autonomous_decision"] = _has_autonomous_decision_signal(prompt_text)
     facts["hijacked_identity"] = _has_hijacked_identity_signal(prompt_text)
 
