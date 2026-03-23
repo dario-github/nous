@@ -597,7 +597,7 @@ def _apply_semantic_verdict(
     sem_verdict: Optional[dict],
     config: SemanticGateConfig,
 ) -> Verdict:
-    """Confidence-Calibrated Verdict Fusion (Loop 4 + Loop 8).
+    """Confidence-Calibrated Verdict Fusion (Loop 4 + Loop 8 + Loop 73).
 
     设计原则：Datalog 是强先验，LLM 需要提供高置信度证据才能推翻。
 
@@ -610,11 +610,17 @@ def _apply_semantic_verdict(
         - semantic confirm → 保持 allow（LLM 犹豫不推翻规则许可）
         - semantic allow → 保持 allow
       Datalog "confirm"/"delegate":
-        - semantic allow (conf >= allow_downgrade_threshold) → 降级为 allow
-        - semantic allow (conf < threshold) → 保持 confirm
-        - semantic block (conf >= block_upgrade_threshold) → 升级为 block
-        - semantic block (conf < block_upgrade_threshold) → 保持 confirm（Loop 8: 低置信度不升级，由人类决定）
-        - semantic confirm → 保持 confirm
+        [upgrade_only=False（默认）]:
+          - semantic allow (conf >= allow_downgrade_threshold) → 降级为 allow
+          - semantic allow (conf < threshold) → 保持 confirm
+          - semantic block (conf >= block_upgrade_threshold) → 升级为 block
+          - semantic block (conf < block_upgrade_threshold) → 保持 confirm（低置信度不升级）
+          - semantic confirm → 保持 confirm
+        [upgrade_only=True（Loop 73 新增）]:
+          - semantic allow → 保持 confirm（禁止 downgrade，安全优先）
+          - semantic block (conf >= block_upgrade_threshold) → 升级为 block
+          - semantic block (conf < block_upgrade_threshold) → 保持 confirm
+          - semantic confirm → 保持 confirm
     """
     if config.mode != "active":
         return current_verdict
@@ -639,7 +645,9 @@ def _apply_semantic_verdict(
         return current_verdict
 
     elif datalog_verdict in ("confirm", "delegate"):
-        if sem_action == "allow" and sem_confidence >= config.allow_downgrade_threshold:
+        # Loop 73: upgrade_only 模式 — 禁止 downgrade（confirm→allow）
+        upgrade_only = getattr(config, "upgrade_only", False)
+        if not upgrade_only and sem_action == "allow" and sem_confidence >= config.allow_downgrade_threshold:
             return Verdict(
                 action="allow",
                 rule_id=f"{current_verdict.rule_id}+semantic-override",
@@ -656,7 +664,7 @@ def _apply_semantic_verdict(
         elif sem_action == "block":
             # Low-confidence block → keep confirm (Loop 8: insufficient evidence, let human decide)
             return current_verdict
-        # sem confirm or low-confidence allow → keep confirm
+        # sem confirm or (upgrade_only + sem allow) or low-confidence allow → keep confirm
         return current_verdict
 
     return current_verdict

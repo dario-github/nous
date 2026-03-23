@@ -214,6 +214,7 @@ def main():
                 provider=provider,
                 block_upgrade_threshold=0.85,  # upgrade allow→block when semantic conf >= 0.85
                 allow_downgrade_threshold=0.70,
+                upgrade_only=True,  # Loop 73: 禁止 confirm→allow downgrade，防止有害案例被语义门放行
             )
             mode_label = f"L1+L2+L3({sem_model}/owner-harm-policy)"
             print(f"\nSemantic gate ENABLED — model: {sem_model}, policy: owner-harm-policy.txt")

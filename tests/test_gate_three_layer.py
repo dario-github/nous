@@ -562,3 +562,114 @@ class TestLoop8ConfidenceThreshold:
         )
         assert result.datalog_verdict == "allow"
         assert result.verdict.action == "allow"  # 0.89 < 0.90 → no upgrade
+
+
+class TestUpgradeOnlyMode:
+    """Loop 73: upgrade_only=True 时禁止 confirm→allow downgrade。"""
+
+    def test_upgrade_only_confirm_allow_stays_confirm(self):
+        """upgrade_only=True: confirm + semantic allow → 保持 confirm（禁止 downgrade）。"""
+        import tempfile
+        from pathlib import Path as _Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            confirm_rule = _Path(tmpdir) / "TC_UO.yaml"
+            confirm_rule.write_text(
+                "id: TC_UO\n"
+                "name: test confirm upgrade_only\n"
+                "priority: 50\n"
+                "enabled: true\n"
+                "trigger:\n"
+                "  action_type: test_confirm_action\n"
+                "verdict: confirm\n"
+                "reason: test confirm\n"
+            )
+            result = gate(
+                constraints_dir=_Path(tmpdir),
+                tool_call={"action_type": "test_confirm_action", "params": {"content": "benign"}},
+                triviality_config=TrivialityConfig(),
+                semantic_config=SemanticGateConfig(
+                    mode="active",
+                    upgrade_only=True,
+                    provider=make_mock_provider(
+                        '{"action":"allow","reason":"benign content","confidence":0.95}'
+                    ),
+                ),
+            )
+            # upgrade_only=True → semantic allow should NOT downgrade confirm
+            assert result.datalog_verdict == "confirm"
+            assert result.verdict.action == "confirm", (
+                f"Expected confirm (upgrade_only), got {result.verdict.action}"
+            )
+
+    def test_upgrade_only_confirm_block_still_upgrades(self):
+        """upgrade_only=True: confirm + semantic block (high conf) → block（upgrade 仍有效）。"""
+        import tempfile
+        from pathlib import Path as _Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            confirm_rule = _Path(tmpdir) / "TC_UO2.yaml"
+            confirm_rule.write_text(
+                "id: TC_UO2\n"
+                "name: test confirm upgrade_only block\n"
+                "priority: 50\n"
+                "enabled: true\n"
+                "trigger:\n"
+                "  action_type: test_confirm_action2\n"
+                "verdict: confirm\n"
+                "reason: test confirm\n"
+            )
+            result = gate(
+                constraints_dir=_Path(tmpdir),
+                tool_call={"action_type": "test_confirm_action2", "params": {"content": "harmful"}},
+                triviality_config=TrivialityConfig(),
+                semantic_config=SemanticGateConfig(
+                    mode="active",
+                    upgrade_only=True,
+                    block_upgrade_threshold=0.85,
+                    provider=make_mock_provider(
+                        '{"action":"block","reason":"harmful content","confidence":0.91}'
+                    ),
+                ),
+            )
+            # upgrade_only=True → semantic block with high conf should STILL upgrade to block
+            assert result.datalog_verdict == "confirm"
+            assert result.verdict.action == "block", (
+                f"Expected block (upgrade_only allows upgrades), got {result.verdict.action}"
+            )
+
+    def test_upgrade_only_false_confirm_allow_downgrades(self):
+        """upgrade_only=False（默认）: confirm + semantic allow → allow（原有降级行为保留）。"""
+        import tempfile
+        from pathlib import Path as _Path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            confirm_rule = _Path(tmpdir) / "TC_UO3.yaml"
+            confirm_rule.write_text(
+                "id: TC_UO3\n"
+                "name: test confirm upgrade_only=False\n"
+                "priority: 50\n"
+                "enabled: true\n"
+                "trigger:\n"
+                "  action_type: test_confirm_action3\n"
+                "verdict: confirm\n"
+                "reason: test confirm\n"
+            )
+            result = gate(
+                constraints_dir=_Path(tmpdir),
+                tool_call={"action_type": "test_confirm_action3", "params": {"content": "benign"}},
+                triviality_config=TrivialityConfig(),
+                semantic_config=SemanticGateConfig(
+                    mode="active",
+                    upgrade_only=False,  # 明确设 False（默认行为）
+                    allow_downgrade_threshold=0.70,
+                    provider=make_mock_provider(
+                        '{"action":"allow","reason":"benign content","confidence":0.92}'
+                    ),
+                ),
+            )
+            # upgrade_only=False → semantic allow with conf >= 0.70 should downgrade confirm→allow
+            assert result.datalog_verdict == "confirm"
+            assert result.verdict.action == "allow", (
+                f"Expected allow (upgrade_only=False), got {result.verdict.action}"
+            )
