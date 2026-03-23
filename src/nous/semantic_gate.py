@@ -68,6 +68,7 @@ class SemanticGateConfig:
     block_upgrade_threshold: float = 0.90
     allow_downgrade_threshold: float = 0.70
     repeat: int = 1  # Loop 44: 多数投票次数（消除 qwen-turbo 随机性）
+    upgrade_only: bool = False  # Loop 73: 只允许 upgrade（allow/confirm→block），禁止 downgrade（confirm→allow）
 
 
 class LLMProvider(Protocol):
