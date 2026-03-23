@@ -1,27 +1,26 @@
 {
-  "loop_number": 71,
-  "timestamp": "2026-03-23T15:30:00Z",
+  "loop_number": 72,
+  "timestamp": "2026-03-23T18:00:00Z",
   "L_val": 0.0,
-  "L_val_source": "Owner-harm L1+L2: TPR 100.0%, FPR_block=0.0%, L=0.0 (200/200). Semantic gate activated with DeepSeek-V3.2 (8/8 benign FP resolved, FPR_semantic=0.0%)",
-  "L_val_note": "Loop 71: Fixed semantic gate infrastructure (OPENAI_BASE_URL fallback). DeepSeek-V3.2 T2 model. 8/8 OH-R8 benign confirms -> allow (conf 0.98). Tests 1072 green.",
+  "L_val_source": "Owner-harm L1+L2: TPR 100.0%, FPR=0.0%, L=0.0 (200/200). Semantic benchmark: TPR 77% FPR 0% L=0.092 — semantic degrades L1 blocks, should only upgrade.",
+  "L_val_note": "Loop 72: Fixed shadow_live.py P2 (provider was None → FAIL_OPEN since day 1). Semantic benchmark reveals semantic gate reduces TPR when overriding L1 blocks. Decision: semantic = upgrade-only mode.",
   "L_challenge": 0.0,
   "L_challenge_note": "Loop 60: L_challenge=0.0 (15/15 harmful blocked). All adv2 FNs resolved.",
   "metric_version": "v1.0-frozen-20260315",
   "tests": 1072,
   "curriculum_phase": 3,
   "urgent": [
-    "P0: Run full --semantic benchmark (200h+50b) with DeepSeek-V3.2 to establish semantic baseline",
-    "P1: KG semantic enhancement — entity enrichment + relation typing (M7.2)",
-    "P2: gateway_hook integration — config not passed, L2/L3 production inactive",
-    "P3: Decision visibility — proof_trace visualization for user-facing output (M7.3)"
+    "P0: 实施 semantic upgrade-only 模式（禁止 downgrade L1 block verdict）",
+    "P1: 重跑 shadow_live.py 验证生产环境语义判断正常产出",
+    "P2: KG semantic enhancement — entity enrichment + relation typing (M7.2)",
+    "P3: gateway_hook integration — config not passed, L2/L3 production inactive"
   ],
   "completed_this_loop": [
-    "Diagnosed semantic gate failure: NOUS_BASE_URL missing, OPENAI_BASE_URL not used as fallback",
-    "Fixed openai_provider.py: added OPENAI_BASE_URL fallback",
-    "Updated T2 semantic model: deepseek-chat (V3.1 deprecated) -> DeepSeek-V3.2 (3.5s/call)",
-    "Validated: 8/8 benign_read_send OH-R8 confirms -> allow via semantic gate (conf=0.98 each)",
-    "Verified: 1072 tests green, no regressions",
-    "Checked: AgentHarm val L_partial=0.2089 (expected post owner-centric pivot, not new regression)"
+    "P2 根因修复：shadow_live.py 的 SemanticGateConfig 从未传入 provider → provider is None → FAIL_OPEN（27987 条生产 shadow 数据全部没有语义判断）",
+    "修复方案：import create_openai_provider, 传入 DeepSeek-V3.2 provider（commit 6d52691）",
+    "语义基准测试完成：200h+50b，TPR=77% FPR=0% L=0.092",
+    "关键发现：语义门覆盖 L1 block 会降低 TPR 23%（46 个有害案例被错误放行）",
+    "架构决策：语义门只用于 upgrade（allow→block），禁止 downgrade（block→allow）"
   ],
   "owner_harm_semantic_benchmark": {
     "T1_judge": {
