@@ -60,6 +60,7 @@ def run_benchmark(scenarios, label, triviality_config=None, semantic_config=None
         tool_calls = scenario_to_tool_calls(scenario)
         
         tc_results = []
+        prior_calls = []
         for tc in tool_calls:
             try:
                 gr = gate(
@@ -67,7 +68,9 @@ def run_benchmark(scenarios, label, triviality_config=None, semantic_config=None
                     constraints_dir=CONSTRAINTS_DIR,
                     triviality_config=triviality_config,
                     semantic_config=semantic_config,
+                    session_context=prior_calls if prior_calls else None,  # Loop 66
                 )
+                prior_calls.append(tc)  # 记录已执行的工具调用
                 tc_results.append({
                     "func": tc["tool_name"],
                     "verdict": gr.verdict.action,

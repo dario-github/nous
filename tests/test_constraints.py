@@ -62,7 +62,7 @@ class TestConstraintParser:
         assert "T10" in ids
         assert "T11" in ids
         assert "T12" in ids
-        assert len(constraints) == 32  # Loop 64: 32 constraints (T3-series + T-series + OH-R1~7) + T3-upload + T5 + T10 + T11 + T12 + T-disinformation-election + T-grooming + T-roleplay-bypass + T-antidemocratic-incitement + T-data-exfiltration
+        assert len(constraints) == 34  # Loop 66: +OH-R8 (read_then_external) +OH-R9a (vague_authorization)
 
     def test_t3_parsed_correctly(self, constraints):
         """T3: 不可逆操作 → block，priority=100"""
@@ -537,7 +537,7 @@ class TestVerdictRouter:
                  "estimated_lines": 10, "search_lang": "en",
                  "output_target": "discord", "content_is_structured": False}
         results = match_all_constraints(constraints, facts)
-        assert len(results) == 32  # Loop 64: 32 constraints (T3-series + T-series + OH-R1~7) + T3-upload + T5 + T10 + T11 + T12 + T-disinformation-election + T-grooming + T-roleplay-bypass + T-antidemocratic-incitement + T-data-exfiltration
+        assert len(results) == 34  # Loop 66: +OH-R8 (read_then_external) +OH-R9a (vague_authorization)
         # 所有约束都不匹配
         assert all(not r.matched for r in results)
 
@@ -627,7 +627,7 @@ class TestGateAPI:
         result = gate(tool_call, db=db, constraints_dir=CONSTRAINTS_DIR)
         assert result.proof_trace is not None
         assert result.proof_trace.final_verdict == result.verdict.action
-        assert len(result.proof_trace.steps) == 32  # Loop 64: 32 constraints (T3-series + T-series + OH-R1~7) + T3-upload + T5 + T10 + T11 + T12 + T-disinformation-election + T-grooming + T-roleplay-bypass + T-antidemocratic-incitement + T-data-exfiltration
+        assert len(result.proof_trace.steps) == 34  # Loop 66: +OH-R8 (read_then_external) +OH-R9a (vague_authorization)
 
     def test_gate_logs_decision_to_db(self, db):
         """block verdict 应写入 decision_log"""

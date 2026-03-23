@@ -257,6 +257,7 @@ def gate(
     triviality_config: Optional[TrivialityConfig] = None,
     semantic_config: Optional[SemanticGateConfig] = None,
     kg_context: Optional[dict] = None,
+    session_context: Optional[list] = None,  # Loop 66: 先前工具调用历史
 ) -> GateResult:
     """
     三层决策 pipeline 入口。
@@ -270,6 +271,7 @@ def gate(
         triviality_config:  Layer 2 配置（可选，None → 不启用 triviality filter）
         semantic_config:    Layer 3 配置（可选，None → 不启用 semantic gate）
         kg_context:         KG 上下文（可选，传给 semantic gate）
+        session_context:    先前工具调用历史（可选，用于链路感知规则 OH-R8/R9a）
 
     Returns:
         GateResult（包含 verdict + proof_trace + datalog_verdict + semantic_verdict + layer_path）
@@ -289,7 +291,7 @@ def gate(
 
         # Step 1: 提取事实（M2.P2: 计时）
         t1_start = time.perf_counter_ns()
-        facts = extract_facts(tool_call)
+        facts = extract_facts(tool_call, session_context=session_context)
         fact_extraction_us = (time.perf_counter_ns() - t1_start) // 1000
 
         # Step 1.2: Action Layer Resolution (Phase A)
