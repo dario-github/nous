@@ -20,6 +20,7 @@ from nous.gate import gate, GateResult
 from nous.db import NousDB
 from nous.triviality_filter import TrivialityConfig
 from nous.semantic_gate import SemanticGateConfig
+from nous.providers.openai_provider import create_openai_provider
 
 TRIGGER_LOG = Path.home() / ".openclaw/ontology-gate/trigger_log.jsonl"
 SHADOW_DIR = Path(__file__).parent.parent / "logs"
@@ -117,12 +118,25 @@ def main():
     db = NousDB(str(db_path)) if db_path.exists() else None
     constraints_dir = Path(__file__).parent.parent / "ontology" / "constraints"
 
-    # L2 Triviality + L3 Semantic Gate 配置（P0 修复：之前未传入导致只跑 L1）
+    # L2 Triviality + L3 Semantic Gate 配置
+    # Loop 72 修复：之前 SemanticGateConfig 未传 provider → provider is None → FAIL_OPEN 立即返回
+    # 现在正确传入 create_openai_provider，使用 DeepSeek-V3.2（同 benchmark）
+    import os
+    sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", "DeepSeek-V3.2")
+    try:
+        _provider_fn = create_openai_provider(model=sem_model)
+        _semantic_enabled = True
+    except Exception:
+        _provider_fn = None
+        _semantic_enabled = False
+
     triviality_cfg = TrivialityConfig()
     semantic_cfg = SemanticGateConfig(
-        enabled=True,
-        mode="shadow",
-        model="openai/gpt-5-mini",  # T2 production, config.yaml
+        enabled=_semantic_enabled,
+        mode="shadow",  # shadow: 不升级 verdict，仅记录语义判断
+        model=sem_model,
+        provider=_provider_fn,
+        block_upgrade_threshold=0.85,
     )
 
     results = []
