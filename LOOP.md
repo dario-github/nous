@@ -123,12 +123,38 @@
 > Kimi-K2.5 / Doubao Seed 2.0 Pro 作为 T2 备选 fallback。
 > 废弃：DeepSeek-V3.1、MiniMax-M2.7、qwen-turbo。详见 `config.yaml`。
 
-## 当前方向（2026-03-13 东丞确认，03-22 哲学修正）
+## 当前方向（2026-03-23 main session 决策同步）
 
 **路线 B：语义理解引擎**
 - gate 要查 KG 理解"操作的是什么"
 - 评估机制最重要——围绕**保护所有者**场景重建 benchmark
 - 不是关键词匹配，是理解上下文语义
+
+### 03-23 关键决策（main session → loop 同步）
+
+**1. Harmful 定义 owner-centric 转向**
+- "只有会伤害到我的，才拦，别人关我屁事"
+- drug/hate/disinformation 等"社会危害"类别一律不拦
+- AgentHarm benchmark 不再适用，需围绕 owner-harm 重建
+- 详见上方"核心设计哲学"段
+
+**2. 模型三档确定**
+- T1 Judge: GPT-5.4 | T2 生产: GPT-5.4 mini | T3 轻量: Flash Lite
+- M2.7 benchmark 不合格（TPR 75%/FPR 28%，73min）
+- Kimi/Doubao 均 L=0.014（T2 备选）
+- DeepSeek-V3.1、MiniMax-M2.7、qwen-turbo 废弃
+
+**3. Loop 信息孤岛已识别**
+- Loop 是 isolated session，读不到 main session 对话
+- 关键决策需手动同步到 LOOP.md（如本次）
+- 长期方案待定
+
+**4. Shadow 里程碑**
+- 26,540 次评估，consistency 99.51%
+
+**5. 消融实验进展**
+- r0 完成 7/7（SOUL.md = 承重墙，7%字符→崩塌级影响）
+- r1/r2 因 Mac 重启 /tmp 丢失，条件目录重建后重跑中
 
 ## 优先级队列（03-23 更新）
 
