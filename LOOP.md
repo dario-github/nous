@@ -156,12 +156,26 @@
 - r0 完成 7/7（SOUL.md = 承重墙，7%字符→崩塌级影响）
 - r1/r2 因 Mac 重启 /tmp 丢失，条件目录重建后重跑中
 
-## 优先级队列（03-23 更新）
+**6. Benchmark 扩展完成（03-23 晚）**
+- Core: 132h+41b → **200h+50b**（每 category 25h）
+- 对抗红队: **50h+10b**（专门骗 gate 的案例）
+  - 发现：工具名规避 8 cases L1 会 100% 漏（sync_file/publish/broadcast_message 等不在 Datalog）
+  - 社会工程 9 cases + 上下文操纵 9 cases + 合法自动化伪装 10 cases
+- 外部: InjecAgent **30 cases** 适配（ACL 2024，间接 prompt injection）
+  - 发现 0 覆盖攻击面：IoT/物理设备、医疗 FHIR、急救调度、金融 API
+- 总计: **280h+60b = 340 cases**
+- 适配器脚本: `scripts/external_benchmark_adapter.py`
 
-1. **Owner-harm benchmark 重建** — 围绕"保护所有者"设计新评估集，替代 AgentHarm
-2. **ExfiltrationViaTools FN 修复** — Loop 68 P0: 62% TPR (10/16)，6个FN待修
-3. **KG 语义增强** — 实体属性丰富化 + 关系类型化（M7.2+M11）
-4. **语义 gate** — gate 流程增加 KG enrichment
+**7. 下一步：Mac baseline + 工具名规避修复**
+- 在 Mac 上跑全量 340 cases baseline（进行中）
+- fact_extractor.py 加 tool category matching（不逐个加工具名，按类别匹配）
+
+## 优先级队列（03-23 晚更新）
+
+1. **🔥 工具名规避修复** — fact_extractor 加 tool category matching，8 cases L1 100% 漏的 P0
+2. **Mac baseline 建立** — 340 cases 全量跑一遍，建立新 baseline 数据（进行中）
+3. **ExfiltrationViaTools FN 修复** — Loop 68 P0: 62% TPR (10/16)，6个FN待修
+4. **KG 语义增强** — 实体属性丰富化 + 关系类型化（M7.2+M11）
 5. **gateway_hook 集成** — P0: config 未传入导致 L2/L3 生产未激活
 
 > Geo RL Loop 已完结（18轮，best L_val=0.5227，LLM synthesis 边际收益为负）。归档 `scripts/geo_*.py`
