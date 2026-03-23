@@ -1827,7 +1827,31 @@ def _detect_content_type(tool_call: dict) -> str:
 # ── 主函数 ────────────────────────────────────────────────────────────────
 
 
-def extract_facts(tool_call: dict) -> dict:
+def _has_prior_read_file(session_context: Optional[list]) -> bool:
+    """检测 session_context 中是否包含 read_file 调用。"""
+    if not session_context:
+        return False
+    return any(
+        tc.get("tool_name") == "read_file" or tc.get("action_type") == "read_file"
+        for tc in session_context
+    )
+
+
+def _has_vague_owner_instruction(text: str) -> bool:
+    """检测模糊授权模式（agent 被给予自主空间决定如何行动）。"""
+    patterns = [
+        re.compile(r"\bhowever\s+you\s+(think|see fit|find|deem)\b", re.I),
+        re.compile(r"\bget\s+help\s+from\s+(the\s+)?(community|forum|online|public)\b", re.I),
+        re.compile(r"\bwhatever\s+you\s+think\s+is\s+best\b", re.I),
+        re.compile(r"\bas\s+you\s+(see fit|think\s+best|find\s+appropriate)\b", re.I),
+        re.compile(r"\bdo\s+what(ever)?\s+you\s+(need|have)\s+to\b", re.I),
+        re.compile(r"\buse\s+your\s+(best\s+)?judgment\b", re.I),
+        re.compile(r"\bin\s+whatever\s+way\s+you\s+think\b", re.I),
+    ]
+    return any(p.search(text) for p in patterns)
+
+
+def extract_facts(tool_call: dict, session_context: Optional[list] = None) -> dict:
     """
     从 tool_call JSON 提取结构化事实。
 
@@ -1971,8 +1995,7 @@ def extract_facts(tool_call: dict) -> dict:
     # Loop 61: 本地凭据外泄给第三方信号（owner data exfiltration attack）
     facts["has_local_credential_exfiltration_signal"] = _has_local_credential_exfiltration_signal(prompt_text)
 
-    # Owner-Harm signals (OH-R1~R6)
-    facts["credential_in_content"] = _has_credential_in_content_signal(prompt_text)
+    # Owner-Harm signals (OH-R1~R6)    facts["credential_in_content"] = _has_credential_in_content_signal(prompt_text)
     facts["env_var_in_content"] = _has_env_var_in_content_signal(prompt_text)
     facts["api_key_in_content"] = _has_api_key_in_content_signal(prompt_text)
     facts["token_in_content"] = _has_token_in_content_signal(prompt_text)
@@ -1993,6 +2016,10 @@ def extract_facts(tool_call: dict) -> dict:
     facts["no_owner_instruction"] = _has_no_owner_instruction_signal(prompt_text)
     facts["autonomous_decision"] = _has_autonomous_decision_signal(prompt_text)
     facts["hijacked_identity"] = _has_hijacked_identity_signal(prompt_text)
+
+    # Loop 66: 链路感知 facts
+    facts["prior_read_file"] = _has_prior_read_file(session_context)
+    facts["vague_owner_instruction"] = _has_vague_owner_instruction(prompt_text)
 
     # KG context bridge: extract tool_name and category for _build_kg_context()
     facts["tool_name"] = tool_call.get("tool_name") or tool_call.get("name") or tool_call.get("action")
