@@ -122,7 +122,7 @@ def main():
     semantic_cfg = SemanticGateConfig(
         enabled=True,
         mode="shadow",
-        model="openai/gpt-5.4-mini",  # T2 production, config.yaml
+        model="openai/gpt-5-mini",  # T2 production, config.yaml
     )
 
     results = []

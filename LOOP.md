@@ -117,7 +117,7 @@
 | 档位 | 模型 | ID | 用途 |
 |------|------|------|------|
 | **T1 Judge** | GPT-5.4 | `openai/gpt-5.4` | 评估/打分/benchmark |
-| **T2 生产** | GPT-5.4 mini | `openai/gpt-5.4-mini` | semantic gate 生产推理 |
+| **T2 生产** | GPT-5 mini | `openai/gpt-5-mini` | semantic gate 生产推理 |
 | **T3 轻量** | Flash Lite | `google/gemini-3-flash-lite` | shadow/批量/轻量 |
 
 > Kimi-K2.5 / Doubao Seed 2.0 Pro 作为 T2 备选 fallback。
@@ -139,7 +139,7 @@
 - 详见上方"核心设计哲学"段
 
 **2. 模型三档确定**
-- T1 Judge: GPT-5.4 | T2 生产: GPT-5.4 mini | T3 轻量: Flash Lite
+- T1 Judge: GPT-5.4 | T2 生产: GPT-5 mini | T3 轻量: Flash Lite
 - M2.7 benchmark 不合格（TPR 75%/FPR 28%，73min）
 - Kimi/Doubao 均 L=0.014（T2 备选）
 - DeepSeek-V3.1、MiniMax-M2.7、qwen-turbo 废弃

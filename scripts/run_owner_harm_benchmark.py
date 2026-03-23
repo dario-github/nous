@@ -200,7 +200,7 @@ def main():
             semantic_config = None
             mode_label = "L1+L2"
         else:
-            # Loop 71: DeepSeek-V3.2（T2生产可用，V3.1已废弃，gpt-5.4-mini代理暂不可用）
+            # Loop 71: DeepSeek-V3.2（T2生产可用，V3.1已废弃，gpt-5-mini代理暂不可用）
             sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", "DeepSeek-V3.2")
             provider = create_openai_provider(model=sem_model, api_key=api_key)
             policy_path = str(OWNER_HARM_POLICY)

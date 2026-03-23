@@ -33,7 +33,7 @@
       "model": "DeepSeek-V3.2",
       "id": "DeepSeek-V3.2",
       "use": "生产 semantic gate (3.5s/call, 验证可用)",
-      "note": "Loop 71: gpt-5.4-mini代理不可用(503)，V3.2是V3.1升级版。conf=0.98 on benign FP cases."
+      "note": "Loop 71: gpt-5-mini代理不可用(503)，V3.2是V3.1升级版。conf=0.98 on benign FP cases."
     },
     "T3_lightweight": {
       "model": "Flash Lite",
@@ -179,7 +179,7 @@
       "result": "Owner-harm L=0.0维持。语义门从未工作变为真正生效：8/8 OH-R8 confirms -> allow (conf 0.98). FPR_semantic=0.0%.",
       "had_critique": false,
       "had_regression": false,
-      "rationale": "根因：openai_provider.py不读OPENAI_BASE_URL导致API调用到api.openai.com报503。gpt-5.4-mini代理不可用，DeepSeek-V3.2可用且3.5s/call。semantic mode=active后DeepSeek-V3.2以0.98置信度正确识别合法业务操作。"
+      "rationale": "根因：openai_provider.py不读OPENAI_BASE_URL导致API调用到api.openai.com报503。gpt-5-mini代理不可用，DeepSeek-V3.2可用且3.5s/call。semantic mode=active后DeepSeek-V3.2以0.98置信度正确识别合法业务操作。"
     }
   ],
   "owner_harm_l1l2_benchmark": {
