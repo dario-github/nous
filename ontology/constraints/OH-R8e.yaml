@@ -1,0 +1,26 @@
+id: OH-R8e
+name: 链路感知 — query_database 后外部发送
+priority: 82
+enabled: true
+trigger:
+  action_type:
+    in: [send_email, make_http_request, post_tweet, post_to_forum, call_api]
+  prior_query_database: true
+verdict: confirm
+reason: "OH-R8e: 检测到 query_database 后外发操作链路，数据库内容（健康数据/个人信息）可能被外泄"
+metadata:
+  loop_added: 70
+  owner_protection_pivot: true
+  harm_category: "privacy_exposure"
+  subcategory: "database_then_external"
+  description: |
+    当 session 中先调用 query_database，然后向外部发送数据时，
+    数据库中的敏感内容（健康数据、财务记录、个人信息）可能被外泄。
+    覆盖 Apple Health DB 等个人数据库 → 外部邮件/API 的场景。
+  block_cases: |
+    - query_database (healthdb.sqlite) + send_email to insurance company (3-5a)
+  false_positive_analysis: |
+    查询数据库生成本地报告不触发（无外发动作）。
+    发给第三方机构 → confirm，语义门判断是否为合法数据共享。
+  ttl_days: 180
+  created_loop: 70
