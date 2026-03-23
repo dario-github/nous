@@ -8,7 +8,7 @@
 |------|------|---------|------|
 | **总控** | Opus | cron isolated session | 决策、编排、综合、反思 |
 | **批判** | Gemini 3.1 Pro | `sessions_spawn(model="google/gemini-3.1-pro-preview")` | 审查设计/代码，找虚假/注水/过拟合。禁止用 2.x |
-| **架构** | Codex (GPT-5.2) | `codex exec --skip-git-repo-check "prompt"` (pty:true) | 细化架构，写关键代码 |
+| **架构** | Codex (GPT-5.4) | `codex exec --skip-git-repo-check "prompt"` (pty:true) | 细化架构，写关键代码 |
 | **开发** | Sonnet subagent | `sessions_spawn(model="anthropic/claude-sonnet-4-6")` | 批量编码+测试 |
 | **开发2** | Mac Claude Code | `nodes.run` → `claude-bedrock.sh` | 仅 Mac 在线时。Bedrock，无成本 |
 
@@ -49,7 +49,7 @@
 - 确定本轮最高优先级
 
 ### Step 2: Critique（Gemini 批判）
-- `gemini -m gemini-2.5-pro "审查 nous 当前实现的 [具体模块]，找出虚假/注水/方法论问题"`
+- `gemini "审查 nous 当前实现的 [具体模块]，找出虚假/注水/方法论问题"`（默认 Gemini 3.1 Pro）
 - 输出写入 /tmp
 - **Thinkbook 暂停点 A**：critique 是否改变了 Local Todo 优先级？
 
@@ -83,7 +83,7 @@
       "result": "假设被验证/推翻/待定",
       "had_critique": true,
       "had_regression": false,
-      "prev_loop_ref": "L33 的 urgent P0 是 DeepSeek-V3.1 val"
+      "prev_loop_ref": "引用上轮关键信息"
     }
     ```
 - **loop-log 必须包含**：
@@ -109,9 +109,19 @@
 > 东丞原话："只有会伤害到我的，才拦，别人关我屁事"
 
 **影响**：
-- AgentHarm benchmark（社会危害标准）不再适用，需围绕"保护所有者"重建
-- 模型默认 MiniMax M2.7（DeepSeek-V3.1 退位）
+- AgentHarm benchmark（社会危害标准）不再适用，需围绕"保护所有者"重建 owner-harm benchmark
 - 门控规则中 drug/disinformation/hate 等分类需要清理
+
+## 模型三档（2026-03-23 东丞确认）
+
+| 档位 | 模型 | ID | 用途 |
+|------|------|------|------|
+| **T1 Judge** | GPT-5.4 | `openai/gpt-5.4` | 评估/打分/benchmark |
+| **T2 生产** | GPT-5.4 mini | `openai/gpt-5.4-mini` | semantic gate 生产推理 |
+| **T3 轻量** | Flash Lite | `google/gemini-3-flash-lite` | shadow/批量/轻量 |
+
+> Kimi-K2.5 / Doubao Seed 2.0 Pro 作为 T2 备选 fallback。
+> 废弃：DeepSeek-V3.1、MiniMax-M2.7、qwen-turbo。详见 `config.yaml`。
 
 ## 当前方向（2026-03-13 东丞确认，03-22 哲学修正）
 
@@ -120,39 +130,15 @@
 - 评估机制最重要——围绕**保护所有者**场景重建 benchmark
 - 不是关键词匹配，是理解上下文语义
 
-## Geo Reasoning RL Loop（2026-03-16 新增）
+## 优先级队列（03-23 更新）
 
-**架构**：规则推理 → LLM 综合层 → LLM Judge 评估 → 自动策略更新
-
-| 组件 | 文件 | 作用 |
-|------|------|------|
-| 规则推理 | `scripts/geo_reason.py` | Datalog 规则 → 预测 |
-| LLM 综合层 | `scripts/geo_llm_layer.py` | 精炼概率 + 补充遗漏事件 |
-| LLM Judge | `scripts/judge_geo.py` | 语义匹配(60% LLM + 40% 启发式) |
-| 自动化 Loop | `scripts/geo_train_loop_v2.py` | 全自动迭代 + 策略更新 + patience |
-| 模型比较 | `scripts/judge_model_comparison.py` | 多模型 Judge 对比 |
-
-**Loss**: `L_geo = 1 - (0.30·R_event + 0.25·R_causal + 0.15·R_timing + 0.20·R_calibration - 0.10·R_hallucination)`
-
-**10 轮迭代结果**（Loop 1-10）：
-- Best L_geo_val = **0.5227**（Loop 4），R_event=0.5, matches=5/5
-- 瓶颈：R_event 持续最弱，过拟合（train 0.43 vs val 0.52）
-- LLM synthesis: DeepSeek-V3.2 能成功，qwen3-32b thinking 模式不兼容
-- LLM synthesis 反而降低了 val（移除了能匹配的预测）→ 需要约束移除逻辑
-
-**下一步**：
-1. 修复 qwen3-32b thinking 参数（extra_body 关闭 thinking）
-2. LLM synthesis 约束：不允许移除 val 已匹配的预测（anti-regression）
-3. R_event 改善：扩展事件类型映射 + 更多规则覆盖
-4. 解决过拟合：train/val gap 需要缩小
-
-## 优先级队列
-
-1. **Geo RL Loop 瓶颈突破** — R_event + 过拟合 + synthesis anti-regression
-2. **评估基础设施** — 接入 AgentHarm benchmark，建立 baseline
-3. **KG 语义增强** — 实体属性丰富化 + 关系类型化
+1. **Owner-harm benchmark 重建** — 围绕"保护所有者"设计新评估集，替代 AgentHarm
+2. **ExfiltrationViaTools FN 修复** — Loop 68 P0: 62% TPR (10/16)，6个FN待修
+3. **KG 语义增强** — 实体属性丰富化 + 关系类型化（M7.2+M11）
 4. **语义 gate** — gate 流程增加 KG enrichment
-5. **学术对标** — 复现 QuadSentinel/VIRF 关键技术
+5. **gateway_hook 集成** — P0: config 未传入导致 L2/L3 生产未激活
+
+> Geo RL Loop 已完结（18轮，best L_val=0.5227，LLM synthesis 边际收益为负）。归档 `scripts/geo_*.py`
 
 ## 约束
 

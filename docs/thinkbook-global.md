@@ -41,7 +41,7 @@
 2. **决策可感知**（M7.3 + 可视化）— 让东丞能看到图谱在工作
 3. **图学术研究**（M11 新增）— 边权重自调整、概念漂移、自纠错
 4. **Semantic gate active**— 从 shadow 切到 active，让安全判断真正生效
-5. **AgentHarm 维护**— L_val 不退化即可，不再刷分
+5. **AgentHarm 维护**— ⚠️ AgentHarm 基于社会危害标准，owner-centric 下不再是主评估集。保留作为兼容性测试，主战场转 owner-harm benchmark
 
 ## 🗄️ Backlog（有趣但不急）
 
