@@ -38,7 +38,8 @@ def create_openai_provider(
     if not key:
         raise ValueError("No API key provided (set NOUS_API_KEY or OPENAI_API_KEY)")
 
-    url = base_url or os.environ.get("NOUS_BASE_URL")
+    # Loop 71: fallback to OPENAI_BASE_URL when NOUS_BASE_URL not set
+    url = base_url or os.environ.get("NOUS_BASE_URL") or os.environ.get("OPENAI_BASE_URL")
     client_kwargs = {"api_key": key}
     if url:
         client_kwargs["base_url"] = url
