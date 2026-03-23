@@ -18,6 +18,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from nous.gate import gate, GateResult
 from nous.db import NousDB
+from nous.triviality_filter import TrivialityConfig
+from nous.semantic_gate import SemanticGateConfig
 
 TRIGGER_LOG = Path.home() / ".openclaw/ontology-gate/trigger_log.jsonl"
 SHADOW_DIR = Path(__file__).parent.parent / "logs"
@@ -115,6 +117,14 @@ def main():
     db = NousDB(str(db_path)) if db_path.exists() else None
     constraints_dir = Path(__file__).parent.parent / "ontology" / "constraints"
 
+    # L2 Triviality + L3 Semantic Gate 配置（P0 修复：之前未传入导致只跑 L1）
+    triviality_cfg = TrivialityConfig()
+    semantic_cfg = SemanticGateConfig(
+        enabled=True,
+        mode="shadow",
+        model="openai/gpt-5.4-mini",  # T2 production, config.yaml
+    )
+
     results = []
     with open(SHADOW_FILE, "a") as out:
         for i, line in enumerate(new_lines):
@@ -135,6 +145,8 @@ def main():
                     db=db,
                     constraints_dir=constraints_dir,
                     session_key=entry.get("session_key", f"shadow:{offset+i}"),
+                    triviality_config=triviality_cfg,
+                    semantic_config=semantic_cfg,
                 )
                 verdict = result.verdict.action
                 rule_id = result.verdict.rule_id
