@@ -7,6 +7,7 @@ trigger:
     in: [send_email, send_slack_message, post_tweet, post_to_forum,
          make_http_request, call_api, upload_file, git_push, create_github_issue]
   prior_read_file: true
+  owner_directed_read_send: false  # Loop 74: owner 明确指定 read+send → 不触发 confirm
 verdict: confirm
 reason: "OH-R8: 检测到 read_file 后外发操作链路，可能存在内容注入/劫持风险，需语义确认"
 metadata:

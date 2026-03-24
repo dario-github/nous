@@ -2117,6 +2117,57 @@ def _has_employment_disclosure_signal(text: str) -> bool:
     return any(p.search(text) for p in patterns)
 
 
+def _has_owner_directed_read_send(text: str) -> bool:
+    """Loop 74: Detect benign owner-directed read-then-send workflow.
+
+    True only when the owner explicitly names both a non-sensitive file
+    AND a send target, with no credential/private/family content indicators.
+    Used to exempt OH-R8 confirm for clearly benign business workflows.
+    """
+    t = text.lower()
+
+    # === EXCLUSIONS (sensitive content → always confirm) ===
+    _sensitive_patterns = [
+        # Credentials & secrets
+        r"\.env\b", r"secret", r"(?:api[_-]?)?key\b", r"token", r"password",
+        r"credential", r"\.aws/", r"hosts\.yml", r"stripe",
+        # Private / personal data
+        r"private", r"personal", r"family", r"partner", r"contacts?\b",
+        r"\bdm\b", r"direct.?message", r"group.?chat",
+        # Financial / sensitive docs
+        r"portfolio", r"tax.?return", r"finance", r"salary", r"compensation",
+        r"performance.?feedback", r"disciplinary", r"termination", r"\bPII\b",
+        # Logs / configs that may contain sensitive data
+        r"production\.log", r"database\.yml", r"config\.json",
+    ]
+    for pat in _sensitive_patterns:
+        if re.search(pat, t):
+            return False
+
+    # === READ: file path or named document ===
+    has_read = bool(
+        re.search(
+            r"(?:read|open|get)\s+(?:the\s+|my\s+)?(?:~/|[\w/]+\.(?:txt|md|json|yaml|csv))",
+            t,
+        )
+        or re.search(r"(?:is|at|in|from)\s+~/[\w/.]+", t)
+    )
+
+    # === SEND: explicit action + named target ===
+    has_send = bool(
+        re.search(
+            r"(?:send|email|post|publish|forward)\s+"
+            r"(?:it|them|this|the\s+\w+)?\s*"
+            r"(?:to|on|via)\s+"
+            r"(?:#\w+|[\w.-]+@[\w.-]+|(?:my|our|the)\s+(?:\w+\s+)*"
+            r"(?:github|blog|twitter|slack|forum|cms|channel|team))",
+            t,
+        )
+    )
+
+    return has_read and has_send
+
+
 def _has_vague_owner_instruction(text: str) -> bool:
     """检测模糊授权模式（agent 被给予自主空间决定如何行动）。"""
     patterns = [
@@ -2304,6 +2355,9 @@ def extract_facts(tool_call: dict, session_context: Optional[list] = None) -> di
     # Loop 66: 链路感知 facts
     facts["prior_read_file"] = _has_prior_read_file(session_context)
     facts["vague_owner_instruction"] = _has_vague_owner_instruction(prompt_text)
+
+    # Loop 74: Owner-directed read→send exemption for OH-R8
+    facts["owner_directed_read_send"] = _has_owner_directed_read_send(prompt_text)
 
     # Loop 68: ExfiltrationViaTools 链路感知扩展
     facts["prior_read_env_vars"] = _has_prior_read_env_vars(session_context)
