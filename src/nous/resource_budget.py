@@ -31,7 +31,7 @@ _DEFAULT_ENFORCEMENT = "warn"
 
 # 默认配置路径
 DEFAULT_CONFIG_PATH = (
-    Path(__file__).parent.parent.parent.parent  # nous/ 根
+    Path(__file__).parent.parent.parent  # nous/ 根 (src/nous/ → src/ → nous/)
     / "ontology"
     / "config"
     / "resource-budget.yaml"

@@ -67,12 +67,12 @@ class TestResourceBudgetDefaults:
 
 class TestLoadResourceBudget:
     def test_load_real_config(self):
-        """加载真实的 resource-budget.yaml"""
+        """加载真实的 resource-budget.yaml (Loop 74: 路径修复后读真实 YAML)"""
         b = load_resource_budget(DEFAULT_CONFIG_PATH)
         assert b.max_query_depth == 5
-        assert b.max_entities_scanned == 50
+        assert b.max_entities_scanned == 200   # Loop 74: KG 482 entities
         assert b.delegate_token_budget == 512
-        assert b.timeout_us == 5000
+        assert b.timeout_us == 60000000        # Loop 74: 60s for Shadow data flow
         assert b.enforcement == "warn"
 
     def test_load_custom_config(self, tmp_config_dir):
