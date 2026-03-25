@@ -173,6 +173,7 @@ class TestReturnSchema:
         assert result["errors"] == []
 
 
+@pytest.mark.skipif(not ENTITIES_ROOT.exists(), reason="entities dir not found (CI)")
 class TestPerformance:
     def test_no_change_under_200ms(self, db):
         sync = IncrementalSync(db, str(ENTITIES_ROOT))
