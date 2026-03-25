@@ -34,6 +34,7 @@ def test_files_exist(path):
 
 # ── 单文件解析测试 ────────────────────────────────────────────────────────────
 
+@_skip_if_no_file
 class TestParsePersonFile:
     """解析人物实体文件"""
 
@@ -108,6 +109,7 @@ class TestParseProjectFile:
         assert len(entity.properties) > 0
 
 
+@_skip_if_no_file
 class TestParseConceptFile:
     """解析概念实体文件"""
 
@@ -122,6 +124,7 @@ class TestParseConceptFile:
 
 # ── 关系解析测试 ──────────────────────────────────────────────────────────────
 
+@_skip_if_no_file
 class TestRelationParsing:
     """关系解析逻辑测试"""
 
@@ -223,6 +226,7 @@ related: [项目A]
 
 # ── 批量扫描测试 ──────────────────────────────────────────────────────────────
 
+@_skip_if_no_file
 class TestScanEntitiesDir:
     """测试 scan_entities_dir"""
 
