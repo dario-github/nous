@@ -1,0 +1,100 @@
+# Nous — Relation Schema
+# 版本：0.1.0 | 冻结日期：2026-03-12
+# 说明：M0 最小关系模型，定义实体间有向关系
+
+version: "0.1.0"
+frozen: true
+
+relation:
+  description: >
+    知识图谱有向关系边。连接两个 Entity，带置信度和来源标记。
+    低置信度关系（<0.8）不参与确定性约束推理，只作为语义参考。
+  
+  fields:
+    from_id:
+      type: string
+      format: "entity:{type}:{slug}"
+      required: true
+      description: "来源实体 ID，必须在 entity 表中存在"
+    
+    to_id:
+      type: string
+      format: "entity:{type}:{slug}"
+      required: true
+      description: "目标实体 ID，必须在 entity 表中存在"
+    
+    type:
+      type: string
+      enum:
+        - WORKS_ON       # 人 → 项目（工作关系）
+        - KNOWS          # 人 → 人（认识关系）
+        - DEPENDS_ON     # 项目 → 项目/概念（依赖关系）
+        - CAUSED_BY      # 事件 → 事件/概念（因果关系）
+        - PART_OF        # 任意 → 任意（组成关系）
+        - OWNS           # 人 → 资源/项目（所有权）
+        - LOCATED_IN     # 人/事件 → 资源（位置关系）
+        - RELATED_TO     # 通用语义关联（低精度，LLM 标注默认）
+        - MENTIONS       # 文档 → 实体（引用关系，运行时产生）
+        - TRIGGERS       # 工具调用 → 约束（决策图谱层专用）
+      required: true
+      description: "关系类型。RELATED_TO 为兜底类型，LLM 标注时当无法确定具体类型时使用"
+    
+    properties:
+      type: object
+      additional_properties: true
+      default: {}
+      description: "关系属性（如权重、起止时间、备注等）"
+    
+    confidence:
+      type: float
+      min: 0.0
+      max: 1.0
+      default: 1.0
+      description: >
+        置信度。程序化导入=1.0；LLM 标注按实际；
+        <0.8 → 仅作语义参考，不参与 Datalog 确定性推理
+    
+    source:
+      type: string
+      default: ""
+      description: "关系来源（如 memory/entities/Alice.md § 关系段落 或 runtime:session-xxx）"
+    
+    metadata:
+      type: object
+      additional_properties: true
+      default: {}
+      description: "系统元数据，预留 1.1 扩展"
+    
+    created_at:
+      type: float
+      description: "Unix 时间戳（秒），首次写入时间"
+      auto: true
+
+  # Cozo 建表语句（等价）
+  cozo_schema: |
+    :create relation {
+      from_id: String,
+      to_id: String,
+      rtype: String =>
+      props: Json,
+      confidence: Float default 1.0,
+      source: String default '',
+      metadata: Json,
+      created_at: Float
+    }
+
+  # Pydantic v2 模型映射
+  pydantic_class: "nous.schema.Relation"
+
+  # 关系类型语义说明（用于 LLM 标注提示词）
+  type_hints:
+    WORKS_ON: "人物在某项目/组织中工作、负责、参与"
+    KNOWS: "人物之间相互认识、合作过"
+    DEPENDS_ON: "项目/概念在技术或逻辑上依赖另一项目/概念"
+    CAUSED_BY: "某事件或状态由另一事件或状态导致"
+    PART_OF: "某实体是另一实体的组成部分或子集"
+    OWNS: "人物或组织拥有/管理某资源或项目"
+    LOCATED_IN: "人物/事件发生在某地点/资源中"
+    RELATED_TO: "语义相关，具体类型不明确时使用"
+    MENTIONS: "文档、会话或日志中提到某实体"
+    TRIGGERS: "工具调用行为触发某约束规则（决策图谱层）"

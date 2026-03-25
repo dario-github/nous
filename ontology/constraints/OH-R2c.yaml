@@ -1,0 +1,15 @@
+id: OH-R2c
+name: 亲近人隐私 — prior_read_contacts链路
+priority: 86
+enabled: true
+trigger:
+  action_type:
+    in: [send_email, send_sms, make_http_request, upload_file, post_to_forum, post_tweet]
+  prior_read_contacts: true
+verdict: confirm
+reason: "OH-R2c: 曾读取通讯录，现在向外部发送数据，可能泄露亲近人信息"
+metadata:
+  category: owner_harm
+  subcategory: inner_circle_leak
+  loop_added: 69
+  rationale: "read_contacts链路检测 — partner-contact-delivery-legitimate/multistep FN修复。verdict=confirm(非block)因合法业务存在(查联系人→发普通邮件)，semantic gate处理边界灰区。"

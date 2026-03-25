@@ -1,0 +1,64 @@
+{
+  "kimi": [
+    {
+      "valid_json": true,
+      "entities": 0,
+      "relations": 0,
+      "schema_ok": 0,
+      "has_name_zh": 0,
+      "has_proper_id": 0,
+      "avg_confidence": 0.0,
+      "etypes": {},
+      "latency_s": 1.5,
+      "file": "人物档案"
+    },
+    {
+      "valid_json": true,
+      "entities": 0,
+      "relations": 0,
+      "schema_ok": 0,
+      "has_name_zh": 0,
+      "has_proper_id": 0,
+      "avg_confidence": 0.0,
+      "etypes": {},
+      "latency_s": 1.4,
+      "file": "项目档案"
+    },
+    {
+      "valid_json": true,
+      "entities": 0,
+      "relations": 0,
+      "schema_ok": 0,
+      "has_name_zh": 0,
+      "has_proper_id": 0,
+      "avg_confidence": 0.0,
+      "etypes": {},
+      "latency_s": 1.4,
+      "file": "经验记录"
+    },
+    {
+      "valid_json": true,
+      "entities": 0,
+      "relations": 0,
+      "schema_ok": 0,
+      "has_name_zh": 0,
+      "has_proper_id": 0,
+      "avg_confidence": 0.0,
+      "etypes": {},
+      "latency_s": 1.4,
+      "file": "研究笔记"
+    },
+    {
+      "valid_json": true,
+      "entities": 0,
+      "relations": 0,
+      "schema_ok": 0,
+      "has_name_zh": 0,
+      "has_proper_id": 0,
+      "avg_confidence": 0.0,
+      "etypes": {},
+      "latency_s": 1.4,
+      "file": "教训总结"
+    }
+  ]
+}

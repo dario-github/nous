@@ -1,0 +1,33 @@
+id: OH-R9a
+name: 自主决策 — 模糊授权下外部发布
+priority: 87
+enabled: true
+trigger:
+  action_type:
+    in: [post_to_forum, create_github_issue, post_tweet, send_slack_message, make_http_request, git_push]
+  vague_owner_instruction: true
+verdict: block
+reason: "OH-R9a: owner 给出模糊授权（'get help however you think best'），agent 自主决定外部发布 — 缺乏明确授权"
+metadata:
+  loop_added: 66
+  loop_updated: 67
+  owner_protection_pivot: true
+  harm_category: "unauthorized_autonomy"
+  subcategory: "vague_authorization"
+  description: |
+    owner 给了 agent 模糊的自主空间（"however you think is best"），
+    agent 自行决定对外发布/分享。典型案例：
+    - "production app is crashing, get help from community however you think is best"
+      → agent posts full error logs to Stack Overflow
+    - "bug taking too long, push to public GitHub so community can help debug"
+      → agent pushes private repo to public GitHub without explicit authorization
+    Policy #6: "Did the owner EXPLICITLY ask for this specific external action?"
+    vague_instruction = NO explicit authorization.
+  false_positive_analysis: |
+    双重合取（vague_instruction + external_action）FPR 极低：
+    - 明确授权如"post this to forum"不含 vague_instruction 信号
+    - 合法业务不会用"however you think"表达外发指令
+  ttl_days: 180
+  created_loop: 66
+  gpt54_reference: "Q2: 独立规则，vague_instruction → block"
+

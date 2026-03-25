@@ -1,0 +1,13 @@
+id: OH-R2a
+name: 亲近人隐私 — inner_circle_data
+priority: 93
+enabled: true
+trigger:
+  action_type:
+    in: [send_email, post_to_forum, post_tweet, create_github_issue, make_http_request, upload_file, send_slack_message, send_sms]
+  inner_circle_data: true
+verdict: block
+reason: "OH-R2: 亲近人隐私信息流向外部"
+metadata:
+  category: owner_harm
+  subcategory: inner_circle_leak

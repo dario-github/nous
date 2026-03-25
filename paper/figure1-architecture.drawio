@@ -1,0 +1,110 @@
+<mxfile host="app.diagrams.net" modified="2026-03-21T01:06:00.000Z" agent="晏" version="24.0" type="device">
+  <diagram id="crai-fig1" name="Three-Layer Safety Gate">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="400" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Title -->
+        <mxCell id="title" value="&lt;b&gt;Figure 1.&lt;/b&gt; Three-layer composable safety gate architecture. Each tool call traverses layers sequentially; early exits reduce cost." style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="150" y="360" width="800" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- Input: Tool Call -->
+        <mxCell id="input" value="&lt;b&gt;Tool Call&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;(action, args, context)&lt;/font&gt;" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fixedSize=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="140" width="140" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: input → Layer 1 -->
+        <mxCell id="arr1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#333333;" edge="1" parent="1" source="input" target="L1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Layer 1: Datalog -->
+        <mxCell id="L1" value="&lt;b&gt;Layer 1&lt;/b&gt;&lt;br&gt;Deterministic Blocker&lt;br&gt;&lt;font style=&quot;font-size:9px;color:#666&quot;&gt;Datalog constraints&lt;br&gt;62 rules · P50=0.055ms&lt;br&gt;Zero FP by construction&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="200" y="120" width="170" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- Layer 1 → Block -->
+        <mxCell id="L1block" value="&lt;font color=&quot;#cc0000&quot;&gt;✗ Block&lt;/font&gt;" style="text;html=1;align=center;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="240" y="240" width="80" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="L1blockArr" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#cc0000;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="L1" target="blocked">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: L1 → L2 -->
+        <mxCell id="arr2" value="pass" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#333333;fontSize=9;fontColor=#009900;" edge="1" parent="1" source="L1" target="L2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Layer 2: Triviality Filter -->
+        <mxCell id="L2" value="&lt;b&gt;Layer 2&lt;/b&gt;&lt;br&gt;Triviality Filter&lt;br&gt;&lt;font style=&quot;font-size:9px;color:#666&quot;&gt;Action-type heuristics&lt;br&gt;~70% early exit&lt;br&gt;Cost-aware routing&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="430" y="120" width="170" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrow: L2 → L3 -->
+        <mxCell id="arr3" value="ambiguous" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeWidth=2;strokeColor=#333333;fontSize=9;fontColor=#cc6600;" edge="1" parent="1" source="L2" target="L3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Layer 2 → Allow (trivial) -->
+        <mxCell id="L2allow" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#009900;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="L2" target="allowed">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="515" y="50"/>
+              <mxPoint x="1030" y="50"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="L2allowLabel" value="&lt;font color=&quot;#009900&quot;&gt;✓ trivially benign&lt;/font&gt;" style="text;html=1;align=center;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="640" y="30" width="110" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Layer 3: Semantic Gate -->
+        <mxCell id="L3" value="&lt;b&gt;Layer 3&lt;/b&gt;&lt;br&gt;Semantic Gate&lt;br&gt;&lt;font style=&quot;font-size:9px;color:#666&quot;&gt;LLM + 23 minimal pairs&lt;br&gt;Intent decomposition&lt;br&gt;Majority vote (k=3)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="660" y="120" width="170" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- Layer 3 → Block -->
+        <mxCell id="L3blockArr" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#cc0000;strokeWidth=1.5;dashed=1;" edge="1" parent="1" source="L3" target="blocked">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="745" y="280"/>
+              <mxPoint x="285" y="280"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Layer 3 → Allow -->
+        <mxCell id="L3allowArr" value="&lt;font color=&quot;#009900&quot;&gt;✓ Allow&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#009900;strokeWidth=2;fontSize=9;" edge="1" parent="1" source="L3" target="allowed">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Blocked output -->
+        <mxCell id="blocked" value="&lt;font color=&quot;#cc0000&quot;&gt;&lt;b&gt;BLOCK&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;+ proof trace&lt;/font&gt;" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="225" y="290" width="120" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Allowed output -->
+        <mxCell id="allowed" value="&lt;font color=&quot;#009900&quot;&gt;&lt;b&gt;ALLOW&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px&quot;&gt;→ execute tool&lt;/font&gt;" style="shape=hexagon;perimeter=hexagonPerimeter2;fixedSize=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="970" y="145" width="120" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Knowledge Graph (side input to L3) -->
+        <mxCell id="KG" value="&lt;b&gt;Knowledge Graph&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:9px;color:#666&quot;&gt;143 relations · 125 entities&lt;br&gt;Post-gate enrichment&lt;/font&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="700" y="260" width="130" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="KGarr" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#9673a6;strokeWidth=1;dashed=1;" edge="1" parent="1" source="KG" target="L3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Shadow Mode annotation -->
+        <mxCell id="shadow" value="&lt;font style=&quot;font-size:9px;color:#888&quot;&gt;Shadow mode: 19,350+ calls · 99.45% consistency&lt;/font&gt;" style="text;html=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="350" y="340" width="300" height="20" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

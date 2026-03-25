@@ -1,0 +1,154 @@
+# Nous — Constraint Schema
+# 版本：0.1.0 | 冻结日期：2026-03-12
+# 说明：决策图谱层约束规则 Schema，来自 AGENTS.md T 规则迁移
+
+version: "0.1.0"
+frozen: true
+
+constraint:
+  description: >
+    决策图谱约束规则。每条规则对应一类工具调用的拦截逻辑。
+    当前覆盖 T3/T5/T10/T11/T12（programmatic tier），
+    语义类 T1/T4/T9 在 M2 阶段以 delegate 方式接入。
+  
+  fields:
+    id:
+      type: string
+      format: "T{N}[-{variant}]"
+      example: "T3"
+      required: true
+      unique: true
+      description: "约束 ID，对应 AGENTS.md 规则编号"
+    
+    trigger_tool:
+      type: string
+      description: "触发此约束的工具名称（如 write / web_fetch / web_search / message）"
+      required: true
+    
+    trigger_pattern:
+      type: string
+      description: >
+        触发匹配模式（字符串描述或正则）。
+        具体格式由 M2 parser 解析，此处为可读性字段。
+        例：'SOUL.md|USER.md|MEMORY.md' 表示文件名包含其一时触发。
+      default: ""
+    
+    verdict:
+      type: string
+      enum:
+        - block      # 硬拒绝，不执行
+        - confirm    # 要求人工确认（T3 默认）
+        - warn       # 执行但附加警告（T10）
+        - transform  # 修改参数后执行（T11 zh→zh-hans）
+        - delegate   # 委托给 LLM 判断（T1/T4/T9，M3+）
+        - allow      # 明确放行（用于白名单例外）
+      required: true
+      description: "判决结果。FAIL_CLOSED 原则：引擎异常时默认 confirm，永远不是 allow"
+    
+    priority:
+      type: integer
+      min: 0
+      max: 1000
+      description: "优先级，数字越小越高。同 trigger 多规则命中时取最高优先级"
+      default: 50
+    
+    enabled:
+      type: boolean
+      default: true
+      description: "是否启用。TTL 衰减后自动置 false；可手动开关"
+    
+    metadata:
+      type: object
+      additional_properties: true
+      default: {}
+      description: "扩展字段（来源引用、迁移记录、人工注释等）"
+    
+    # TTL 衰减（M3 启用）
+    ttl_days:
+      type: integer
+      default: 90
+      description: "规则 TTL（天）。last_triggered_at 超过此值进入衰减流程"
+    
+    last_triggered_at:
+      type: float
+      description: "最后一次被触发的 Unix 时间戳（由 decision_log 聚合回填）"
+      nullable: true
+    
+    created_at:
+      type: float
+      description: "Unix 时间戳（秒），首次创建时间"
+      auto: true
+    
+    updated_at:
+      type: float
+      description: "Unix 时间戳（秒），最后热加载更新时间"
+      auto: true
+
+  # Cozo 建表语句（等价）
+  cozo_schema: |
+    :create constraint {
+      id: String =>
+      trigger_tool: String,
+      trigger_pattern: String default '',
+      verdict: String,
+      priority: Int default 50,
+      enabled: Bool default true,
+      metadata: Json,
+      ttl_days: Int default 90,
+      last_triggered_at: Float?,
+      created_at: Float,
+      updated_at: Float
+    }
+
+  # Pydantic v2 模型映射
+  pydantic_class: "nous.schema.Constraint"
+
+  # M0 初始规则集（来自 AGENTS.md T3/T5/T10/T11/T12）
+  initial_rules:
+    - id: T3
+      trigger_tool: write
+      trigger_pattern: "SOUL.md|USER.md|MEMORY.md|config"
+      verdict: confirm
+      priority: 10
+      enabled: true
+      metadata:
+        agents_md_ref: "T3 不可逆确认"
+        migrated_from: "interceptors.dl"
+    
+    - id: T5
+      trigger_tool: web_fetch
+      trigger_pattern: "xhslink|douyin|weibo|instagram|twitter|x.com"
+      verdict: block
+      priority: 20
+      enabled: true
+      metadata:
+        agents_md_ref: "T5 社媒链接"
+        migrated_from: "interceptors.dl"
+    
+    - id: T10
+      trigger_tool: write
+      trigger_pattern: "estimated_lines>400"
+      verdict: warn
+      priority: 30
+      enabled: true
+      metadata:
+        agents_md_ref: "T10 大文件截断防护"
+    
+    - id: T11
+      trigger_tool: web_search
+      trigger_pattern: "search_lang=zh"
+      verdict: transform
+      priority: 40
+      enabled: true
+      metadata:
+        agents_md_ref: "T11 搜索语言参数"
+        transform_action: "rewrite zh → zh-hans"
+    
+    - id: T12
+      trigger_tool: message
+      trigger_pattern: "output_target=discord+content_is_structured"
+      verdict: confirm
+      priority: 25
+      enabled: true
+      metadata:
+        agents_md_ref: "T12 Discord 输出格式"

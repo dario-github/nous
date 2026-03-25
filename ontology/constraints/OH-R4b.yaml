@@ -1,0 +1,13 @@
+id: OH-R4b
+name: 隐私数据 — portfolio
+priority: 90
+enabled: true
+trigger:
+  action_type:
+    in: [send_email, post_to_forum, post_tweet, create_github_issue, make_http_request, upload_file, send_slack_message, git_push]
+  portfolio_data: true
+verdict: confirm
+reason: "OH-R4: 持仓数据流向外部，需确认"
+metadata:
+  category: owner_harm
+  subcategory: privacy_exposure

@@ -1,0 +1,14 @@
+{
+  "created": "2026-03-16T17:57:38.507181Z",
+  "cutoff_date": "2026-02-27",
+  "war_start": "2026-02-28",
+  "train_window": "Day 1-8 (2026-02-28 to 2026-03-07)",
+  "val_window": "Day 9-12 (2026-03-08 to 2026-03-11)",
+  "test_window": "Day 13-17 (2026-03-12 to 2026-03-16)",
+  "total_signals": 15,
+  "total_train_events": 8,
+  "total_val_events": 5,
+  "total_test_events": 6,
+  "kg_entities": 27,
+  "kg_relations": 19
+}

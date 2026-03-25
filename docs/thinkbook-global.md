@@ -1,0 +1,54 @@
+# Nous — Global Todo (Thinkbook)
+
+> 项目级方向控制。每 5 轮 Swarm 审计时更新。Loop 开头必读。
+> 2026-03-18 初始化，based on meeting notes + 今日反馈。
+
+## 🔴 核心缺口（noted 2026-03-18）
+
+1. **KG 实体属性和关系远远不够**
+   - 现状：56 个实体，全是 RELATED_TO，没有类型化关系
+   - 目标：9 种关系类型 + 丰富的实体属性（时间/来源/置信度）
+   - Spec: M7.2（关系类型化）→ 新增 M11（时间维度+概率边+漂移追踪）
+
+2. **本体论没感知，决策图谱没感知**
+   - 现状：gate() 有 proof_trace，但对用户不可见
+   - 目标：决策路径可视化，the user can see"为什么这么判断"
+   - 需要：决策图谱前端 or Discord 可视化输出
+
+3. **图的学术研究空白**
+   - 自生长：从非结构化文本自动提取三元组 → M7.1b 骨架有，但未验证
+   - 自纠错：FP/FN 自动分析→规则修正 → M7.4-5 未做
+   - 边权重自调整：完全没有。需要概率化的边权重 + 时序衰减
+   - 概念漂移追踪：零一会议提到的"特修斯之船"问题，完全未涉及
+   - 时间维度：跨源同一实体属性融合 + 时间维度概率关联
+
+4. **Thinkbook 机制** ← 已落入 LOOP.md ✅
+
+## 📊 当前数字
+
+| 指标 | 值 | 说明 |
+|------|------|------|
+| Shadow | 14,238 calls / 99.33% | 稳定，但一直是 shadow 没切 active |
+| KG 实体 | 56 | 远远不够，目标 >500 |
+| 关系类型 | 5 (DEPENDS_ON/PART_OF/WORKS_ON/KNOWS/governed_by) | ✅ RELATED_TO 清零 |
+| 时间维度 | 56/56 实体有 valid_from | ✅ M11.1 完成 |
+| Tests | 672 | green |
+| AgentHarm L_val | 0.0 | 满分但不代表系统有用 |
+
+## 📋 方向优先级
+
+1. **KG 基建**（M7.2 + M11 新增）— 让图谱从 56 个死实体变成有时间/概率/自生长的活图
+2. **决策可感知**（M7.3 + 可视化）— 让the user can see图谱在工作
+3. **图学术研究**（M11 新增）— 边权重自调整、概念漂移、自纠错
+4. **Semantic gate active**— 从 shadow 切到 active，让安全判断真正生效
+5. **AgentHarm 维护**— ⚠️ AgentHarm 基于社会危害标准，owner-centric 下不再是主评估集。保留作为兼容性测试，主战场转 owner-harm benchmark
+
+## 🗄️ Backlog（有趣但不急）
+
+- CRAI 2026 Position Paper（TBD）
+- Geo RL Loop（有进展但非主线）
+- M9 Prompt 解放（依赖 KG 基建先做好）
+- M10 政策预测引擎（依赖 KG + 时序推理）
+
+---
+*上次更新：2026-03-18 Loop 41 初始化*

@@ -1,0 +1,173 @@
+[
+  {
+    "id": "pred_001",
+    "predicted_day": 2,
+    "event_type": "military_strike",
+    "description": "伊朗对以色列/美军基地发射导弹报复",
+    "probability": 0.95,
+    "causal_chain": [
+      "sig_005",
+      "sig_007",
+      "sig_012"
+    ],
+    "reasoning": "伊朗拥有导弹库存(IRGC)+被美以攻击=报复几乎必然",
+    "rule": "R1",
+    "day_range": [
+      1,
+      3
+    ]
+  },
+  {
+    "id": "pred_002",
+    "predicted_day": 4,
+    "event_type": "economic",
+    "description": "油价从 $55 暴涨 50%+ 至 $80+",
+    "probability": 0.9,
+    "causal_chain": [
+      "sig_004",
+      "sig_008"
+    ],
+    "reasoning": "霍尔木兹封锁+中东冲突=油价暴涨",
+    "rule": "R6",
+    "day_range": [
+      1,
+      8
+    ]
+  },
+  {
+    "id": "pred_003",
+    "predicted_day": 8,
+    "event_type": "escalation",
+    "description": "美以与伊朗进入交替报复升级螺旋，烈度递增",
+    "probability": 0.85,
+    "causal_chain": [
+      "sig_003",
+      "sig_005",
+      "sig_007",
+      "sig_012"
+    ],
+    "reasoning": "双方都有打击能力+报复意愿=升级螺旋难以控制",
+    "rule": "R8",
+    "day_range": [
+      3,
+      14
+    ]
+  },
+  {
+    "id": "pred_004",
+    "predicted_day": 6,
+    "event_type": "humanitarian",
+    "description": "伊朗出现大规模平民伤亡和人道危机",
+    "probability": 0.85,
+    "causal_chain": [
+      "sig_005"
+    ],
+    "reasoning": "大规模空袭+人口密集城市=平民伤亡不可避免",
+    "rule": "R10",
+    "day_range": [
+      3,
+      10
+    ]
+  },
+  {
+    "id": "pred_005",
+    "predicted_day": 3,
+    "event_type": "escalation",
+    "description": "Hezbollah对Israel发动攻击",
+    "probability": 0.8,
+    "causal_chain": [
+      "sig_010",
+      "sig_007"
+    ],
+    "reasoning": "Hezbollah受伊朗支持+已威胁country:israel=代理人攻击",
+    "rule": "R3",
+    "day_range": [
+      1,
+      5
+    ]
+  },
+  {
+    "id": "pred_006",
+    "predicted_day": 3,
+    "event_type": "escalation",
+    "description": "Houthis对Strait of Hormuz发动攻击",
+    "probability": 0.8,
+    "causal_chain": [
+      "sig_010",
+      "sig_007"
+    ],
+    "reasoning": "Houthis受伊朗支持+已威胁facility:hormuz=代理人攻击",
+    "rule": "R3",
+    "day_range": [
+      1,
+      5
+    ]
+  },
+  {
+    "id": "pred_007",
+    "predicted_day": 2,
+    "event_type": "escalation",
+    "description": "伊朗封锁或限制霍尔木兹海峡通行",
+    "probability": 0.75,
+    "causal_chain": [
+      "sig_008"
+    ],
+    "reasoning": "伊朗控制霍尔木兹(全球20%油)+被攻击=封锁是最大杠杆",
+    "rule": "R5",
+    "day_range": [
+      1,
+      3
+    ]
+  },
+  {
+    "id": "pred_008",
+    "predicted_day": 5,
+    "event_type": "economic",
+    "description": "Saudi Arabia受霍尔木兹封锁影响",
+    "probability": 0.7,
+    "causal_chain": [
+      "sig_008",
+      "sig_011"
+    ],
+    "reasoning": "Saudi Arabia依赖霍尔木兹+封锁=经济受压",
+    "rule": "R5b",
+    "day_range": [
+      2,
+      8
+    ]
+  },
+  {
+    "id": "pred_009",
+    "predicted_day": 5,
+    "event_type": "economic",
+    "description": "UAE受霍尔木兹封锁影响",
+    "probability": 0.7,
+    "causal_chain": [
+      "sig_008",
+      "sig_011"
+    ],
+    "reasoning": "UAE依赖霍尔木兹+封锁=经济受压",
+    "rule": "R5b",
+    "day_range": [
+      2,
+      8
+    ]
+  },
+  {
+    "id": "pred_010",
+    "predicted_day": 5,
+    "event_type": "economic",
+    "description": "Kuwait受霍尔木兹封锁影响",
+    "probability": 0.7,
+    "causal_chain": [
+      "sig_008",
+      "sig_011"
+    ],
+    "reasoning": "Kuwait依赖霍尔木兹+封锁=经济受压",
+    "rule": "R5b",
+    "day_range": [
+      2,
+      8
+    ]
+  }
+]

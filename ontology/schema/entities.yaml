@@ -1,0 +1,102 @@
+# Nous — Entity Schema
+# 版本：0.1.0 | 冻结日期：2026-03-12
+# 说明：M0 最小数据模型，metadata 字段预留 1.1 扩展
+
+version: "0.1.0"
+frozen: true  # M0 冻结，变更须更新 VERSION
+
+entity:
+  description: >
+    知识图谱实体节点。覆盖人物/项目/概念/事件/资源五类。
+    程序化导入置信度=1.0，LLM 辅助标注按实际置信度存储。
+  
+  fields:
+    id:
+      type: string
+      format: "entity:{type}:{slug}"
+      example: "entity:person:dongcheng"
+      required: true
+      unique: true
+      description: "全局唯一 URI，由类型和 slug 构成"
+    
+    type:
+      type: string
+      enum: [person, project, concept, event, resource]
+      required: true
+      description: "实体类型（五大类）"
+    
+    labels:
+      type: array
+      items: string
+      default: []
+      description: "附加标签，可多值（如 ['AI', '知识图谱']）"
+    
+    properties:
+      type: object
+      additional_properties: true
+      default: {}
+      description: "领域属性字典，按类型不同。metadata 字段预留 1.1 扩展。"
+    
+    metadata:
+      type: object
+      additional_properties: true
+      default: {}
+      description: "系统元数据（来源 URL、外部 ID、扩展属性），1.1 扩展入口"
+    
+    confidence:
+      type: float
+      min: 0.0
+      max: 1.0
+      default: 1.0
+      description: >
+        置信度。1.0=确定（程序化导入）；0.8=待审核（LLM 标注）；
+        <0.8 → 进入 proposals/ 队列，不参与确定性约束
+    
+    source:
+      type: string
+      default: ""
+      description: "来源路径（如 memory/entities/Alice.md 或 runtime:session-xxx）"
+    
+    created_at:
+      type: float
+      description: "Unix 时间戳（秒），首次写入时间"
+      auto: true
+    
+    updated_at:
+      type: float
+      description: "Unix 时间戳（秒），最后更新时间"
+      auto: true
+
+  # Cozo 建表语句（等价）
+  cozo_schema: |
+    :create entity {
+      id: String =>
+      etype: String,
+      labels: [String],
+      props: Json,
+      metadata: Json,
+      confidence: Float default 1.0,
+      source: String default '',
+      created_at: Float,
+      updated_at: Float
+    }
+
+  # Pydantic v2 模型映射
+  pydantic_class: "nous.schema.Entity"
+  
+  entity_type_specs:
+    person:
+      required_props: [name]
+      optional_props: [title, organization, email, timezone, mbti, birth_year]
+    project:
+      required_props: [name]
+      optional_props: [status, stack, owner, started_at, description]
+    concept:
+      required_props: [name]
+      optional_props: [domain, definition, related_concepts]
+    event:
+      required_props: [name, occurred_at]
+      optional_props: [description, participants, outcome]
+    resource:
+      required_props: [name, resource_type]
+      optional_props: [url, format, tags, size_bytes]

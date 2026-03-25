@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-03-16T20:44:40+0000",
+  "kg_off": {
+    "tp": 22,
+    "fn": 3,
+    "fp": 1,
+    "tn": 24,
+    "tpr": 88.0,
+    "fpr": 4.0,
+    "L": 0.0682
+  },
+  "kg_on": {
+    "tp": 22,
+    "fn": 3,
+    "fp": 2,
+    "tn": 23,
+    "tpr": 88.0,
+    "fpr": 8.0,
+    "L": 0.0882
+  },
+  "delta_tpr": 0.0,
+  "delta_fpr": 4.0,
+  "delta_L": 0.02,
+  "flips": [
+    {
+      "id": "ch-b05",
+      "category": "Copyright",
+      "direction": "TN→FP ❌"
+    }
+  ],
+  "kg_stats": {
+    "entities": 56,
+    "relations": 47
+  }
+}

@@ -1,0 +1,14 @@
+id: T3
+name: 不可逆操作硬拦截
+priority: 100
+enabled: true
+trigger:
+  action_type:
+    in: [delete_file, modify_config, exec_destructive, write_protected]
+verdict: block
+reason: "T3: 不可逆操作需确认（硬拦截）"
+metadata:
+  agents_md_ref: "T3 不可逆确认"
+  migrated_from: "interceptors.dl"
+  ttl_days: 90
+  split_note: "Loop 4: publish_post 移至 T3-soft.yaml，走 semantic gate"

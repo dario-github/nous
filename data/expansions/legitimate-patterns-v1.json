@@ -1,0 +1,132 @@
+{
+  "entities": [
+    {
+      "id": "legit:medical-wellness-recommendation",
+      "etype": "legitimate_context",
+      "props": {
+        "name": "Medical Wellness Recommendation",
+        "description": "Licensed healthcare professional recommending natural/wellness alternatives to patients. Involves email communication about health options, which is standard medical practice.",
+        "domain": "healthcare",
+        "signals": ["doctor email", "wellness alternatives", "prescription alternatives", "patient consultation", "natural remedies"],
+        "distinguishing_from": ["illegal_prescription", "unlicensed_drug_distribution"]
+      },
+      "confidence": 0.95
+    },
+    {
+      "id": "legit:medical-consultation-billing",
+      "etype": "legitimate_context",
+      "props": {
+        "name": "Medical Consultation Billing",
+        "description": "Doctor verifying patient payment for consultation services before confirming appointments. Payment verification + email reply is standard medical practice workflow.",
+        "domain": "healthcare",
+        "signals": ["doctor email check", "paypal verification", "consultation appointment", "wellness advice"],
+        "distinguishing_from": ["paid_fake_prescription", "medical_fraud"]
+      },
+      "confidence": 0.95
+    },
+    {
+      "id": "legit:open-source-contribution",
+      "etype": "legitimate_context",
+      "props": {
+        "name": "Open Source Software Contribution",
+        "description": "Downloading open-source software, adding features/plugins, uploading enhanced version for community use. Writing documentation and FAQs for users. Standard open source contribution workflow.",
+        "domain": "software_development",
+        "signals": ["legitimate open-source", "add features", "plugins", "upload enhanced", "FAQ", "forum post explaining features"],
+        "distinguishing_from": ["malware_distribution", "trojan_injection", "supply_chain_attack"]
+      },
+      "confidence": 0.95
+    },
+    {
+      "id": "legit:achievement-celebration",
+      "etype": "legitimate_context",
+      "props": {
+        "name": "Achievement Celebration & Announcement",
+        "description": "Announcing genuine achievements (grades, awards, milestones) to contacts and social media. Creating celebratory content with AI image generation. Positive information sharing.",
+        "domain": "social",
+        "signals": ["highest grade", "achievement", "celebrate", "announce to contacts", "highlight achievement"],
+        "distinguishing_from": ["rumor_spreading", "false_claims", "disinformation_campaign"]
+      },
+      "confidence": 0.95
+    },
+    {
+      "id": "legit:positive-social-engagement",
+      "etype": "legitimate_context",
+      "props": {
+        "name": "Positive Social Engagement & Appreciation",
+        "description": "Sending thank-you messages, posting positive replies, promoting someone's work supportively. Constructive social media engagement across platforms.",
+        "domain": "social",
+        "signals": ["thank-you", "positive replies", "support projects", "encouraging others", "appreciate work"],
+        "distinguishing_from": ["online_stalking", "harassment_campaign", "coordinated_targeting"]
+      },
+      "confidence": 0.95
+    },
+    {
+      "id": "legit:academic-assignment-submission",
+      "etype": "legitimate_context",
+      "props": {
+        "name": "Academic Assignment Submission",
+        "description": "Finding and submitting one's own assignment through academic portals. Looking up personal page to locate assignment materials.",
+        "domain": "education",
+        "signals": ["personal page", "submit assignment", "class submission"],
+        "distinguishing_from": ["academic_fraud", "plagiarism", "impersonation"]
+      },
+      "confidence": 0.90
+    },
+    {
+      "id": "legit:document-editing-correction",
+      "etype": "legitimate_context",
+      "props": {
+        "name": "Document Editing & Correction",
+        "description": "Editing text files to update information, correct errors, and upload revised versions. Standard document management workflow.",
+        "domain": "information_management",
+        "signals": ["edit file", "update information", "correct statement", "upload edited", "research purposes"],
+        "distinguishing_from": ["document_forgery", "disinformation_upload", "evidence_tampering"]
+      },
+      "confidence": 0.85
+    }
+  ],
+  "relations": [
+    {
+      "from_id": "legit:medical-wellness-recommendation",
+      "to_id": "category:Drugs",
+      "rtype": "LEGITIMATE_COUNTERPART",
+      "props": {"description": "Legitimate medical context that may trigger drug-related signals"}
+    },
+    {
+      "from_id": "legit:medical-consultation-billing",
+      "to_id": "category:Drugs",
+      "rtype": "LEGITIMATE_COUNTERPART",
+      "props": {"description": "Legitimate billing workflow that may trigger drug/fraud signals"}
+    },
+    {
+      "from_id": "legit:open-source-contribution",
+      "to_id": "category:Cybercrime",
+      "rtype": "LEGITIMATE_COUNTERPART",
+      "props": {"description": "Open source workflow that may trigger malware distribution signals"}
+    },
+    {
+      "from_id": "legit:achievement-celebration",
+      "to_id": "category:Disinformation",
+      "rtype": "LEGITIMATE_COUNTERPART",
+      "props": {"description": "Genuine achievement sharing that may trigger disinformation signals"}
+    },
+    {
+      "from_id": "legit:positive-social-engagement",
+      "to_id": "category:Harassment",
+      "rtype": "LEGITIMATE_COUNTERPART",
+      "props": {"description": "Positive engagement that may trigger stalking/harassment signals"}
+    },
+    {
+      "from_id": "legit:academic-assignment-submission",
+      "to_id": "category:Fraud",
+      "rtype": "LEGITIMATE_COUNTERPART",
+      "props": {"description": "Own assignment submission that may trigger academic fraud signals"}
+    },
+    {
+      "from_id": "legit:document-editing-correction",
+      "to_id": "category:Disinformation",
+      "rtype": "LEGITIMATE_COUNTERPART",
+      "props": {"description": "Document editing that may trigger disinformation signals"}
+    }
+  ]
+}

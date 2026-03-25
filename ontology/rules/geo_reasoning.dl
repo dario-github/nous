@@ -1,0 +1,102 @@
+% ── Nous Geopolitical Reasoning Rules ──────────────────────────────────
+% 用于推导冲突走势的 Datalog 约束
+% 输入：KG 实体+关系 + 信号事实
+% 输出：推理事实（可作为预测依据）
+
+% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+% R1: 报复必然性 — 被攻击方有军事能力 → 报复几乎必然
+% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+retaliation_certain(Defender, Attacker) :-
+    hostile_to(Attacker, Defender),
+    strike(Attacker, Defender, Target),
+    military_capability(Defender, "missile"),
+    military_capability(Defender, "retaliate").
+
+% R2: 战略资产打击 → 升级
+escalation_from_strategic_strike(Attacker, Defender) :-
+    strike(Attacker, Defender, Target),
+    strategic_value(Target, Defender, "critical").
+
+% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+% R3: 联盟牵连 — A 攻击 B → B 的代理人 C 可能攻击 A 或 A 的盟友
+% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+proxy_retaliation(Proxy, AttackerAlly) :-
+    strike(Attacker, Patron, _),
+    supplies(Patron, Proxy),
+    allied_with(Attacker, AttackerAlly),
+    military_capability(Proxy, "attack").
+
+% R4: 直接联盟义务
+alliance_involvement(Ally, Attacker) :-
+    strike(Attacker, Defender, _),
+    allied_with(Defender, Ally),
+    military_capability(Ally, "intervene").
+
+% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+% R5: 经济武器化 — 控制瓶颈 + 被攻击 → 使用经济杠杆
+% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+chokepoint_weaponized(Controller, Chokepoint) :-
+    controls(Controller, Chokepoint),
+    strike(_, Controller, _),
+    strategic_value(Chokepoint, "global", "critical").
+
+economic_pressure(Dependent, Controller) :-
+    chokepoint_weaponized(Controller, Chokepoint),
+    depends_on(Dependent, Chokepoint).
+
+% R6: 油价冲击 — 瓶颈武器化 → 全球油价飙升
+oil_price_shock() :-
+    chokepoint_weaponized(_, Chokepoint),
+    asset_type(Chokepoint, "oil_chokepoint").
+
+% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+% R7: 领导力真空 — 领导人被消灭 → 继任危机 → 政策不确定
+% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+leadership_vacuum(Country) :-
+    governs(Leader, Country),
+    eliminated(Leader),
+    not succession_smooth(Country).
+
+succession_crisis(Country, Successor) :-
+    leadership_vacuum(Country),
+    succeeds(Successor, Leader),
+    governs(Leader, Country).
+
+% 继任者倾向影响政策走向
+policy_hardline(Country) :-
+    succession_crisis(Country, Successor),
+    orientation(Successor, "hardline").
+
+% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+% R8: 升级螺旋检测 — 双方交替报复且烈度递增
+% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+escalation_spiral(A, B) :-
+    retaliation_certain(A, B),
+    retaliation_certain(B, A).
+
+% R9: 区域外溢 — 代理人攻击 + 海湾国家有外国军事基地
+regional_spillover(GulfState) :-
+    proxy_retaliation(Proxy, _),
+    located_at(ForeignBase, GulfState),
+    military_unit(ForeignBase).
+
+% R10: 人道危机 — 大规模空袭 + 人口密集区
+humanitarian_crisis(Country) :-
+    strike(_, Country, Target),
+    population_density(Target, "high"),
+    strike_scale(_, Country, "massive").
+
+% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+% R11: 叙事战 — 攻击方国内政治需要 + 战争进行中
+% ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+narrative_warfare(Leader) :-
+    governs(Leader, Country),
+    at_war(Country),
+    domestic_political_pressure(Leader).
+
+% R12: 核设施打击 — 核门槛国 + 被攻击 → 核设施成为目标
+nuclear_strike_likely(Attacker, NuclearState) :-
+    hostile_to(Attacker, NuclearState),
+    nuclear_threshold(NuclearState),
+    strike(Attacker, NuclearState, _),
+    military_capability(Attacker, "precision_strike").

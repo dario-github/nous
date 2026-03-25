@@ -1,0 +1,13 @@
+id: OH-R6b
+name: 未授权行为 — autonomous_decision
+priority: 80
+enabled: true
+trigger:
+  action_type:
+    in: [send_email, post_tweet, post_to_forum, create_github_issue, upload_file, git_push]
+  autonomous_decision: true
+verdict: confirm
+reason: "OH-R6: Agent 自主决定外部行为，需授权确认"
+metadata:
+  category: owner_harm
+  subcategory: unauthorized_autonomy

@@ -1,0 +1,262 @@
+[
+  {
+    "id": "sig_001",
+    "timestamp": "2026-02-20",
+    "source_type": "intelligence",
+    "source_credibility": 0.85,
+    "content": "以色列空军在塞浦路斯 Akrotiri 基地进行大规模联合演习，F-35 编队演练远程突袭路线",
+    "entities": [
+      "israel",
+      "akrotiri",
+      "f35"
+    ],
+    "signal_type": "military_posture",
+    "implications": [
+      "force_projection",
+      "iran_strike_rehearsal"
+    ]
+  },
+  {
+    "id": "sig_002",
+    "timestamp": "2026-02-22",
+    "source_type": "news",
+    "source_credibility": 0.9,
+    "content": "NVIDIA 完成对 OpenAI 300 亿美元投资，为 pre-IPO 做准备。科技板块稳定",
+    "entities": [
+      "nvidia",
+      "openai"
+    ],
+    "signal_type": "economic",
+    "implications": [
+      "market_stability",
+      "tech_sector_normal"
+    ]
+  },
+  {
+    "id": "sig_003",
+    "timestamp": "2026-02-24",
+    "source_type": "official",
+    "source_credibility": 0.95,
+    "content": "Trump 政府对伊朗实施新一轮制裁，冻结 IRGC 关联资产。Hegseth: 'all options on the table'",
+    "entities": [
+      "trump",
+      "iran",
+      "irgc",
+      "hegseth"
+    ],
+    "signal_type": "diplomatic",
+    "implications": [
+      "escalation_signal",
+      "military_option_signaled"
+    ]
+  },
+  {
+    "id": "sig_004",
+    "timestamp": "2026-02-25",
+    "source_type": "data",
+    "source_credibility": 0.95,
+    "content": "油价 WTI $55/桶，处于近年低位。美国 SPR 储备充足。OPEC 维持现有产量",
+    "entities": [
+      "oil_wti",
+      "spr",
+      "opec"
+    ],
+    "signal_type": "economic",
+    "implications": [
+      "low_oil_price_buffer",
+      "spr_available_for_release"
+    ]
+  },
+  {
+    "id": "sig_005",
+    "timestamp": "2026-02-25",
+    "source_type": "intelligence",
+    "source_credibility": 0.8,
+    "content": "美军 CENTCOM 增派 USS Lincoln 航母打击群至波斯湾，B-2 轰炸机前置部署到迪戈加西亚",
+    "entities": [
+      "centcom",
+      "uss_lincoln",
+      "b2",
+      "diego_garcia",
+      "persian_gulf"
+    ],
+    "signal_type": "military_posture",
+    "implications": [
+      "force_buildup",
+      "strike_preparation"
+    ]
+  },
+  {
+    "id": "sig_006",
+    "timestamp": "2026-02-26",
+    "source_type": "news",
+    "source_credibility": 0.85,
+    "content": "以色列 Mossad 据报已完成对伊朗高价值目标的情报收集。Netanyahu 发表'存亡之战'演讲",
+    "entities": [
+      "mossad",
+      "netanyahu",
+      "iran"
+    ],
+    "signal_type": "political",
+    "implications": [
+      "intelligence_complete",
+      "political_will_signaled"
+    ]
+  },
+  {
+    "id": "sig_007",
+    "timestamp": "2026-02-26",
+    "source_type": "official",
+    "source_credibility": 0.9,
+    "content": "伊朗最高领袖哈梅内伊发表强硬讲话: '任何侵略都将遭到毁灭性回击'。IRGC 进入高度戒备",
+    "entities": [
+      "khamenei",
+      "irgc",
+      "iran"
+    ],
+    "signal_type": "political",
+    "implications": [
+      "deterrence_rhetoric",
+      "military_alert_elevated"
+    ]
+  },
+  {
+    "id": "sig_008",
+    "timestamp": "2026-02-27",
+    "source_type": "data",
+    "source_credibility": 0.95,
+    "content": "霍尔木兹海峡日均通过 1700 万桶原油（全球 20%）。伊朗海军在海峡部署快艇和水雷",
+    "entities": [
+      "hormuz_strait",
+      "iran_navy"
+    ],
+    "signal_type": "military_posture",
+    "implications": [
+      "chokepoint_vulnerability",
+      "mine_warfare_capability"
+    ]
+  },
+  {
+    "id": "sig_009",
+    "timestamp": "2026-02-27",
+    "source_type": "intelligence",
+    "source_credibility": 0.75,
+    "content": "伊朗 Natanz 和 Fordow 核设施加速浓缩活动，铀浓缩度接近 60%（武器级为 90%）",
+    "entities": [
+      "natanz",
+      "fordow",
+      "nuclear_program"
+    ],
+    "signal_type": "military_posture",
+    "implications": [
+      "nuclear_threshold_approaching",
+      "strike_urgency"
+    ]
+  },
+  {
+    "id": "sig_010",
+    "timestamp": "2026-02-27",
+    "source_type": "news",
+    "source_credibility": 0.85,
+    "content": "真主党领导层宣布'如果伊朗遭到攻击，全面北方战争将启动'。以色列北部疏散令发布",
+    "entities": [
+      "hezbollah",
+      "lebanon",
+      "israel_north"
+    ],
+    "signal_type": "military_posture",
+    "implications": [
+      "multi_front_threat",
+      "second_front_ready"
+    ]
+  },
+  {
+    "id": "sig_011",
+    "timestamp": "2026-02-27",
+    "source_type": "official",
+    "source_credibility": 0.9,
+    "content": "海湾合作委员会紧急会议：沙特、UAE、巴林、科威特、卡塔尔、阿曼讨论安全局势。会后未发联合声明",
+    "entities": [
+      "gcc",
+      "saudi",
+      "uae",
+      "bahrain",
+      "kuwait",
+      "qatar",
+      "oman"
+    ],
+    "signal_type": "diplomatic",
+    "implications": [
+      "gulf_concern",
+      "no_unified_position"
+    ]
+  },
+  {
+    "id": "sig_012",
+    "timestamp": "2026-02-27",
+    "source_type": "data",
+    "source_credibility": 0.9,
+    "content": "伊朗军事能力: Fateh-110/Zolfaghar 短程导弹 1000+ 枚，Shahab-3 中程 200+，无人机 Shahed-136 大量库存。防空: S-300/Bavar-373",
+    "entities": [
+      "iran_missiles",
+      "shahed_136",
+      "s300",
+      "bavar_373"
+    ],
+    "signal_type": "military_posture",
+    "implications": [
+      "retaliation_capability",
+      "asymmetric_warfare_tools"
+    ]
+  },
+  {
+    "id": "sig_013",
+    "timestamp": "2026-02-25",
+    "source_type": "data",
+    "source_credibility": 0.95,
+    "content": "伊朗经济: GDP $400B，通胀 45%+，失业率 ~11%。制裁下外汇储备有限。石油出口 150 万桶/日（Kharg Island 占 90%）",
+    "entities": [
+      "iran_economy",
+      "kharg_island"
+    ],
+    "signal_type": "economic",
+    "implications": [
+      "economic_fragility",
+      "kharg_strategic_value"
+    ]
+  },
+  {
+    "id": "sig_014",
+    "timestamp": "2026-02-26",
+    "source_type": "news",
+    "source_credibility": 0.8,
+    "content": "Anthropic 拒绝五角大楼最后通牒，成为首家拒绝美国军方合同的美国 AI 公司。ARR 暴涨",
+    "entities": [
+      "anthropic",
+      "pentagon"
+    ],
+    "signal_type": "political",
+    "implications": [
+      "tech_military_tension",
+      "domestic_politics_factor"
+    ]
+  },
+  {
+    "id": "sig_015",
+    "timestamp": "2026-02-27",
+    "source_type": "intelligence",
+    "source_credibility": 0.7,
+    "content": "美军特种部队已在伊拉克库尔德地区预置。第五舰队在巴林母港进入最高戒备",
+    "entities": [
+      "special_forces",
+      "kurdistan",
+      "fifth_fleet",
+      "bahrain"
+    ],
+    "signal_type": "military_posture",
+    "implications": [
+      "ground_preparation",
+      "naval_readiness"
+    ]
+  }
+]

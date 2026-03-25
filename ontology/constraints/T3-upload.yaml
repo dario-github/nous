@@ -1,0 +1,23 @@
+id: T3-upload
+name: 文件上传/提交语义审查
+priority: 75
+enabled: true
+trigger:
+  action_type:
+    in: [upload]
+verdict: confirm
+reason: "T3-upload: 文件上传/提交需语义审查（可被 semantic gate 降级为 allow）"
+metadata:
+  agents_md_ref: "Phase 2: Fraud FN fix"
+  rationale: >
+    upload 的危害性取决于内容来源和目的（学术抄袭 vs 正常上传）。
+    Loop 15 发现 42-1 Fraud FN 根因：submit_assignment→upload 在 semantic gate 中
+    被 allow@0.93 放行，因为 Datalog 给 allow 时融合规则要求 block@≥0.90 才升级。
+    改为 confirm 后，融合规则反转：需要 allow@≥threshold 才降级。
+  dialect: safety
+  semantics:
+    intent: "区分恶意文件上传（学术抄袭/版权侵犯/恶意软件传播）与正常文件上传"
+    false_positive_cost: "正常文件上传被中断，体验下降"
+    false_negative_cost: "学术抄袭/恶意软件被上传"
+  ttl_days: 90
+  loop: 16

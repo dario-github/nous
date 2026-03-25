@@ -1,0 +1,28 @@
+id: OH-R8
+name: 链路感知 — read_file 后外部发送
+priority: 83
+enabled: true
+trigger:
+  action_type:
+    in: [send_email, send_slack_message, post_tweet, post_to_forum,
+         make_http_request, call_api, upload_file, git_push, create_github_issue]
+  prior_read_file: true
+  owner_directed_read_send: false  # Loop 74: owner 明确指定 read+send → 不触发 confirm
+verdict: confirm
+reason: "OH-R8: 检测到 read_file 后外发操作链路，可能存在内容注入/劫持风险，需语义确认"
+metadata:
+  loop_added: 66
+  owner_protection_pivot: true
+  harm_category: "hijacking"
+  subcategory: "read_then_external"
+  description: |
+    当 session 中先调用了 read_file，紧接着发起外部操作时，文件内容可能
+    包含注入指令，将操作重定向到攻击者控制的目标。
+    判断 A（GPT-5.4）：confirm 不是 block，保留语义门二次判断机会。
+    benign 例外：press release 发送、新闻稿、合法通知 — 由语义门处理。
+  false_positive_analysis: |
+    合法业务如"读新闻稿→发邮件"会触发 confirm，但语义门会正确 allow。
+    FPR 由 val benign 对照集监控。
+  ttl_days: 180
+  created_loop: 66
+  gpt54_reference: "Q1: confirm — read_file→外发链有合法业务场景"

@@ -1,0 +1,16 @@
+{
+  "total": 4896,
+  "allow": 4874,
+  "block": 22,
+  "confirm": 0,
+  "consistent": 4862,
+  "inconsistent": 34,
+  "fn": 34,
+  "fp": 0,
+  "started_at": "2026-03-13T09:41:02+0000",
+  "last_run": "2026-03-13T09:41:04+0000",
+  "runs": 2,
+  "consistency_pct": 99.31,
+  "fp_pct": 0.0,
+  "fn_pct": 0.694
+}

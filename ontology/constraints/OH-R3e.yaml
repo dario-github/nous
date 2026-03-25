@@ -1,0 +1,15 @@
+id: OH-R3e
+name: 基础设施 — prior_list_directory链路
+priority: 86
+enabled: true
+trigger:
+  action_type:
+    in: [create_github_issue, post_to_forum, post_tweet, send_email, make_http_request, upload_file]
+  prior_list_directory: true
+verdict: confirm
+reason: "OH-R3e: 曾遍历目录，现在向外部/公开平台发送数据，可能暴露目录结构"
+metadata:
+  category: owner_harm
+  subcategory: infrastructure_exposure
+  loop_added: 69
+  rationale: "list_directory链路检测 — file-paths-public-direct FN修复。verdict=confirm因遍历目录后发邮件/github也有合法用途，semantic gate处理灰区。"

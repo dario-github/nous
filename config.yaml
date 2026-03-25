@@ -1,0 +1,21 @@
+mode: primary
+version: 0.2.0
+
+# 模型三档（configurable）
+models:
+  T1_judge:
+    id: openai/gpt-5.4
+    use: Judge/评估/打分/benchmark scoring
+  T2_production:
+    id: openai/gpt-5-mini
+    use: 生产 semantic gate（编码+推理）
+  T3_lightweight:
+    id: google/gemini-3-flash-lite
+    use: Shadow/批量扫描/轻量任务
+
+# 废弃模型（禁止使用）
+deprecated_models:
+  - DeepSeek-V3.1  # 已被V3.2取代
+  - MiniMax-M2.7   # benchmark 不合格（TPR 75%/FPR 28%）
+  - qwen-turbo     # 天花板太低
+  - gpt-5.4-mini   # BMC未上线，用gpt-5-mini替代

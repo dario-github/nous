@@ -1,0 +1,232 @@
+{
+  "date": "2026-03-13",
+  "total": 1567,
+  "match": 1397,
+  "partial": 0,
+  "mismatch": 170,
+  "error": 0,
+  "consistency_pct": 89.15,
+  "pass": false,
+  "mismatches_sample": [
+    {
+      "index": 3,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1476908177244291155"
+    },
+    {
+      "index": 7,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1476908177244291155"
+    },
+    {
+      "index": 9,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1481274635831214181"
+    },
+    {
+      "index": 18,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1476908177244291155"
+    },
+    {
+      "index": 27,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1476908177244291155"
+    },
+    {
+      "index": 34,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1476908177244291155"
+    },
+    {
+      "index": 57,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1476908177244291155"
+    },
+    {
+      "index": 59,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1481615496796307637"
+    },
+    {
+      "index": 69,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1476908177244291155"
+    },
+    {
+      "index": 79,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1476908177244291155"
+    },
+    {
+      "index": 81,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1476908177244291155"
+    },
+    {
+      "index": 128,
+      "tool": "write",
+      "ts_gates": [
+        "T10"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "write:file_path=openspec/changes/nous/pr"
+    },
+    {
+      "index": 145,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1481274635831214181"
+    },
+    {
+      "index": 151,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1481331585180500028"
+    },
+    {
+      "index": 183,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1481274635831214181"
+    },
+    {
+      "index": 184,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,threadId=1481625505164689550"
+    },
+    {
+      "index": 194,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1481331585180500028"
+    },
+    {
+      "index": 208,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1481331585180500028"
+    },
+    {
+      "index": 284,
+      "tool": "write",
+      "ts_gates": [
+        "T10"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "write:file_path=/tmp/subagent-out/kimi-layer2-r1.md"
+    },
+    {
+      "index": 301,
+      "tool": "message",
+      "ts_gates": [
+        "T12"
+      ],
+      "ts_rewrites": {},
+      "nous_verdict": "Verdict(action='allow', rule_id='', reason='\u65e0\u7ea6\u675f\u547d\u4e2d\uff0c\u653e\u884c', rewrite_params=None, all_matched=[])",
+      "nous_matches": [],
+      "params": "message:action=send,channel=discord,target=1481331585180500028"
+    }
+  ]
+}

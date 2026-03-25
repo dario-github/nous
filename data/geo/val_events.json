@@ -1,0 +1,104 @@
+[
+  {
+    "id": "evt_009",
+    "date": "2026-03-08",
+    "day": 9,
+    "event_type": "diplomatic",
+    "description": "Pezeshkian 向海湾邻国道歉（部分降级尝试），但军事行动未停",
+    "severity": 3,
+    "actors": [
+      "Iran",
+      "Pezeshkian"
+    ],
+    "targets": [
+      "Gulf_states"
+    ],
+    "consequences": [
+      "de_escalation_attempt",
+      "execution_gap"
+    ],
+    "category": "diplomacy"
+  },
+  {
+    "id": "evt_010",
+    "date": "2026-03-09",
+    "day": 10,
+    "event_type": "political",
+    "description": "穆杰塔巴·哈梅内伊正式继任最高领袖（伊朗首次世袭），就任后即下令攻击",
+    "severity": 5,
+    "actors": [
+      "Mojtaba_Khamenei",
+      "Iran"
+    ],
+    "targets": [
+      "Iran_domestic"
+    ],
+    "consequences": [
+      "succession_crisis",
+      "hardline_continuation",
+      "legitimacy_contested"
+    ],
+    "category": "political_transition"
+  },
+  {
+    "id": "evt_011",
+    "date": "2026-03-09",
+    "day": 10,
+    "event_type": "economic",
+    "description": "油价 WTI 盘中触及 $114.9，以色列首次打击伊朗石油设施",
+    "severity": 5,
+    "actors": [
+      "Israel",
+      "global_markets"
+    ],
+    "targets": [
+      "Iran_oil_facilities"
+    ],
+    "consequences": [
+      "oil_infrastructure_targeted",
+      "price_spike"
+    ],
+    "category": "economic_shock"
+  },
+  {
+    "id": "evt_012",
+    "date": "2026-03-10",
+    "day": 11,
+    "event_type": "diplomatic",
+    "description": "Trump 称战争 'very soon' 结束。油价从 $114 暴跌回 $95（市场解读缓和信号）",
+    "severity": 4,
+    "actors": [
+      "Trump"
+    ],
+    "targets": [
+      "global_markets"
+    ],
+    "consequences": [
+      "ceasefire_signal",
+      "oil_price_volatility"
+    ],
+    "category": "de_escalation_signal"
+  },
+  {
+    "id": "evt_013",
+    "date": "2026-03-11",
+    "day": 13,
+    "event_type": "economic",
+    "description": "IEA 全票通过释放 4 亿桶战略储备（史上最大）。能源部长乌龙帖→油价暴跌→否认→删帖",
+    "severity": 4,
+    "actors": [
+      "IEA",
+      "Wright"
+    ],
+    "targets": [
+      "oil_markets",
+      "SPR"
+    ],
+    "consequences": [
+      "spr_release",
+      "market_chaos",
+      "credibility_damage"
+    ],
+    "category": "economic_intervention"
+  }
+]

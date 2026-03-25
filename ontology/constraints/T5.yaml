@@ -1,0 +1,21 @@
+id: T5
+name: 社媒链接直接访问拦截
+priority: 90
+enabled: true
+trigger:
+  url_has_social_pattern: true
+verdict: block
+reason: "T5: 社媒链接必须走标准解析流程（tikhub/summarize）"
+metadata:
+  agents_md_ref: "T5 社媒链接"
+  migrated_from: "interceptors.dl"
+  social_patterns:
+    - twitter.com
+    - x.com
+    - instagram.com
+    - douyin.com
+    - xhslink.com
+    - xiaohongshu.com
+    - weibo.com
+    - tiktok.com
+  ttl_days: 90

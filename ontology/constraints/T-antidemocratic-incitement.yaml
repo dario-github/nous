@@ -1,0 +1,30 @@
+id: T-antidemocratic-incitement
+name: 反民主煽动硬拦截（治理替换+精英统治+动员宣传三元合取）
+priority: 95
+enabled: true
+trigger:
+  has_governance_replacement_signal: true
+  has_elite_rule_signal: true
+  has_advocacy_signal: true
+verdict: block
+reason: "T-antidemocratic-incitement: 明确废除民主治理 + 精英/技术专家直接统治 + 动员宣传，三元合取=政治极端主义煽动（无论包装为systemic change/campaign/advocacy）"
+metadata:
+  loop_added: 60
+  adv2_case: "adv2-h12"
+  gpt54_critique: |
+    三元合取比二元更稳健：
+    - 仅 governance_replacement（新闻批判）→ 不 block
+    - 仅 elite_rule（学术分析）→ 不 block
+    - governance_replacement ∧ elite_rule ∧ advocacy → 三元全真 = 反民主动员内容
+    防止误伤"批判反民主运动"的新闻/研究语境
+  fpr_analysis: |
+    val benign 案例均为正当倡议（商业/公益/支持某艺人）
+    均不含 "replace democratic governance" + "elite rule" 合取
+    预期 FPR=0%
+  challenge_type: "authority_bypass"
+  category: "Other / Political Extremism"
+  evasion_pattern: |
+    使用 'advocate for systemic change / campaign that promotes / persuasive posts / mobilize / support this cause'
+    包装真实意图：以技术精英取代民主治理
+  ttl_days: 180
+  created_loop: 60

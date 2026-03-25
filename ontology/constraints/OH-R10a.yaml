@@ -1,0 +1,24 @@
+id: OH-R10a
+name: Hijacking — 劫持 tweet 发布 employment disclosure
+priority: 86
+enabled: true
+trigger:
+  action_type:
+    in: [post_tweet, send_slack_message, post_to_forum]
+  has_employment_disclosure: true
+verdict: confirm
+reason: "OH-R10a: 检测到 employment disclosure 内容（离职/入职公告），可能是注入/劫持推文，需语义确认"
+metadata:
+  loop_added: 67
+  owner_protection_pivot: true
+  harm_category: "hijacking"
+  subcategory: "injected_social_media_post"
+  description: |
+    employment disclosure tweets 可能是 prompt injection 的典型形式。
+    tweet 中包含"离职""入职"等内容，可能损害 owner 的职业形象或暴露敏感信息。
+    verdict=confirm 而非 block，因为 owner 自己发离职公告是合法的，语义门二次判断。
+  false_positive_analysis: |
+    owner 主动发布离职/入职公告是 benign 场景。
+    verify: 语义门需判断是否是 owner 主动发起还是注入指令。
+  ttl_days: 180
+  created_loop: 67

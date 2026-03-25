@@ -1,0 +1,127 @@
+[
+  {
+    "id": "evt_014",
+    "date": "2026-03-12",
+    "day": 14,
+    "event_type": "military_strike",
+    "description": "伊朗无人船炸毁巴斯拉油轮，伊拉克暂停港口。Brent 首破 $100",
+    "severity": 5,
+    "actors": [
+      "Iran"
+    ],
+    "targets": [
+      "Basra_tanker",
+      "Iraq_port"
+    ],
+    "consequences": [
+      "oil_shipping_disrupted",
+      "brent_100_breached"
+    ],
+    "category": "escalation"
+  },
+  {
+    "id": "evt_015",
+    "date": "2026-03-13",
+    "day": 15,
+    "event_type": "military_strike",
+    "description": "美军轰炸 Kharg Island 军事目标。Trump: 'totally obliterated crown jewel'",
+    "severity": 5,
+    "actors": [
+      "US"
+    ],
+    "targets": [
+      "Kharg_Island"
+    ],
+    "consequences": [
+      "strategic_oil_facility_hit",
+      "escalation_peak"
+    ],
+    "category": "military_escalation"
+  },
+  {
+    "id": "evt_016",
+    "date": "2026-03-13",
+    "day": 15,
+    "event_type": "escalation",
+    "description": "伊朗对沙特发射 24+ 无人机，阿曼 Duqm/Salalah 被击中。法军首次阵亡",
+    "severity": 5,
+    "actors": [
+      "Iran"
+    ],
+    "targets": [
+      "Saudi_Arabia",
+      "Oman",
+      "France"
+    ],
+    "consequences": [
+      "gulf_states_under_attack",
+      "nato_ally_casualty"
+    ],
+    "category": "regional_spillover"
+  },
+  {
+    "id": "evt_017",
+    "date": "2026-03-14",
+    "day": 16,
+    "event_type": "military_strike",
+    "description": "德黑兰亲政府集会遭空袭。美增派 5000 海军陆战队。美军死亡升至 13 人",
+    "severity": 5,
+    "actors": [
+      "US",
+      "Israel"
+    ],
+    "targets": [
+      "Tehran_rally",
+      "Hormuz"
+    ],
+    "consequences": [
+      "civilian_target_controversy",
+      "force_escalation"
+    ],
+    "category": "military_escalation"
+  },
+  {
+    "id": "evt_018",
+    "date": "2026-03-15",
+    "day": 17,
+    "event_type": "escalation",
+    "description": "美驻巴格达大使馆遭导弹袭击，紧急撤离令。巴林首都被无人机攻击。科威特机场雷达被毁",
+    "severity": 5,
+    "actors": [
+      "Iran_proxies",
+      "Iran"
+    ],
+    "targets": [
+      "Baghdad_embassy",
+      "Manama",
+      "Kuwait_airport"
+    ],
+    "consequences": [
+      "embassy_attack",
+      "gulf_capitals_under_fire",
+      "civilian_casualties"
+    ],
+    "category": "regional_war"
+  },
+  {
+    "id": "evt_019",
+    "date": "2026-03-15",
+    "day": 17,
+    "event_type": "diplomatic",
+    "description": "Sacks(白宫AI沙皇)呼吁'declare victory and get out'。Hegseth 同日宣布最大规模打击。鸽鹰分歧明确化",
+    "severity": 3,
+    "actors": [
+      "Sacks",
+      "Hegseth",
+      "Trump"
+    ],
+    "targets": [
+      "US_domestic_politics"
+    ],
+    "consequences": [
+      "internal_policy_split",
+      "exit_debate"
+    ],
+    "category": "political_dynamics"
+  }
+]

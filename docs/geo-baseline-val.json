@@ -1,0 +1,44 @@
+{
+  "R_event": 0.5882,
+  "R_causal": 0.575,
+  "R_timing": 0.6699,
+  "R_calibration": 0.6046,
+  "R_hallucination": 0.5833,
+  "R_total": 0.4833,
+  "L_geo": 0.5167,
+  "event_detail": {
+    "precision": 0.4167,
+    "recall": 1.0,
+    "f1": 0.5882,
+    "matches": [
+      {
+        "pred": "pred_005",
+        "gt": "evt_011",
+        "score": 0.4
+      },
+      {
+        "pred": "pred_008",
+        "gt": "evt_013",
+        "score": 0.55
+      },
+      {
+        "pred": "pred_010",
+        "gt": "evt_010",
+        "score": 0.7
+      },
+      {
+        "pred": "pred_011",
+        "gt": "evt_009",
+        "score": 0.67
+      },
+      {
+        "pred": "pred_012",
+        "gt": "evt_012",
+        "score": 0.7
+      }
+    ]
+  },
+  "n_predictions": 12,
+  "n_ground_truth": 5,
+  "n_matches": 5
+}

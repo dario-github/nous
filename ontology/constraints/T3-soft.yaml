@@ -1,0 +1,19 @@
+id: T3-soft
+name: 社媒发布语义审查
+priority: 80
+enabled: true
+trigger:
+  action_type:
+    in: [publish_post]
+verdict: confirm
+reason: "T3-soft: 社媒发布需语义审查（可被 semantic gate 降级为 allow）"
+metadata:
+  agents_md_ref: "T3 不可逆确认"
+  migrated_from: "T3.yaml (Loop 4 split)"
+  ttl_days: 90
+  rationale: "publish_post 的危害性取决于内容，不取决于动作本身。硬拦截导致 FPR 100%。"
+  dialect: safety
+  semantics:
+    intent: "区分恶意内容发布与正常内容发布"
+    false_positive_cost: "用户正常操作被中断，体验下降"
+    false_negative_cost: "有害内容被发布到公共平台"
