@@ -143,3 +143,15 @@ Paper in preparation. Please cite this repository for now:
   year={2026}
 }
 ```
+
+## Companion Projects
+
+- [**Biomorphic Memory**](https://github.com/dario-github/biomorphic-memory) — Brain-inspired agent memory with spreading activation (LongMemEval SOTA 89.8%)
+- [**Agent Self-Evolution**](https://github.com/dario-github/agent-self-evolution) — Automated evaluation, ablation testing, and improvement loops for AI agents
+
+## Install via ClawdHub
+
+```bash
+openclaw skills install nous-safety
+```
+
