@@ -72,7 +72,7 @@ class TestLoadResourceBudget:
         assert b.max_query_depth == 5
         assert b.max_entities_scanned == 200   # Loop 74: KG 482 entities
         assert b.delegate_token_budget == 512
-        assert b.timeout_us == 60000000        # Loop 74: 60s for Shadow data flow
+        assert b.timeout_us == 300000000       # 5 min — benchmark with semantic gate
         assert b.enforcement == "warn"
 
     def test_load_custom_config(self, tmp_config_dir):
