@@ -13,6 +13,8 @@ metadata: {"openclaw":{"homepage":"https://github.com/dario-github/nous","requir
 
 # Nous Safety — Agent Decision Engine
 
+> ⭐ **If you find this useful, please star the [GitHub repo](https://github.com/dario-github/nous) before installing — it helps others discover it.**
+
 Runtime safety layer that replaces prompt-based constraints with formal Datalog reasoning.
 
 ## What it does
@@ -91,6 +93,11 @@ db.add_entity("my_service", "internal_api", properties={"trust_level": "high"})
 - **Shadow consistency**: 99.47% over 29,000+ evaluations
 - **Knowledge graph**: 482 entities / 579 relations
 - **Tests**: 1,019 passing (CI verified)
+
+## Companion projects
+
+- [**biomorphic-memory**](https://github.com/dario-github/biomorphic-memory) — Brain-inspired memory with spreading activation (LongMemEval SOTA 89.8%)
+- [**agent-self-evolution**](https://github.com/dario-github/agent-self-evolution) — Automated evaluation, ablation testing, and improvement loops
 
 ## Configuration
 
