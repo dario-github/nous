@@ -6,17 +6,23 @@ import pytest
 from nous.db import NousDB
 from nous.sync import sync_entities
 
+from _paths import ENTITIES_ROOT
+
+_skip_no_entities = pytest.mark.skipif(
+    not ENTITIES_ROOT.exists(), reason="entities dir not found (CI)"
+)
+
 
 @pytest.fixture
 def populated_db():
     """一个已导入 memory/entities 的内存 DB"""
     db = NousDB(":memory:")
-    from _paths import ENTITIES_ROOT
     sync_entities(db, ENTITIES_ROOT)
     yield db
     db.close()
 
 
+@_skip_no_entities
 class TestFindEntity:
     """find_entity() 精确查找"""
 
@@ -38,6 +44,7 @@ class TestFindEntity:
         assert expected_fields.issubset(set(e.keys()))
 
 
+@_skip_no_entities
 class TestFindByType:
     """find_by_type() 按类型查找"""
 
@@ -56,6 +63,7 @@ class TestFindByType:
         assert result == []
 
 
+@_skip_no_entities
 class TestRelated:
     """related() 邻居查询"""
 
@@ -80,6 +88,7 @@ class TestRelated:
             assert r["rtype"] == "RELATED_TO"
 
 
+@_skip_no_entities
 class TestPath:
     """path() 多跳路径查找"""
 
@@ -99,6 +108,7 @@ class TestPath:
         assert isinstance(result, list)
 
 
+@_skip_no_entities
 class TestSearch:
     """search() 关键词搜索"""
 
@@ -120,6 +130,7 @@ class TestSearch:
         assert len(r1) == len(r2)
 
 
+@_skip_no_entities
 class TestDeleteEntity:
     """delete_entity() 删除"""
 
