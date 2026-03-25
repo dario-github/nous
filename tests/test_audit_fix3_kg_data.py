@@ -27,6 +27,10 @@ def _get_db():
         raise
 
 
+@pytest.mark.skipif(
+    not (Path(__file__).parent.parent / "nous.db").exists(),
+    reason="nous.db not found (CI environment)"
+)
 class TestKGNotEmpty:
     """验证 nous.db 非空（有 MITRE ATT&CK + CWE 数据）"""
 
