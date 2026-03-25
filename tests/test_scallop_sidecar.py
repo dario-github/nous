@@ -1,6 +1,10 @@
 """Test Scallop Sidecar with real Nous KG data."""
 import sys
 import time
+import pytest
+
+scallopy = pytest.importorskip("scallopy", reason="scallopy native wheel not available")
+
 sys.path.insert(0, 'src')
 
 from nous.db import NousDB
