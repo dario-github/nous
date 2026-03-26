@@ -10,10 +10,11 @@
   "tests": 1075,
   "curriculum_phase": 3,
   "urgent": [
-    "P1: 重跑完整 L1+L2+L3 semantic benchmark 验证 TPR 恢复到 100%（需更长 timeout 或分批跑）",
-    "P2: 重跑 shadow_live.py 验证生产环境语义判断正常产出（Loop 72 修了 provider=None）",
-    "P3: KG semantic enhancement — entity enrichment + relation typing (M7.2)",
-    "P4: gateway_hook integration — config not passed, L2/L3 production inactive"
+    "P1: 完整 L1+L2+L3 semantic benchmark 验证 TPR 100% (需分批跑，API 延迟)",
+    "P2: shadow_live.py 生产验证 (Loop 74 修了 provider=None)",
+    "P3: KG semantic enhancement M7.2",
+    "P4: gateway_hook integration (config not passed, L2/L3 production inactive)",
+    "P5 [NEW]: 论文署名待东丞确认 + Figure 1 drawio → PNG/PDF 导出"
   ],
   "completed_this_loop": [
     "P0 完成：实施 semantic upgrade-only 模式",
@@ -24,7 +25,12 @@
     "1075 tests green (Mac 1068+3 new pass, 6 pre-existing Mac failures)",
     "验证逻辑: confirm+sem_allow@0.92→confirm(旧行为→allow), confirm+sem_block@0.91→block",
     "L1+L2 baseline 确认: TPR 100%, FPR 16%(OH-R8 8个benign confirm)",
-    "commit 8d19994 pushed to main"
+    "commit 8d19994 pushed to main",
+    "Paper P4: Baseline Comparison Table (Table 5) 整合到 main.tex",
+    "95% CI 加到 Owner-Harm section: TPR [98.2%, 100%] FPR [0%, 7.1%]",
+    "Limitations: InjecAgent 56.7% TPR 加入 (indirect injection benchmark)",
+    "InjecAgent bib 条目加入 references.bib",
+    "commit d6710ac pushed"
   ],
   "owner_harm_semantic_benchmark": {
     "T1_judge": {
