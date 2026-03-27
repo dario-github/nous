@@ -112,12 +112,7 @@ A knowledge graph (579~relations, 482~entities across 11 entity types and 11 rel
 
 \begin{figure}[t]
   \centering
-  % TODO: Replace with exported PNG/PDF from figure1-architecture.drawio
-  \fbox{\parbox{0.95\columnwidth}{\centering\vspace{2em}
-    \textbf{[Figure 1: Three-Layer Architecture]}\\
-    \small See \texttt{figure1-architecture.drawio}\\
-    Tool Call $\to$ L1 Datalog $\to$ L2 Triviality $\to$ L3 Semantic $\to$ Verdict
-  \vspace{2em}}}
+  \includegraphics[width=0.98\columnwidth]{figure1}
   \caption{Three-layer composable safety gate. Each tool call traverses layers sequentially; early exits at L1 (pattern match) and L2 (trivially benign) reduce cost. The knowledge graph provides post-gate enrichment without verdict override.}
   \label{fig:architecture}
 \end{figure}
