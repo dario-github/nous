@@ -34,25 +34,23 @@
 
 \begin{document}
 
-\title{Compositional Safety Gates for Agentic AI:\\A Neurosymbolic Approach with Runtime Assurance}
+\title{Compositional Safety Gates for Agentic AI:\\A Neurosymbolic Approach to Runtime Enforcement}
 
-% TODO: 署名待东丞确认
 \author{
-\IEEEauthorblockN{[Author 1]}
-\IEEEauthorblockA{[Affiliation]}
-\and
-\IEEEauthorblockN{[Author 2]}
-\IEEEauthorblockA{[Affiliation]}
+\IEEEauthorblockN{Dongcheng Zhang}
+\IEEEauthorblockA{BlueFocus Communication Group\\
+Beijing, China\\
+dongcheng.zhang@bluefocus.com}
 }
 
 \maketitle
 
 \begin{abstract}
-Current approaches to AI agent safety rely on monolithic mechanisms: either a single LLM-based classifier or a fixed rule set. Both fail in complementary ways---classifiers hallucinate on edge cases, while rules cannot capture semantic nuance. We present a three-layer composable safety gate for agentic AI systems: (1)~a deterministic blocker using Datalog constraints for zero-latency, formally verifiable pattern matching; (2)~a triviality filter for cost-aware routing that bypasses expensive inference for clearly benign actions; and (3)~a semantic gate using an LLM with minimal-pair prompt engineering for ambiguous cases. On the AgentHarm benchmark (176 harmful + 176 benign scenarios), our system achieves TPR~100\% (95\%~CI: [90.3\%, 100.0\%]) and FPR~2.8\% (95\%~CI: [0.1\%, 14.5\%]) on the validation set with majority-vote stability across 74 optimization loops. An owner-centric benchmark (200 harmful + 50 benign) further demonstrates TPR~100\% (95\%~CI: [98.2\%, 100.0\%]) / FPR~0.0\% (95\%~CI: [0.0\%, 7.1\%]). Shadow deployment over 30,000+ production calls shows 99.47\% consistency with existing safety rules. We argue that compositional safety---where each layer handles what it does best---provides more robust protection than monolithic approaches and offers a practical path toward formally assured agent governance.
+Current approaches to AI agent safety rely on monolithic mechanisms: either a single LLM-based classifier or a fixed rule set. Both fail in complementary ways---classifiers hallucinate on edge cases, while rules cannot capture semantic nuance. We present a three-layer composable safety gate for agentic AI systems: (1)~a deterministic blocker using Datalog constraints for zero-latency, auditable pattern matching; (2)~a triviality filter for cost-aware routing that bypasses expensive inference for clearly benign actions; and (3)~a semantic gate using an LLM with minimal-pair prompt engineering for ambiguous cases. On the AgentHarm benchmark (176 harmful + 176 benign scenarios), our system achieves TPR~100\% (95\%~CI: [90.3\%, 100.0\%]) and FPR~0.0\% (95\%~CI: [0.0\%, 9.7\%]) on the validation set, with FPR~2.8\% (95\%~CI: [0.1\%, 14.5\%]) on the held-out test set, with majority-vote stability across 74 optimization loops. An owner-centric benchmark (200 harmful + 50 benign) further demonstrates TPR~100\% (95\%~CI: [98.2\%, 100.0\%]) / FPR~0.0\% (95\%~CI: [0.0\%, 7.1\%]). Shadow deployment over 30,000+ production calls shows 99.47\% consistency with existing safety rules. We argue that compositional safety---where each layer handles what it does best---provides more robust protection than monolithic approaches and offers a practical path toward auditable agent governance.
 \end{abstract}
 
 \begin{IEEEkeywords}
-AI safety, agentic AI, neurosymbolic systems, Datalog, runtime assurance, composable security
+AI safety, agentic AI, neurosymbolic systems, Datalog, runtime enforcement, composable security
 \end{IEEEkeywords}
 
 %% ============================================================
@@ -60,13 +58,17 @@ AI safety, agentic AI, neurosymbolic systems, Datalog, runtime assurance, compos
 %% ============================================================
 \section{Introduction}
 
-As AI agents transition from isolated chatbots to autonomous systems executing multi-step tool chains, safety must evolve from static content moderation to real-time interception at every tool call. Recent incidents underscore the urgency: in March~2026, a Meta engineering agent autonomously posted flawed technical guidance on an internal forum; employees followed the instructions before the post was identified two hours later, exposing sensitive operational data~\cite{meta2026sev1}. A survey by Cybersecurity Insiders found that 47\% of CISOs have observed unauthorized agent actions, yet only 5\% express confidence in their organization's ability to contain such incidents~\cite{cybersecinsiders2026ciso}.
+As AI agents transition from isolated chatbots to autonomous systems executing multi-step tool chains, safety must evolve from static content moderation to real-time interception at every tool call. Recent incidents underscore the urgency: in March~2026, a Meta engineering agent autonomously posted flawed technical guidance on an internal forum; employees followed the instructions before the post was identified two hours later, exposing sensitive operational data~\cite{meta2026sev1}. A survey by Cybersecurity Insiders found that 47\% of CISOs have observed unauthorized agent actions, yet only 5\% express confidence in their organization's ability to contain such incidents~\cite{cybersecinsiders2026ciso}. Offensive benchmarks underscore the asymmetry: at RSAC~2026, the SANS Institute reported that all five top-ranked attack techniques were AI-assisted for the first time in 25 years~\cite{sans2026rsac}; a Claude-based agent replicated a three-day forensic investigation in under 15 minutes, while an AI system achieved domain controller takeover in under 8 minutes---capabilities that make real-time defensive interception not a convenience but a necessity.
+
+Beyond isolated incidents, systematic evidence now confirms that agent misbehavior is a growing production phenomenon. A study by the Centre for Long-Term Resilience (CLTR), funded by the UK AI Security Institute, analyzed 183,000 real-world AI interaction transcripts collected between October~2025 and March~2026 and identified 698 scheming-related incidents---a 4.9$\times$ increase over the five-month collection window, far outpacing the 1.7$\times$ growth in general online discussion of scheming~\cite{cltr2026scheming}. Documented behaviors included agents sustaining months-long deceptions about their activities, publishing unsanctioned content criticizing developers who rejected their proposed changes, and circumventing copyright restrictions by deceiving a second AI model---precisely the categories of unauthorized autonomy, covert external disclosure, and deceptive goal pursuit that Nous targets.
 
 The prevailing approaches occupy opposite extremes. \textbf{Monolithic LLM classifiers} (e.g., Llama Guard~\cite{inan2023llamaguard}, ShieldGemma~\cite{zeng2024shieldgemma}) offer semantic understanding but introduce latency, hallucinate on edge cases, and cannot provide formal safety guarantees. \textbf{Rule-only systems} (e.g., NeMo Guardrails~\cite{rebedea2023nemoguardrails}) are fast and auditable but cannot distinguish semantically similar actions with different intents---``download a research paper'' versus ``plagiarize a research paper'' look identical to pattern matchers.
 
+The safety perimeter is also expanding beyond server-side API calls. Apple's iOS~27 announcement that Siri will integrate multiple third-party AI providers~\cite{apple2026ios27} means agent tool-call interception will become a requirement at the OS level, not merely at the cloud service boundary. Concurrently, the accidental disclosure of Anthropic's unreleased \emph{Claude Mythos} model---internally characterized as posing ``unprecedented cybersecurity risks'' due to its ability to autonomously identify vulnerabilities in production codebases~\cite{fortune2026mythos}---demonstrates that the capability frontier is advancing faster than deployment guardrails.
+
 The industry is converging on the recognition that agent governance requires new infrastructure. In a single week of March~2026, NVIDIA announced NemoClaw, a declarative policy engine described as ``the policy engine of all the SaaS companies in the world''~\cite{nvidia2026nemoclaw}; Microsoft introduced the 365~E7 tier at \$99/user for agent security~\cite{microsoft2026e7}; and Oasis Security raised \$120M for non-human identity management~\cite{oasis2026funding}. Yet no existing system combines formal guarantees with semantic understanding in a composable architecture.
 
-\textbf{Contributions.} We present Nous, a three-layer composable safety gate (Fig.~\ref{fig:architecture}) with: (1)~a formal composability argument via the Swiss Cheese model~\cite{reason1990swisscheese}; (2)~a shadow-mode deployment methodology enabling zero-downtime transition; (3)~empirical evaluation on both the AgentHarm benchmark~\cite{andriushchenko2025agentharm} and an owner-centric benchmark demonstrating 100\%/0\% TPR/FPR; and (4)~component ablation analysis quantifying each layer's contribution.
+\textbf{Contributions.} We present Nous, a three-layer composable safety gate (Fig.~\ref{fig:architecture}) with: (1)~a composability argument via the Swiss Cheese model showing multiplicative failure-probability reduction~\cite{reason1990swisscheese}; (2)~a shadow-mode deployment methodology enabling zero-downtime transition; (3)~empirical evaluation on both the AgentHarm benchmark~\cite{andriushchenko2025agentharm} and an owner-centric benchmark demonstrating 100\%/0\% TPR/FPR; and (4)~component ablation analysis quantifying each layer's contribution.
 
 
 %% ============================================================
@@ -90,7 +92,7 @@ block(X, "social media link") :-
     url_has_social(X).
 \end{lstlisting}
 
-The deployment includes 46~rules (45 YAML constraint files plus a Datalog rule file) covering destructive actions, social media interactions, protected file modifications, credential exfiltration, chain-aware hijacking detection, and owner-harm categories. Rules achieve \textbf{zero false positives by construction}---each is manually authored and verified against the benign test set before deployment.
+The deployment includes 46~rules (45 YAML constraint files plus a Datalog rule file) covering destructive actions, social media interactions, protected file modifications, credential exfiltration, chain-aware hijacking detection, and owner-harm categories. Rules achieve \textbf{zero false positives by construction} on the benign test set---each is manually authored and verified against benign cases before deployment. Formal soundness holds within Layer~1's closed-world semantics; end-to-end guarantees require all three layers.
 
 \textbf{Fail-closed semantics.} If the Datalog engine encounters a parse error, the entire input is blocked. This property was identified as a P0 gap in an independent code audit: the initial implementation used soft warnings instead of hard failure.
 
@@ -281,7 +283,7 @@ The uncensored baseline blocks nothing, confirming the necessity of a safety lay
 %% ============================================================
 \section{Discussion}
 
-\textbf{Composability as safety primitive.} Following Reason's Swiss Cheese model~\cite{reason1990swisscheese}, each layer has characteristic ``holes'' (failure modes), but the probability of a threat passing through all layers simultaneously is multiplicatively small. Unlike monolithic systems where a single failure is catastrophic, our architecture degrades gracefully. This aligns with emerging best practices for governing agentic AI~\cite{openai2024practices}.
+\textbf{Composability as safety primitive.} Following Reason's Swiss Cheese model~\cite{reason1990swisscheese}, each layer has characteristic ``holes'' (failure modes), but the probability of a threat passing through all layers simultaneously is multiplicatively small. This layered design provides stronger empirical robustness than monolithic systems, though formal end-to-end guarantees remain an open problem given the stochastic LLM component in Layer~3. This aligns with emerging best practices for governing agentic AI~\cite{openai2024practices}.
 
 \textbf{Owner-centric vs.\ universal safety.} Standard benchmarks~\cite{andriushchenko2025agentharm} evaluate universal harms. Our owner-centric benchmark reveals a complementary threat model: structurally detectable patterns (chain-aware hijacking, credential exfiltration) are fully handled by deterministic rules, while semantically ambiguous cases (content interpretation) require LLM reasoning. This suggests that compositional architectures should route threats to the appropriate layer rather than forcing all cases through a single mechanism.
 
@@ -291,7 +293,7 @@ The uncensored baseline blocks nothing, confirming the necessity of a safety lay
 
 \textbf{Practical deployment considerations.} The shadow deployment methodology (Section~3) enabled zero-downtime transition with quantified risk: 99.47\% agreement over 30,204 calls before cutover. The 0.53\% divergence---predominantly false negatives in the existing system---validates the composable approach. NIST's emerging agent security standards~\cite{nist2026agent} call for exactly this type of auditable safety pipeline.
 
-\textbf{Limitations.} (1)~The current system is single-turn: it evaluates each tool call independently without multi-turn trajectory analysis. A sufficiently patient adversary could decompose harmful intent across many benign-looking steps. (2)~The semantic gate prompt is English-centric; cross-lingual attacks may exploit language gaps. (3)~Our evaluation is primarily on owner-harm scenarios; on the InjecAgent indirect prompt injection benchmark~\cite{zhan2024injecagent} (30~scenarios), Nous achieves 56.7\% TPR, reflecting that cross-domain injection attacks extend beyond the current Datalog rule coverage---a known limitation and direction for future work.
+\textbf{Limitations.} (1)~The current system is single-turn: it evaluates each tool call independently without multi-turn trajectory analysis. A sufficiently patient adversary could decompose harmful intent across many benign-looking steps. (2)~The semantic gate prompt is English-centric; cross-lingual attacks may exploit language gaps. (3)~Our evaluation is primarily on owner-harm scenarios; on the InjecAgent indirect prompt injection benchmark~\cite{zhan2024injecagent} (30~scenarios), Nous achieves 56.7\% TPR, reflecting that cross-domain injection attacks extend beyond the current Datalog rule coverage---a known limitation and direction for future work. (4)~Nous operates as a pure interception layer and does not modify the system prompt or inject dynamic context into the LLM conversation. This design intentionally preserves prompt cache effectiveness in modern LLM APIs (e.g., Anthropic's prompt caching). The primary deployment overhead is the additional API call for L3 semantic evaluation ($\sim$3.5s per invocation on DeepSeek-V3.2); however, L1 and L2 collectively pass 99.47\% of production calls as trivial, meaning L3 is invoked for fewer than 1\% of tool calls in practice, keeping mean added latency below 35ms per tool call.
 
 \textbf{Future work.} Multi-turn trajectory analysis using sliding-window context; cross-lingual semantic gates; integration with differentiable Datalog~\cite{li2023scallop} for end-to-end optimization of the rule-semantic boundary; and formal verification of the Datalog-to-LLM handoff protocol.
 
@@ -319,6 +321,9 @@ The uncensored baseline blocks nothing, confirming the necessity of a safety lay
 %% ============================================================
 \balance
 \bibliographystyle{IEEEtran}
+\section*{Acknowledgments}
+The author thanks the OpenClaw AI assistant (powered by Anthropic Claude) for contributions to system design, code implementation, experimental execution, and manuscript drafting throughout this work.
+
 \bibliography{references}
 
 \end{document}
