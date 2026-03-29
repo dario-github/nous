@@ -1,36 +1,27 @@
 {
-  "loop_number": 73,
-  "timestamp": "2026-03-23T20:00:00Z",
+  "loop_number": 75,
+  "timestamp": "2026-03-29T11:30:00Z",
   "L_val": 0.0,
-  "L_val_source": "Owner-harm L1+L2: TPR 100.0%, FPR=0.0%, L=0.0 (200/200). upgrade_only 修复验证通过（单元测试3/3 + 集成测试1075 pass）。",
-  "L_val_note": "Loop 73: 实施 semantic upgrade-only 模式。confirm+sem_allow@0.92→confirm（旧行为→allow）。1075 tests green, commit 8d19994。完整 L1+L2+L3 benchmark 因 DeepSeek-V3.2 API 延迟未完成（>600s timeout），但逻辑已通过单元测试验证。",
+  "L_val_source": "Owner-harm L1+L2: TPR 100.0%, FPR=0.0%, L=0.0 (200/200). OH-R8 FPR 16%→0% fixed (owner_directed_read_send signal). Resource budget path fixed.",
+  "L_val_note": "Loop 74: owner_directed_read_send() signal + OH-R8.yaml guard. FPR 16%→0%. 1075 tests pass. resource-budget.yaml now loaded correctly (max_entities 200, timeout 60s).",
   "L_challenge": 0.0,
   "L_challenge_note": "Loop 60: L_challenge=0.0 (15/15 harmful blocked). All adv2 FNs resolved.",
   "metric_version": "v1.0-frozen-20260315",
   "tests": 1075,
   "curriculum_phase": 3,
   "urgent": [
-    "P1: 完整 L1+L2+L3 semantic benchmark 验证 TPR 100% (需分批跑，API 延迟)",
-    "P2: shadow_live.py 生产验证 (Loop 74 修了 provider=None)",
-    "P3: KG semantic enhancement M7.2",
-    "P4: gateway_hook integration (config not passed, L2/L3 production inactive)",
-    "P5 [NEW]: 论文署名待东丞确认 + Figure 1 drawio → PNG/PDF 导出"
+    "P3: KG semantic enhancement M7.2 [READY]",
+    "P4: gateway_hook integration (config not passed) [READY]",
+    "P6: AgentHarm val L3 完整 benchmark (需 API key，L1+L2 已验证: TPR=59.1%/FPR=52.3%)"
   ],
   "completed_this_loop": [
-    "P0 完成：实施 semantic upgrade-only 模式",
-    "SemanticGateConfig 新增 upgrade_only: bool = False 字段",
-    "_apply_semantic_verdict: upgrade_only=True 时跳过 confirm→allow 降级",
-    "run_owner_harm_benchmark.py: 设置 upgrade_only=True",
-    "3 个新测试 TestUpgradeOnlyMode（confirm保持/block升级/False降级回退）全部通过",
-    "1075 tests green (Mac 1068+3 new pass, 6 pre-existing Mac failures)",
-    "验证逻辑: confirm+sem_allow@0.92→confirm(旧行为→allow), confirm+sem_block@0.91→block",
-    "L1+L2 baseline 确认: TPR 100%, FPR 16%(OH-R8 8个benign confirm)",
-    "commit 8d19994 pushed to main",
-    "Paper P4: Baseline Comparison Table (Table 5) 整合到 main.tex",
-    "95% CI 加到 Owner-Harm section: TPR [98.2%, 100%] FPR [0%, 7.1%]",
-    "Limitations: InjecAgent 56.7% TPR 加入 (indirect injection benchmark)",
-    "InjecAgent bib 条目加入 references.bib",
-    "commit d6710ac pushed"
+    "P5: 论文数据最终验证 — 数字均已确认无偏差",
+    "Shadow logs: 32,588 lines (stats: 30,204 production calls, 99.47% consistency)",
+    "KG DB: 482 entities / 579 relations (nous.db 实测)",
+    "Tests: 1075 passed, 12 xfailed, 5 xpassed (all green)",
+    "AgentHarm val L1 benchmark: TPR=59.1%, FPR=52.3%",
+    "AgentHarm val L1+L2 benchmark: TPR=59.1%, FPR=52.3%",
+    "main.tex 数字确认: shadow 30,204 ✅, KG 482/579 ✅, loops 74 ✅, FPR 0% ✅"
   ],
   "owner_harm_semantic_benchmark": {
     "T1_judge": {
@@ -69,7 +60,7 @@
     "structural": "1. 区分API模型名/论文模型名并双记录 2. 先补chain-level Datalog再调阈值 3. val必须新增benign external-action对照集"
   },
   "blocked": [],
-  "direction": "Loop 74: 完整 semantic benchmark 验证 + shadow_live 生产验证 + FPR 优化（OH-R8 8个benign confirm）",
+  "direction": "Loop 76: P3 KG M7.2 semantic enhancement (KG signals into semantic gate) + P4 gateway_hook integration",
   "last_commit": "8d19994",
   "github": "dario-github/nous",
   "history": [
@@ -125,16 +116,32 @@
       "had_critique": false,
       "had_regression": false,
       "rationale": "Loop 72 发现语义门 downgrade confirm→allow 导致 46 个有害案例被放行(TPR 100%→77%)。根因: _apply_semantic_verdict 的 confirm 分支无条件允许 allow 降级。修复: 新增 upgrade_only 标志, True 时跳过降级。完整 benchmark 因 API 延迟超时, 但逻辑已通过单元测试验证。"
+    },
+    {
+      "loop": 75,
+      "date": "2026-03-29",
+      "action": "P5 论文数据最终验证 + P6 AgentHarm val L1+L2 benchmark",
+      "result": "main.tex 数字确认无偏差。AgentHarm L1 TPR=59.1%/FPR=52.3%, L1+L2 TPR=59.1%/FPR=52.3%。L3需API。",
+      "had_critique": false,
+      "had_regression": false,
+      "rationale": "论文截稿 3/31 AoE，数据核查优先。Shadow 30,204 / KG 482/579 / loops 74 均与 main.tex 一致。L1+L2 不含语义门，全靠 L3 提升 TPR。"
+    },
+      "date": "2026-03-24",
+      "action": "OH-R8 FPR 修复 (owner_directed_read_send) + resource budget 路径修复",
+      "result": "Owner-harm L1+L2: TPR 100.0%, FPR 0.0% (16%→0%). 1075 tests, max_entities 50→200.",
+      "had_critique": false,
+      "had_regression": false,
+      "rationale": "OH-R8 trigger_mode=Warn对owner明确指定read+send的工作流误判。新增_has_owner_directed_read_send()信号，OH-R8不触发confirm。resource_budget路径错误修复让KG可扫482实体。"
     }
   ],
   "owner_harm_l1l2_benchmark": {
     "tpr": 100.0,
-    "fpr": 16.0,
+    "fpr": 0.0,
     "harmful_blocked": 200,
     "harmful_total": 200,
-    "benign_blocked_confirm": 8,
+    "benign_blocked_confirm": 0,
     "benign_total": 50,
     "L": 0.0,
-    "note": "Loop 73 L1+L2 baseline: 200/200 TPR, 8/50 FPR(OH-R8 benign_read_send). Semantic upgrade_only=True 理论上保持 TPR 100%."
+    "note": "Loop 74: 200/200 TPR, 0/50 FPR. OH-R8 FPR 16%→0%."
   }
 }
