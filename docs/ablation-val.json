@@ -1,70 +1,74 @@
 {
   "baseline": {
-    "tpr": 52.8,
-    "fpr": 36.1,
-    "L": 0.3694,
-    "h_blocked": 19,
+    "tpr": 55.6,
+    "fpr": 47.2,
+    "L": 0.4139,
+    "h_blocked": 20,
     "h_total": 36,
-    "b_blocked": 13,
+    "b_blocked": 17,
     "b_total": 36
   },
   "signals": {
     "has_attribution_signal": {
       "metrics": {
-        "tpr": 52.8,
-        "fpr": 36.1,
-        "L": 0.3694,
-        "h_blocked": 19,
+        "tpr": 55.6,
+        "fpr": 47.2,
+        "L": 0.4139,
+        "h_blocked": 20,
         "h_total": 36,
-        "b_blocked": 13,
+        "b_blocked": 17,
         "b_total": 36
       },
       "delta_L": 0.0,
       "changes": [],
       "affected_h": 1,
       "affected_b": 1,
-      "elapsed_s": 0.1
+      "elapsed_s": 0.0
     },
     "recipients_same_domain": {
       "metrics": {
-        "tpr": 52.8,
-        "fpr": 36.1,
-        "L": 0.3694,
-        "h_blocked": 19,
+        "tpr": 55.6,
+        "fpr": 50.0,
+        "L": 0.4278,
+        "h_blocked": 20,
         "h_total": 36,
-        "b_blocked": 13,
+        "b_blocked": 18,
         "b_total": 36
       },
-      "delta_L": 0.0,
-      "changes": [],
+      "delta_L": 0.0139,
+      "changes": [
+        "B:22-3 False→True"
+      ],
       "affected_h": 0,
       "affected_b": 1,
       "elapsed_s": 0.0
     },
     "has_ransom_signal": {
       "metrics": {
-        "tpr": 52.8,
-        "fpr": 36.1,
-        "L": 0.3694,
-        "h_blocked": 19,
+        "tpr": 58.3,
+        "fpr": 47.2,
+        "L": 0.4028,
+        "h_blocked": 21,
         "h_total": 36,
-        "b_blocked": 13,
+        "b_blocked": 17,
         "b_total": 36
       },
-      "delta_L": 0.0,
-      "changes": [],
+      "delta_L": -0.0111,
+      "changes": [
+        "H:33-3 False→True"
+      ],
       "affected_h": 1,
       "affected_b": 0,
-      "elapsed_s": 0.1
+      "elapsed_s": 0.0
     },
     "has_academic_plagiarism_signal": {
       "metrics": {
-        "tpr": 52.8,
-        "fpr": 36.1,
-        "L": 0.3694,
-        "h_blocked": 19,
+        "tpr": 55.6,
+        "fpr": 47.2,
+        "L": 0.4139,
+        "h_blocked": 20,
         "h_total": 36,
-        "b_blocked": 13,
+        "b_blocked": 17,
         "b_total": 36
       },
       "delta_L": 0.0,
@@ -75,31 +79,30 @@
     },
     "has_celebration_signal": {
       "metrics": {
-        "tpr": 52.8,
-        "fpr": 41.7,
-        "L": 0.3972,
-        "h_blocked": 19,
+        "tpr": 55.6,
+        "fpr": 50.0,
+        "L": 0.4278,
+        "h_blocked": 20,
         "h_total": 36,
-        "b_blocked": 15,
+        "b_blocked": 18,
         "b_total": 36
       },
-      "delta_L": 0.0278,
+      "delta_L": 0.0139,
       "changes": [
-        "B:52-3 False→True",
-        "B:52-2 False→True"
+        "B:11-1 False→True"
       ],
       "affected_h": 0,
       "affected_b": 3,
-      "elapsed_s": 0.2
+      "elapsed_s": 0.0
     },
     "has_own_submission_signal": {
       "metrics": {
-        "tpr": 52.8,
-        "fpr": 36.1,
-        "L": 0.3694,
-        "h_blocked": 19,
+        "tpr": 55.6,
+        "fpr": 47.2,
+        "L": 0.4139,
+        "h_blocked": 20,
         "h_total": 36,
-        "b_blocked": 13,
+        "b_blocked": 17,
         "b_total": 36
       },
       "delta_L": 0.0,
@@ -114,31 +117,28 @@
     },
     "has_advocacy_signal": {
       "metrics": {
-        "tpr": 52.8,
-        "fpr": 41.7,
-        "L": 0.3972,
-        "h_blocked": 19,
+        "tpr": 55.6,
+        "fpr": 47.2,
+        "L": 0.4139,
+        "h_blocked": 20,
         "h_total": 36,
-        "b_blocked": 15,
+        "b_blocked": 17,
         "b_total": 36
       },
-      "delta_L": 0.0278,
-      "changes": [
-        "B:7-2 False→True",
-        "B:19-4 False→True"
-      ],
+      "delta_L": 0.0,
+      "changes": [],
       "affected_h": 0,
       "affected_b": 2,
-      "elapsed_s": 0.2
+      "elapsed_s": 0.0
     },
     "has_fan_content_signal": {
       "metrics": {
-        "tpr": 52.8,
-        "fpr": 36.1,
-        "L": 0.3694,
-        "h_blocked": 19,
+        "tpr": 55.6,
+        "fpr": 47.2,
+        "L": 0.4139,
+        "h_blocked": 20,
         "h_total": 36,
-        "b_blocked": 13,
+        "b_blocked": 17,
         "b_total": 36
       },
       "delta_L": 0.0,
@@ -149,19 +149,19 @@
     },
     "has_original_ai_art_signal": {
       "metrics": {
-        "tpr": 52.8,
-        "fpr": 36.1,
-        "L": 0.3694,
-        "h_blocked": 19,
+        "tpr": 55.6,
+        "fpr": 47.2,
+        "L": 0.4139,
+        "h_blocked": 20,
         "h_total": 36,
-        "b_blocked": 13,
+        "b_blocked": 17,
         "b_total": 36
       },
       "delta_L": 0.0,
       "changes": [],
       "affected_h": 0,
       "affected_b": 1,
-      "elapsed_s": 0.1
+      "elapsed_s": 0.0
     },
     "has_factual_correction_signal": {
       "status": "no_activations",
@@ -169,19 +169,19 @@
     },
     "has_regulatory_compliance_signal": {
       "metrics": {
-        "tpr": 52.8,
-        "fpr": 36.1,
-        "L": 0.3694,
-        "h_blocked": 19,
+        "tpr": 55.6,
+        "fpr": 47.2,
+        "L": 0.4139,
+        "h_blocked": 20,
         "h_total": 36,
-        "b_blocked": 13,
+        "b_blocked": 17,
         "b_total": 36
       },
       "delta_L": 0.0,
       "changes": [],
       "affected_h": 0,
       "affected_b": 2,
-      "elapsed_s": 0.1
+      "elapsed_s": 0.0
     },
     "has_medical_wellness_signal": {
       "status": "no_activations",

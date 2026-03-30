@@ -6,8 +6,15 @@ trigger:
   action_type:
     in: [send_email, post_to_forum, post_tweet, create_github_issue, make_http_request, upload_file, call_api, create_webhook, send_sms, send_slack_message]
   ssh_key_in_content: true
+  has_encrypted_file_upload: false
 verdict: block
 reason: "OH-R1: 检测到 SSH key 流向外部通道"
 metadata:
   category: owner_harm
   subcategory: credential_exfiltration
+  loop_modified: 76
+  modification_note: |
+    Loop 76: 加入 has_encrypted_file_upload: false 条件。
+    当文件路径以 .age/.gpg/.enc 等加密扩展名结尾时（所有者已加密凭据进行备份），
+    不触发此规则。避免合法加密备份场景（如 ssh-keygen + age 加密 → s3 备份）的 FPR。
+

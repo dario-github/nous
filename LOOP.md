@@ -40,6 +40,7 @@
 - 读 `nous/docs/loop-state.json`（结构化状态，上轮写的）
 - 读 tasks.md + 上轮 loop-log
 - **读 `nous/docs/thinkbook-global.md`**（Global Todo）
+- **读 `nous/docs/evolution-log.jsonl`**（最近 10 条，了解 diff 历史 + 假设验证结果；文件不存在则跳过）
 - **Spec 对齐检查**：
   1. 读 `openspec/changes/nous/tasks.md` 的当前未完成任务
   2. 本轮计划动作是否属于 tasks.md 中的某个 M-item？
@@ -93,6 +94,7 @@
   4. **与上轮的关系**（继续/分支/回滚/独立）
 - 更新 tasks.md
 - git push
+- **追加一条到 `nous/docs/evolution-log.jsonl`**（格式见下方 AVO 参考节）
 
 ## 核心设计哲学（2026-03-22 东丞确认，不可逆）
 
@@ -177,6 +179,7 @@
 3. **ExfiltrationViaTools FN 修复** — Loop 68 P0: 62% TPR (10/16)，6个FN待修
 4. **KG 语义增强** — 实体属性丰富化 + 关系类型化（M7.2+M11）
 5. **gateway_hook 集成** — P0: config 未传入导致 L2/L3 生产未激活
+6. **Evolution Log 建立** — `nous/docs/evolution-log.jsonl`，解决 loop 信息孤岛（见下方 AVO 参考）
 
 > Geo RL Loop 已完结（18轮，best L_val=0.5227，LLM synthesis 边际收益为负）。归档 `scripts/geo_*.py`
 
@@ -265,3 +268,66 @@ L = 0.4 * (1 - TPR) + 0.3 * FPR + 0.2 * (1 - capability) + 0.1 * category_varian
 ## 下次做什么
 ## 风险/问题
 ```
+
+---
+
+## AVO 进化参考（2026-03-28，英伟达论文）
+
+> 来源：arXiv 2603.24517，许冰/Terry Chen/Zhifan Ye。完整调研见 `nous/docs/avo-reference-20260328.md`
+
+### 核心思想
+
+AVO（Agentic Variation Operators）把 Agent 从"被动候选生成器"升级为"主动变异算子"：
+- **传统进化搜索**：LLM 每轮只输出一个候选，不能查文档、不能测试、不能迭代
+- **AVO**：Agent 自主查历史版本 + 领域KB + 评估工具，自己决定改什么、何时提交
+- 外层 Orchestrator 只做 fitness 评估和父代选择
+
+7 天无人工干预，在 Blackwell B200 上超越 cuDNN (+3.5%) 和 FlashAttention-4 (+10.5%)。
+
+### 对 Nous Loop 的直接影响
+
+**1. Evolution Log（最高优先级，已加入优先级队列 #6）**
+
+每轮 Step 6 Reflect 结束后，追加一条到 `nous/docs/evolution-log.jsonl`：
+
+```json
+{
+  "loop": 75,
+  "date": "2026-03-28",
+  "rules_changed": ["fact_extractor: tool_category_matching"],
+  "delta_metrics": {"tpr": +0.05, "fpr": -0.02, "L_val": -0.008},
+  "failure_cases_before": ["case_031", "case_044"],
+  "hypothesis": "按类别匹配工具名能覆盖 L1 漏掉的 8 个 sync/publish 类工具",
+  "outcome": "confirmed/refuted/partial",
+  "parent_loop": 74
+}
+```
+
+Step 1 读取这个文件（最近 10 条），Agent 就能知道演化历史，不再是信息孤岛。
+
+**2. 失败案例聚类（替代直觉判断）**
+
+AVO 的关键发现：Agent 做真实的微架构级推理（寄存器分配、流水线调度），不是随机变异。
+
+Nous 类比：每次 loop 在 Step 2 Critique 之前，先做一轮失败案例聚类：
+- 这批失败的 case 有没有系统性模式？（不是随机噪声）
+- 是 Fact Extractor 层的问题还是 Gate 层的问题？
+- T3 和 T6 的规则之间有没有干扰？
+
+**生成假设再提 diff**，不要直接跳到改代码。
+
+**3. 多 Fitness 验证（防过拟合）**
+
+AVO 的 MHA 优化 30 分钟就泛化到了 GQA。对应 Nous 的警示：
+
+每轮 fitness 评估必须覆盖至少 2 个数据集：
+- AgentHarm subset（当前 baseline）
+- Owner-Harm cases（当前 FPR 16%，是真正的弱点）
+
+单一 benchmark 高分 ≠ 泛化。
+
+### AVO 不适用的边界
+
+- **无限 loop 搜索**：AVO 跑 7 天是因为 kernel 编译成本固定。Nous 有 LLM 调用成本，不适合无限迭代
+- **大规模种群并行**：AVO 同时维护多个候选 kernel。Nous 用 Opus 成本太高，种群探索用 Sonnet/Kimi 跑候选，Opus 只做最终评估
+- **纯代码优化类比的局限**：AVO 是封闭域（GPU 性能），Nous 的 safety semantics 有领域理解要求，Agent 自主程度有上限，关键规则变更仍需人工 review

@@ -10,6 +10,7 @@
 设计用于 cron 每 5 分钟运行一次，14 天后产出完整 shadow 数据。
 """
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -22,7 +23,9 @@ from nous.triviality_filter import TrivialityConfig
 from nous.semantic_gate import SemanticGateConfig
 from nous.providers.openai_provider import create_openai_provider
 
-TRIGGER_LOG = Path.home() / ".openclaw/ontology-gate/trigger_log.jsonl"
+TRIGGER_LOG_DEFAULT = Path.home() / ".openclaw/ontology-gate/trigger_log.jsonl"
+# Allow override via env var for cross-machine usage (e.g. Mac reading Linux trigger_log via NAS)
+TRIGGER_LOG = Path(os.environ.get("NOUS_TRIGGER_LOG", str(TRIGGER_LOG_DEFAULT)))
 SHADOW_DIR = Path(__file__).parent.parent / "logs"
 SHADOW_FILE = SHADOW_DIR / "shadow_live.jsonl"
 OFFSET_FILE = SHADOW_DIR / ".shadow_offset"
