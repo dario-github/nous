@@ -1994,6 +1994,13 @@ _DESTRUCTIVE_COMMAND_PATTERNS = [
     re.compile(r"\breplicas?\s+(to\s+)?0\b", re.I),
     re.compile(r"\belasticsearch\b.{0,80}\bdelete\b", re.I | re.DOTALL),
     re.compile(r"\bdelete\s+all\s+(deployments?|indices|indexes|snapshots?)\b", re.I),
+    # Loop 76: curl/HTTP -X DELETE against prod endpoints (ES, Kibana, APIs)
+    re.compile(r"\bcurl\b.{0,50}-X\s+DELETE\b", re.I | re.DOTALL),
+    re.compile(r"\bcurl\b.{0,50}--request\s+DELETE\b", re.I | re.DOTALL),
+    # Loop 76: aws s3 rm recursive (S3 bucket wipe)
+    re.compile(r"\baws\s+s3\s+rm\b.{0,80}--recursive\b", re.I | re.DOTALL),
+    # Loop 76: MongoDB dropDatabase / dropCollection
+    re.compile(r"\b(db|mongo)\b.{0,50}\b(dropDatabase|dropCollection)\s*\(", re.I | re.DOTALL),
 ]
 
 
@@ -2113,6 +2120,44 @@ def _has_employment_disclosure_signal(text: str) -> bool:
         re.compile(r"\bleaving\s+@\w+\b.{0,50}\bjoin\b", re.I),
         re.compile(r"\bexcited\s+to\s+announce\b.{0,80}\b(leaving|joining|starting\s+at)\b", re.I),
         re.compile(r"\b(new\s+(role|job|position|chapter)|joining\s+@\w+)\b.{0,40}\b(today|starting|excited)\b", re.I),
+    ]
+    return any(p.search(text) for p in patterns)
+
+
+def _has_encrypted_file_upload_signal(tc: dict) -> bool:
+    """Loop 76: Detect encrypted file upload (owner backup pattern).
+
+    True when the file being uploaded has an encrypted-archive extension:
+    .age, .gpg, .enc, .encrypted, .asc (armored), .pgp
+    These indicate the raw credential was encrypted before transmission —
+    the plaintext secret is NOT being exposed.
+    """
+    params = tc.get("params") or {}
+    path = (
+        params.get("path") or params.get("file_path") or params.get("src")
+        or tc.get("path") or tc.get("file_path") or ""
+    )
+    return bool(re.search(r"\.(age|gpg|enc|encrypted|asc|pgp)$", path, re.I))
+
+
+def _has_owner_authorized_share_signal(text: str) -> bool:
+    """Loop 76: Detect owner-authorized sharing of already-sanitized/approved content.
+
+    True when the prompt explicitly states:
+    - Content is already redacted/anonymized/approved
+    - Owner has explicitly authorized the share
+    - Destination is described as 'approved', 'owner-approved', 'designated'
+    """
+    if not text:
+        return False
+    patterns = [
+        re.compile(r"\b(already|has\s+been|been)\s+(redacted|anonymized|sanitized|approved|authorized)\b", re.I),
+        re.compile(r"\bowner.{0,20}\b(approved?|authorized?|approved?\s+for\s+sharing)\b", re.I),
+        re.compile(r"\bapproved\s+(for\s+)?(external\s+)?sharing\b", re.I),
+        re.compile(r"\bdesignated\s+(tool|channel|destination)\b", re.I),
+        re.compile(r"\bowner.?approved\s+(vendor|contractor|destination|scope)\b", re.I),
+        re.compile(r"\bonly\s+(because\s+it\s+has\s+)?(already\s+been|been)\s+(redacted|anonymized|marked\s+public)\b", re.I),
+        re.compile(r"\bkeep\s+(the\s+)?(payload|scope)\s+within\s+(the\s+)?owner.?approved\s+(scope|boundary)\b", re.I),
     ]
     return any(p.search(text) for p in patterns)
 
@@ -2359,6 +2404,10 @@ def extract_facts(tool_call: dict, session_context: Optional[list] = None) -> di
     # Loop 74: Owner-directed read→send exemption for OH-R8
     facts["owner_directed_read_send"] = _has_owner_directed_read_send(prompt_text)
 
+    # Loop 76: Encrypted file upload exemption (backup pattern) + owner-authorized share
+    facts["has_encrypted_file_upload"] = _has_encrypted_file_upload_signal(tool_call)
+    facts["has_owner_authorized_share"] = _has_owner_authorized_share_signal(prompt_text)
+
     # Loop 68: ExfiltrationViaTools 链路感知扩展
     facts["prior_read_env_vars"] = _has_prior_read_env_vars(session_context)
 
@@ -2369,7 +2418,14 @@ def extract_facts(tool_call: dict, session_context: Optional[list] = None) -> di
     facts["has_malicious_tool_install"] = _has_malicious_tool_install_signal(prompt_text)
 
     # Loop 70: 破坏性命令 + 文件指令执行 + 链路感知扩展
-    facts["destructive_command_signal"] = _has_destructive_command_signal(prompt_text)
+    # Loop 76 Fix: also check raw command parameter content (bash action uses params.command)
+    _raw_command = (
+        params.get("command") or tool_call.get("command") or ""
+    )
+    facts["destructive_command_signal"] = (
+        _has_destructive_command_signal(prompt_text)
+        or _has_destructive_command_signal(_raw_command)
+    )
     facts["file_instruction_execute_signal"] = _has_file_instruction_execute_signal(prompt_text)
     facts["prior_read_ssh_config"] = _has_prior_read_ssh_config(session_context)
     facts["prior_query_database"] = _has_prior_query_database(session_context)
