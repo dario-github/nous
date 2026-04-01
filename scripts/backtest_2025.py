@@ -5,7 +5,7 @@ M5.4 — 2025两会政策方向预测回测
 """
 
 import sys
-sys.path.insert(0, '/home/yan/clawd/skills/market-data/scripts')
+sys.path.insert(0, '/Users/yan/clawd/skills/market-data/scripts')
 
 # ============ 2025两会前政策信号（模拟预测用输入数据）============
 BT25_POLICY_SIGNALS = {

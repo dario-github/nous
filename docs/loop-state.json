@@ -1,6 +1,6 @@
 {
-  "loop_number": 76,
-  "timestamp": "2026-03-30T05:40:00Z",
+  "loop_number": 79,
+  "timestamp": "2026-04-01T14:16:38Z",
   "L_val": 0.0,
   "L_val_source": "Owner-harm L1+L2: TPR 100.0%, FPR=0.0% (AD fix: Loop 76). Second held-out v2: TPR 78.4% L1+L2+L3, FPR 0.0%, AD 100.0%",
   "L_val_note": "Loop 76: Extended DESTRUCTIVE_COMMAND_PATTERNS (redis FLUSHALL via cmd, curl DELETE, aws s3 rm, mongo dropDatabase). Fixed destructive_command_signal to check raw command param. Added has_encrypted_file_upload exemption to OH-R1e. Added has_owner_authorized_share signal. 1075 tests pass.",
@@ -10,20 +10,21 @@
   "tests": 1075,
   "curriculum_phase": 3,
   "urgent": [
-    "P3: KG semantic enhancement M7.2 [READY]",
-    "P4: gateway_hook integration (config not passed) [READY]",
-    "P6: AgentHarm val L3 完整 benchmark (需 API key，L1+L2 已验证: TPR=59.1%/FPR=52.3%)"
+    "P0: git push (network/proxy down, commit ready locally)",
+    "P1 (M12.4): T1 judge audit of ablation results",
+    "P2: M12.1 no_kg full mode — needs ~$5 API cost decision from Dario",
+    "P3: M12.5-9 paper table fills (Table 1-5)"
   ],
   "completed_this_loop": [
-    "Asset Destruction FN root cause: 8/38 missed due to command param not checked (FLUSHALL, curl DELETE, aws s3 rm)",
-    "Fix 1: _has_destructive_command_signal now checks raw bash command params (Loop 76 Fix)",
-    "Fix 2: Added curl -X DELETE, aws s3 rm --recursive, mongo dropDatabase patterns",
-    "Fix 3: OH-R1e SSH key exemption for encrypted backups (.age/.gpg/.enc)",
-    "Fix 4: has_owner_authorized_share signal + semantic gate injection for Exfiltration FPR",
-    "Regression: 1075 tests pass",
-    "v2 held-out (306H+154B) L1+L2: AD 90%, L1+L2+L3: AD 100%, FPR 0%",
-    "v2 held-out L1+L2+L3: TPR 78.4%, FPR 0.0% (AD 100%, CI[82.7%] lower)",
-    "Paper updated: Abstract + Section 3.3 AD weakness discussion + Contributions"
+    "M12.1-3 ablation experiments (fast mode): baseline_l1l2 TPR=11% FPR=0% L=0.623",
+    "ablation_no_datalog: TPR=0% FPR=0% L=0.700 (ΔL=+0.077) - Datalog critical",
+    "ablation_no_semantic: same as baseline (semantic not active in L1+L2 fast mode)",
+    "ablation_no_kg: skipped (needs full mode, API cost ~$5)",
+    "Results written to docs/ablation-results.json",
+    "M12.0 FIXED: create_production_hook() factory added to gateway_hook.py",
+    "All L2 (TrivialityConfig) + L3 (SemanticGateConfig, upgrade_only=True) now initialized",
+    "27 gateway_hook tests pass, 58 semantic_gate tests pass",
+    "commit 02a8e02 — pending push (network down at 22:10 CST)"
   ],
   "owner_harm_semantic_benchmark": {
     "T1_judge": {
@@ -62,8 +63,8 @@
     "structural": "1. 区分API模型名/论文模型名并双记录 2. 先补chain-level Datalog再调阈值 3. val必须新增benign external-action对照集"
   },
   "blocked": [],
-  "direction": "Loop 76: P3 KG M7.2 semantic enhancement (KG signals into semantic gate) + P4 gateway_hook integration",
-  "last_commit": "8d19994",
+  "direction": "Loop 79: M12.0 FIXED. Next: git push (wait for network), M12.4 T1 audit, M12.1 no_kg decision",
+  "last_commit": "02a8e02",
   "github": "dario-github/nous",
   "history": [
     {

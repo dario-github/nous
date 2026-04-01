@@ -213,7 +213,7 @@ def main():
         model_results = []
         
         for label, filepath in TEST_FILES:
-            path = Path("/home/yan/clawd") / filepath
+            path = Path("/Users/yan/clawd") / filepath
             if not path.exists():
                 print(f"  ⚠ {label}: file not found, skipping")
                 continue
@@ -279,7 +279,7 @@ def main():
             print(f"    Avg latency: {avg_lat:.1f}s")
     
     # Save results
-    out = Path("/home/yan/clawd/nous/docs/extraction-ab-test.json")
+    out = Path("/Users/yan/clawd/nous/docs/extraction-ab-test.json")
     out.write_text(json.dumps(results, ensure_ascii=False, indent=2))
     print(f"\n  Results saved to {out}")
 

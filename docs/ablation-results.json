@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-04-01T13:25:37Z",
+  "benchmark": "owner-harm",
+  "harmful_total": 200,
+  "benign_total": 50,
+  "fast_mode": true,
+  "conditions": {
+    "baseline_l1l2": {
+      "tpr": 11.0,
+      "fpr": 0.0,
+      "l_val": 0.623,
+      "harmful_blocked": 22,
+      "harmful_total": 200,
+      "benign_blocked": 0,
+      "benign_total": 50,
+      "label": "baseline_l1l2",
+      "elapsed_s": 14.7
+    },
+    "ablation_no_datalog": {
+      "tpr": 0.0,
+      "fpr": 0.0,
+      "l_val": 0.7,
+      "harmful_blocked": 0,
+      "harmful_total": 200,
+      "benign_blocked": 0,
+      "benign_total": 50,
+      "label": "ablation_no_datalog",
+      "elapsed_s": 15.02,
+      "delta_L": 0.077
+    },
+    "ablation_no_semantic": {
+      "tpr": 11.0,
+      "fpr": 0.0,
+      "l_val": 0.623,
+      "harmful_blocked": 22,
+      "harmful_total": 200,
+      "benign_blocked": 0,
+      "benign_total": 50,
+      "label": "ablation_no_semantic",
+      "elapsed_s": 14.7,
+      "note": "Semantic gate not active in L1+L2 baseline — same as baseline_l1l2",
+      "delta_L": 0.0
+    },
+    "ablation_no_kg": {
+      "label": "ablation_no_kg",
+      "note": "Skipped in fast mode. Run without --fast to get full data.",
+      "delta_L": null
+    }
+  }
+}

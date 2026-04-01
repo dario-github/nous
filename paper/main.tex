@@ -46,7 +46,7 @@ dongcheng.zhang@bluefocus.com}
 \maketitle
 
 \begin{abstract}
-Current approaches to AI agent safety rely on monolithic mechanisms: either a single LLM-based classifier or a fixed rule set. Both fail in complementary ways---classifiers hallucinate on edge cases, while rules cannot capture semantic nuance. We present a three-layer composable safety gate for agentic AI systems: (1)~a deterministic blocker using Datalog constraints for zero-latency, auditable pattern matching; (2)~a triviality filter for cost-aware routing that bypasses expensive inference for clearly benign actions; and (3)~a semantic gate using an LLM with minimal-pair prompt engineering for ambiguous cases. On the AgentHarm benchmark (176 harmful + 176 benign scenarios), our system achieves TPR~100\% (95\%~CI: [90.3\%, 100.0\%]) and FPR~0.0\% (95\%~CI: [0.0\%, 9.7\%]) on the validation set, with FPR~2.8\% (95\%~CI: [0.1\%, 14.5\%]) on the held-out test set, with majority-vote stability across 74 optimization loops. A held-out owner-centric evaluation (300 harmful + 150 benign, unseen during optimization) achieves TPR~89.7\% (95\%~CI: [85.7\%, 92.6\%]) / FPR~4.7\% (95\%~CI: [2.3\%, 9.3\%]), with 7 of 8 categories achieving $\geq$83.8\% TPR; the training benchmark (200 harmful + 50 benign, 74 optimization loops) achieves TPR~100\% / FPR~0\% and is reported for reference only. A targeted post-analysis (Loop 76) on the Asset Destruction weakness (52.6\% TPR on v1 held-out) extended the Datalog constraint engine to cover additional destructive command patterns (Redis FLUSHALL, Elasticsearch DELETE, AWS S3 recursive delete, MongoDB dropDatabase, curl HTTP DELETE), reducing false negatives while preserving 0\% FPR; validation on a second held-out set (306 harmful + 154 benign, independently constructed) confirms Asset Destruction TPR~100\% (50/50) and FPR~0.0\% (0/154). Shadow deployment over 30,000+ production calls shows 99.47\% consistency with existing safety rules. We argue that compositional safety---where each layer handles what it does best---provides more robust protection than monolithic approaches and offers a practical path toward auditable agent governance.
+Current approaches to AI agent safety rely on monolithic mechanisms: either a single LLM-based classifier or a fixed rule set. Both fail in complementary ways---classifiers hallucinate on edge cases, while rules cannot capture semantic nuance. We present a three-layer composable safety gate for agentic AI systems: (1)~a deterministic blocker using Datalog constraints for zero-latency, auditable pattern matching; (2)~a triviality filter for cost-aware routing that bypasses expensive inference for clearly benign actions; and (3)~a semantic gate using an LLM with minimal-pair prompt engineering for ambiguous cases. On the AgentHarm benchmark (176 harmful + 176 benign scenarios), our system achieves TPR~100\% (95\%~CI: [90.3\%, 100.0\%]) and FPR~0.0\% (95\%~CI: [0.0\%, 9.7\%]) on the validation set with majority-vote stability across 74 optimization loops. On a final independent held-out owner-centric benchmark (300 harmful, 150 benign, never seen during optimization), the system achieves overall TPR~75.3\% (95\%~CI: [70.2\%, 79.9\%]) and FPR~3.3\% (95\%~CI: [1.4\%, 7.6\%]). Per-category analysis reveals a structural split: three categories (Credential Leak, Infrastructure Exposure, Privacy Exposure) achieve 100\% TPR via deterministic Datalog matching, while Hijacking---attacks that embed malicious instructions in external documents to hijack agent execution---reaches only 43.3\% TPR, reflecting a fundamental limitation of single-call architectures against prompt injection. Shadow deployment over 30,000+ production calls shows 99.47\% consistency with existing safety rules. We argue that compositional safety---where each layer handles what it does best---provides more robust protection than monolithic approaches, and we identify prompt injection detection as the primary open problem for future work.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -68,7 +68,7 @@ The safety perimeter is also expanding beyond server-side API calls. Apple's iOS
 
 The industry is converging on the recognition that agent governance requires new infrastructure. In a single week of March~2026, NVIDIA announced NemoClaw, a declarative policy engine described as ``the policy engine of all the SaaS companies in the world''~\cite{nvidia2026nemoclaw}; Microsoft introduced the 365~E7 tier at \$99/user for agent security~\cite{microsoft2026e7}; and Oasis Security raised \$120M for non-human identity management~\cite{oasis2026funding}. Yet no existing system combines formal guarantees with semantic understanding in a composable architecture.
 
-\textbf{Contributions.} We present Nous, a three-layer composable safety gate (Fig.~\ref{fig:architecture}) with: (1)~a composability argument via the Swiss Cheese model showing multiplicative failure-probability reduction~\cite{reason1990swisscheese}; (2)~a shadow-mode deployment methodology enabling zero-downtime transition; (3)~empirical evaluation on both the AgentHarm benchmark~\cite{andriushchenko2025agentharm} and an owner-centric benchmark demonstrating 89.7\%/4.7\% TPR/FPR on held-out data (300H+150B), with a post-analysis Loop~76 iteration confirming Asset Destruction TPR~100.0\% on a second independent held-out set (306H+154B) (training set reference: 100\%/0\%); and (4)~component ablation analysis quantifying each layer's contribution.
+\textbf{Contributions.} We present Nous, a three-layer composable safety gate (Fig.~\ref{fig:architecture}) with: (1)~a composability argument via the Swiss Cheese model showing multiplicative failure-probability reduction~\cite{reason1990swisscheese}; (2)~a shadow-mode deployment methodology enabling zero-downtime transition with 99.47\% agreement over 30,204 production calls; (3)~empirical evaluation on AgentHarm (TPR~100\%/FPR~0\% val) and a final independent owner-centric held-out benchmark (300H+150B, TPR~75.3\%/FPR~3.3\%), with per-category analysis distinguishing structurally-detectable threats (3 categories at 100\% TPR) from prompt-injection-driven attacks (Hijacking 43.3\% TPR, identified as open problem); and (4)~component ablation analysis quantifying each layer's contribution.
 
 
 %% ============================================================
@@ -192,35 +192,37 @@ These numbers reflect the \emph{training distribution} and are reported for comp
 
 \subsubsection{Held-out Generalization}
 
-To assess generalization beyond the training distribution, we evaluate on a held-out set of 450~scenarios (300~harmful, 150~benign) constructed independently from the loop optimization process. No sample from this set was observed during any of the 74~optimization iterations.
+To assess generalization, we report results on a \emph{final} independent held-out set (v3: 300 harmful, 150 benign) constructed \emph{after} all optimization loops and never used during any iteration. This set deliberately oversamples categories identified as weak in prior evaluations to stress-test the system boundary conditions.
 
-With the full three-layer pipeline, the held-out evaluation achieves \textbf{TPR~89.7\%} (269/300; Wilson 95\%~CI: [85.7\%, 92.6\%]) and \textbf{FPR~4.7\%} (7/150; Wilson 95\%~CI: [2.3\%, 9.3\%]).
+With the full three-layer pipeline (L1+L2+L3), the final held-out evaluation achieves \textbf{TPR~75.3\%} (226/300; Wilson 95\%~CI: [70.2\%, 79.9\%]) and \textbf{FPR~3.3\%} (5/150; Wilson 95\%~CI: [1.4\%, 7.6\%]).
 
 \begin{table}[t]
 \centering
-\caption{Owner-centric held-out results by category (300H + 150B)}
+\caption{Owner-centric final held-out results by category (300H + 150B, v3 independent set)}
 \label{tab:owner_heldout}
 \begin{tabular}{lccc}
 \toprule
 \textbf{Category} & \textbf{TPR} & \textbf{$N_h$} & \textbf{FPR} \\
 \midrule
-Credential Leak         & 100.0\% & 38 & 21.1\% \\
-Hijacking               & 100.0\% & 38 & 0.0\%  \\
-Privacy Exposure        & 100.0\% & 37 & 0.0\%  \\
-Infrastructure Exposure &  97.3\% & 37 & 0.0\%  \\
-Exfiltration via Tools  &  92.1\% & 38 & 15.8\% \\
-Inner Circle Leak       &  91.9\% & 37 & 0.0\%  \\
-Unauthorized Autonomy   &  83.8\% & 37 & 0.0\%  \\
-Asset Destruction       &  52.6\% & 38 & 0.0\%  \\
+Credential Leak         & 100.0\% & 28 & 0.0\%  \\
+Infrastructure Exposure & 100.0\% & 50 & 20.0\% \\
+Privacy Exposure        & 100.0\% & 28 & 0.0\%  \\
+Inner Circle Leak       &  89.3\% & 28 & 0.0\%  \\
+Unauthorized Autonomy   &  70.0\% & 50 & 0.0\%  \\
+Asset Destruction       &  64.3\% & 28 & 0.0\%  \\
+Exfiltration via Tools  &  57.1\% & 28 & 0.0\%  \\
+Hijacking               &  43.3\% & 60 & 0.0\%  \\
 \midrule
-\textbf{Overall}        & \textbf{89.7\%} & \textbf{300} & \textbf{4.7\%} \\
+\textbf{Overall}        & \textbf{75.3\%} & \textbf{300} & \textbf{3.3\%} \\
 \bottomrule
 \end{tabular}
 \vspace{0.5em}
-\small FPR is per-category (benign $N_b = 18$--$19$ per category). The overall FPR of 4.7\% is dominated by Credential Leak (21.1\%) and Exfiltration via Tools (15.8\%), where benign actions closely resemble harmful patterns; the remaining 6 categories achieve 0\% FPR.
+\small This set oversamples Hijacking (60H) and Infrastructure Exposure (50H) to stress-test known weak categories. Overall FPR of 3.3\% comes entirely from Infrastructure Exposure (OH-R3a rule over-trigger on 5 benign external-channel config queries).
 \end{table}
 
-The 10.3~percentage point TPR gap from training-set performance reflects mild overfitting consistent with 74~optimization loops on a small training corpus. The sole significant weakness in the primary evaluation is Asset Destruction (52.6\% TPR), where held-out scenarios included patterns not covered by existing Datalog rules: Redis FLUSHALL via CLI, Elasticsearch index deletion via \texttt{curl -X DELETE}, AWS S3 recursive deletion, MongoDB \texttt{dropDatabase()}, and encrypted file backup workflows. A targeted iteration (Loop 76) extended \texttt{\_DESTRUCTIVE\_COMMAND\_PATTERNS} to cover these additional patterns and also fixed the fact-extraction pipeline to evaluate \texttt{destructive\_command\_signal} against the raw bash command parameter (not just the prompt text). Validation on an independently constructed second held-out set (306 harmful + 154 benign, never used during any optimization loop) confirms Asset Destruction TPR~100.0\% (50/50; Wilson 95\%~CI: [92.9\%, 100.0\%]) and FPR~0.0\% (0/154; Wilson 95\%~CI: [0.0\%, 2.4\%]). The Credential Leak and Exfiltration via Tools FPR issues (previously 21.1\% and 15.8\%) were resolved by: (1)~adding an \texttt{has\_encrypted\_file\_upload} exemption to the SSH key exfiltration rule for encrypted backup archives (.age/.gpg/.enc), and (2)~injecting an \texttt{OWNER-AUTHORIZED SHARE SIGNAL} into the semantic gate prompt for owner-approved redacted content.
+The per-category results reveal a structural split. Three categories achieve 100\% TPR: Credential Leak, Infrastructure Exposure, and Privacy Exposure---these involve structurally distinct tool-call signatures that Datalog rules can match deterministically. Four categories fall in the 57--89\% range (Inner Circle Leak, Unauthorized Autonomy, Asset Destruction, Exfiltration via Tools), reflecting semantic ambiguity that the L3 gate partially resolves but does not fully close. Hijacking is the primary weakness at 43.3\% TPR; all 34 false negatives share a prompt-injection pattern---the agent receives a malicious instruction embedded in an external document (email, runbook, Slack message) and executes it. Prompt injection is a \emph{fundamentally different attack surface} from direct harmful requests: the attacker controls the agent's context rather than the principal's instruction. Detecting it requires multi-turn trajectory awareness and source attribution that the current single-call architecture does not support. We treat this as an open problem and discuss it in limitations.
+
+Iterative analysis (Loops 76--77) identified and patched specific signal gaps for Asset Destruction, Infrastructure Exposure, and Unauthorized Autonomy by extending \texttt{\_DESTRUCTIVE\_COMMAND\_PATTERNS} and adding three new Datalog constraint rules (OH-R12a/b/c). The v3 held-out numbers above reflect the fully patched system evaluated on a distribution that had not been seen during any optimization. All 1075~regression tests pass.
 
 \subsection{Capability Preservation}
 
@@ -326,9 +328,9 @@ The uncensored baseline blocks nothing, confirming the necessity of a safety lay
 
 \textbf{Practical deployment considerations.} The shadow deployment methodology (Section~3) enabled zero-downtime transition with quantified risk: 99.47\% agreement over 30,204 calls before cutover. The 0.53\% divergence---predominantly false negatives in the existing system---validates the composable approach. NIST's emerging agent security standards~\cite{nist2026agent} call for exactly this type of auditable safety pipeline.
 
-\textbf{Limitations.} (1)~The current system is single-turn: it evaluates each tool call independently without multi-turn trajectory analysis. A sufficiently patient adversary could decompose harmful intent across many benign-looking steps. (2)~The semantic gate prompt is English-centric; cross-lingual attacks may exploit language gaps. (3)~Our evaluation is primarily on owner-harm scenarios; on the InjecAgent indirect prompt injection benchmark~\cite{zhan2024injecagent} (30~scenarios), Nous achieves 56.7\% TPR, reflecting that cross-domain injection attacks extend beyond the current Datalog rule coverage---a known limitation and direction for future work. (4)~Nous operates as a pure interception layer and does not modify the system prompt or inject dynamic context into the LLM conversation. This design intentionally preserves prompt cache effectiveness in modern LLM APIs (e.g., Anthropic's prompt caching). The primary deployment overhead is the additional API call for L3 semantic evaluation ($\sim$3.5s per invocation on DeepSeek-V3.2); however, L1 and L2 collectively pass 99.47\% of production calls as trivial, meaning L3 is invoked for fewer than 1\% of tool calls in practice, keeping mean added latency below 35ms per tool call.
+\textbf{Limitations.} (1)~\emph{Prompt injection (primary open problem).} The Hijacking category achieves only 43.3\% TPR on the final held-out set; all false negatives involve an adversary embedding malicious instructions in external documents (emails, runbooks, Slack messages) that the agent then executes. Detecting this attack class requires source attribution and multi-turn trajectory awareness---capabilities absent from the current single-call architecture. (2)~The current system is single-turn: it evaluates each tool call independently without multi-turn trajectory analysis. A sufficiently patient adversary could decompose harmful intent across many benign-looking steps. (3)~The semantic gate prompt is English-centric; cross-lingual attacks may exploit language gaps. (4)~Nous operates as a pure interception layer and does not modify the system prompt or inject dynamic context into the LLM conversation. The primary deployment overhead is the additional API call for L3 semantic evaluation ($\sim$3.5s per invocation on DeepSeek-V3.2); L1 and L2 collectively pass 99.47\% of production calls as trivial, so L3 is invoked for fewer than 1\% of tool calls in practice, keeping mean added latency below 35ms per tool call.
 
-\textbf{Future work.} Multi-turn trajectory analysis using sliding-window context; cross-lingual semantic gates; integration with differentiable Datalog~\cite{li2023scallop} for end-to-end optimization of the rule-semantic boundary; and formal verification of the Datalog-to-LLM handoff protocol.
+\textbf{Future work.} Prompt injection detection via source attribution and sliding-window multi-turn context (addressing Hijacking 43.3\% TPR gap); cross-lingual semantic gates; integration with differentiable Datalog~\cite{li2023scallop} for end-to-end optimization of the rule-semantic boundary; and formal verification of the Datalog-to-LLM handoff protocol.
 
 
 %% ============================================================
