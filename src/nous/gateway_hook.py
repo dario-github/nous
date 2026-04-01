@@ -304,3 +304,61 @@ def _summarize_tool_call(tool_call: dict, max_len: int = 100) -> str:
     except Exception:
         s = str(tool_call)
     return s[:max_len] + ("..." if len(s) > max_len else "")
+
+
+def create_production_hook(
+    shadow_mode: bool = True,
+    db: Optional[NousDB] = None,
+    constraints_dir: Optional[Path] = None,
+    **kwargs,
+) -> NousGatewayHook:
+    """工厂函数：创建带 L2+L3 配置的 production-ready hook。
+
+    自动从环境变量读取 NOUS_SEMANTIC_MODEL（默认 DeepSeek-V3.2）。
+    L3 semantic gate 默认启用 shadow mode + upgrade_only=True（Loop 73 设定）。
+
+    M12.0 修复：直接 new NousGatewayHook() 时 triviality_config/semantic_config 均为 None，
+    导致 L2/L3 在 production hook 场景下不激活。使用此工厂函数确保三层全部激活。
+
+    Args:
+        shadow_mode:      True = 只记录不拦截（默认）；False = 真正拦截
+        db:               NousDB 实例（可选）
+        constraints_dir:  约束目录（None = 使用默认）
+        **kwargs:         其余参数传给 NousGatewayHook
+
+    Returns:
+        NousGatewayHook with L2 TrivialityConfig + L3 SemanticGateConfig initialized.
+    """
+    import os
+    from nous.triviality_filter import TrivialityConfig
+    from nous.semantic_gate import SemanticGateConfig
+
+    triviality_cfg = TrivialityConfig()
+
+    sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", "DeepSeek-V3.2")
+    try:
+        from nous.providers.openai_provider import create_openai_provider
+        provider = create_openai_provider(model=sem_model)
+        l3_enabled = True
+    except Exception:
+        provider = None
+        l3_enabled = False
+        logger.warning("[create_production_hook] L3 semantic provider init failed, L3 disabled")
+
+    semantic_cfg = SemanticGateConfig(
+        enabled=l3_enabled,
+        mode="shadow",          # shadow: 记录不升级 verdict
+        model=sem_model,
+        provider=provider,
+        block_upgrade_threshold=0.85,
+        upgrade_only=True,      # Loop 73: 只允许 upgrade，禁止 downgrade
+    )
+
+    return NousGatewayHook(
+        shadow_mode=shadow_mode,
+        db=db,
+        constraints_dir=constraints_dir,
+        triviality_config=triviality_cfg,
+        semantic_config=semantic_cfg,
+        **kwargs,
+    )
