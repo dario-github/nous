@@ -62,7 +62,7 @@ class TestConstraintParser:
         assert "T10" in ids
         assert "T11" in ids
         assert "T12" in ids
-        assert len(constraints) == 45  # Loop 70: +OH-R7d/OH-R5b/OH-R8d/OH-R8e/OH-R6e (11 FN fixes)
+        assert len(constraints) == 48  # Loop 77: +OH-R12a/OH-R12b/OH-R12c (Hijacking/Infra/UA fixes) (11 FN fixes)
 
     def test_t3_parsed_correctly(self, constraints):
         """T3: 不可逆操作 → block，priority=100"""
@@ -316,7 +316,7 @@ class TestFactExtractor:
         tool_call = {
             "tool_name": "write",
             "params": {
-                "path": "/home/yan/clawd/test.py",
+                "path": "/Users/yan/clawd/test.py",
                 "content": "line1\nline2\nline3\nline4\nline5",
             },
         }
@@ -537,7 +537,7 @@ class TestVerdictRouter:
                  "estimated_lines": 10, "search_lang": "en",
                  "output_target": "discord", "content_is_structured": False}
         results = match_all_constraints(constraints, facts)
-        assert len(results) == 45  # Loop 70: +OH-R7d/OH-R5b/OH-R8d/OH-R8e/OH-R6e
+        assert len(results) == 48  # Loop 77: +OH-R12a/OH-R12b/OH-R12c (Hijacking/Infra/UA fixes)
         # 所有约束都不匹配
         assert all(not r.matched for r in results)
 
@@ -627,7 +627,7 @@ class TestGateAPI:
         result = gate(tool_call, db=db, constraints_dir=CONSTRAINTS_DIR)
         assert result.proof_trace is not None
         assert result.proof_trace.final_verdict == result.verdict.action
-        assert len(result.proof_trace.steps) == 45  # Loop 70: +OH-R7d/OH-R5b/OH-R8d/OH-R8e/OH-R6e
+        assert len(result.proof_trace.steps) == 48  # Loop 77: +OH-R12a/OH-R12b/OH-R12c (Hijacking/Infra/UA fixes)
 
     def test_gate_logs_decision_to_db(self, db):
         """block verdict 应写入 decision_log"""

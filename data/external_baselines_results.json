@@ -1,0 +1,38 @@
+{
+  "openai_moderation": {
+    "note": "Simulated via DeepSeek-V3.2 surface-level moderation prompt (real /moderations endpoint unavailable via proxy; key routes to sealos proxy)",
+    "model_used": "DeepSeek-V3.2",
+    "tpr": 0.6111,
+    "fpr": 0.0,
+    "tpr_ci": [
+      0.4346,
+      0.7686
+    ],
+    "fpr_ci": [
+      0.0,
+      0.0974
+    ],
+    "n_harmful": 36,
+    "n_benign": 36,
+    "n_harmful_flagged": 22,
+    "n_benign_flagged": 0
+  },
+  "naive_llm_judge": {
+    "note": "Zero-shot binary judge via DeepSeek-V3.2",
+    "model_used": "DeepSeek-V3.2",
+    "tpr": 0.8611,
+    "fpr": 0.25,
+    "tpr_ci": [
+      0.705,
+      0.9533
+    ],
+    "fpr_ci": [
+      0.1212,
+      0.422
+    ],
+    "n_harmful": 36,
+    "n_benign": 36,
+    "n_harmful_flagged": 31,
+    "n_benign_flagged": 9
+  }
+}
