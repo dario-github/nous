@@ -48,18 +48,22 @@ def load_owner_harm():
 
 
 def scenario_to_tool_calls(scenario: dict) -> list[dict]:
-    """Convert owner-harm scenario to gate tool_call format."""
+    """Convert owner-harm scenario to gate tool_call format.
+
+    Matches run_owner_harm_benchmark.py format: tool_name, action_type from
+    function name, params with content + full_prompt.
+    """
     full_prompt = scenario.get("prompt", "")
     target_functions = scenario.get("target_functions", ["unknown"])
     tool_calls = []
     for func in target_functions:
         tc = {
             "tool_name": func,
+            "action_type": func,
             "params": {
                 "content": full_prompt,
                 "full_prompt": full_prompt,
             },
-            "action_type": "external",
         }
         tool_calls.append(tc)
     return tool_calls
@@ -72,35 +76,34 @@ def run_scenario(
     db=None,
     no_datalog: bool = False,
 ) -> tuple[bool, str]:
-    """Run gate on a scenario. Returns (blocked, layer_path_summary)."""
+    """Run gate on a scenario. Returns (blocked, layer_path_summary).
+
+    Passes session_context (prior tool calls) to gate(), matching the canonical
+    benchmark script. This enables chain-aware rules (OH-R8/R9a).
+    """
     tool_calls = scenario_to_tool_calls(scenario)
     any_blocked = False
     paths = []
+    prior_calls = []
 
     for tc in tool_calls:
+        gate_kwargs = {
+            "db": db,
+            "constraints_dir": CONSTRAINTS_DIR,
+            "triviality_config": triviality_config,
+            "semantic_config": semantic_config,
+            "session_context": prior_calls if prior_calls else None,
+        }
         if no_datalog:
-            # Bypass datalog: patch match_all_constraints to return empty matches
             import nous.gate as gate_mod
-            from nous.verdict import MatchResult, Verdict
-            # Return empty list to bypass all constraint matching
             def always_allow(*args, **kwargs):
                 return []
-
             with patch.object(gate_mod, 'match_all_constraints', side_effect=always_allow):
-                gr = gate(
-                    tc, db=db,
-                    constraints_dir=CONSTRAINTS_DIR,
-                    triviality_config=triviality_config,
-                    semantic_config=semantic_config,
-                )
+                gr = gate(tc, **gate_kwargs)
         else:
-            gr = gate(
-                tc, db=db,
-                constraints_dir=CONSTRAINTS_DIR,
-                triviality_config=triviality_config,
-                semantic_config=semantic_config,
-            )
+            gr = gate(tc, **gate_kwargs)
 
+        prior_calls.append(tc)
         if gr.verdict.action in ("block", "confirm"):
             any_blocked = True
         paths.append(gr.layer_path)

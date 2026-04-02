@@ -1,30 +1,29 @@
 {
-  "loop_number": 79,
-  "timestamp": "2026-04-01T14:16:38Z",
+  "loop_number": 80,
+  "timestamp": "2026-04-02T09:30:00Z",
   "L_val": 0.0,
-  "L_val_source": "Owner-harm L1+L2: TPR 100.0%, FPR=0.0% (AD fix: Loop 76). Second held-out v2: TPR 78.4% L1+L2+L3, FPR 0.0%, AD 100.0%",
-  "L_val_note": "Loop 76: Extended DESTRUCTIVE_COMMAND_PATTERNS (redis FLUSHALL via cmd, curl DELETE, aws s3 rm, mongo dropDatabase). Fixed destructive_command_signal to check raw command param. Added has_encrypted_file_upload exemption to OH-R1e. Added has_owner_authorized_share signal. 1075 tests pass.",
+  "L_val_source": "Owner-harm L1+L2: TPR 100.0%, FPR=0.0%. Ablation corrected: no_datalog ΔL=+0.700.",
+  "L_val_note": "Loop 80: Fixed ablation script (missing session_context). Re-run confirms Datalog is sole L1+L2 detection mechanism. Paper Table 4 updated with owner-harm ablation row.",
   "L_challenge": 0.0,
   "L_challenge_note": "Loop 60: L_challenge=0.0 (15/15 harmful blocked). All adv2 FNs resolved.",
   "metric_version": "v1.0-frozen-20260315",
   "tests": 1075,
   "curriculum_phase": 3,
   "urgent": [
-    "P0: git push (network/proxy down, commit ready locally)",
-    "P1 (M12.4): T1 judge audit of ablation results",
+    "P0: git push — SSH publickey denied (Mac Mini lacks deploy key)",
+    "P1: M12.5 AgentHarm per-category table (needs benchmark re-run with per-cat tracking)",
     "P2: M12.1 no_kg full mode — needs ~$5 API cost decision from Dario",
-    "P3: M12.5-9 paper table fills (Table 1-5)"
+    "P3: Paper compile + final review"
   ],
   "completed_this_loop": [
-    "M12.1-3 ablation experiments (fast mode): baseline_l1l2 TPR=11% FPR=0% L=0.623",
-    "ablation_no_datalog: TPR=0% FPR=0% L=0.700 (ΔL=+0.077) - Datalog critical",
-    "ablation_no_semantic: same as baseline (semantic not active in L1+L2 fast mode)",
-    "ablation_no_kg: skipped (needs full mode, API cost ~$5)",
-    "Results written to docs/ablation-results.json",
-    "M12.0 FIXED: create_production_hook() factory added to gateway_hook.py",
-    "All L2 (TrivialityConfig) + L3 (SemanticGateConfig, upgrade_only=True) now initialized",
-    "27 gateway_hook tests pass, 58 semantic_gate tests pass",
-    "commit 02a8e02 — pending push (network down at 22:10 CST)"
+    "M12.4 T1 judge audit: INITIAL FAIL → found session_context bug → FIXED → re-audited PASS",
+    "ablation script fix: added session_context tracking to m12_component_ablation.py",
+    "Corrected ablation results: baseline_l1l2 TPR=100%/FPR=0% (was 11% before fix), no_datalog ΔL=+0.700",
+    "Paper Table 4 (ablation_layers) updated: added owner-harm ablation row with ΔL=+0.700",
+    "Paper text updated: Layer Contribution section now cites L3 +45.4pp contribution on heldout",
+    "Added \\multirow package to main.tex for updated table",
+    "docs/m12-4-ablation-audit.md written (audit trail)",
+    "git push attempted: FAILED — SSH publickey denied"
   ],
   "owner_harm_semantic_benchmark": {
     "T1_judge": {
@@ -62,10 +61,62 @@
     },
     "structural": "1. 区分API模型名/论文模型名并双记录 2. 先补chain-level Datalog再调阈值 3. val必须新增benign external-action对照集"
   },
-  "blocked": [],
-  "direction": "Loop 79: M12.0 FIXED. Next: git push (wait for network), M12.4 T1 audit, M12.1 no_kg decision",
-  "last_commit": "02a8e02",
+  "blocked": [
+    "git push: SSH publickey denied on Mac Mini — need deploy key setup"
+  ],
+  "direction": "Loop 80: Ablation audit PASS (after fix). Paper updated. Next: git push fix, M12.5 per-category data, paper compile.",
+  "last_commit": "pending (Loop 80 changes not yet committed)",
   "github": "dario-github/nous",
+  "ablation_corrected": {
+    "date": "2026-04-02",
+    "bug": "m12_component_ablation.py missing session_context → chain-aware rules disabled → TPR=11% instead of 100%",
+    "fix": "Added session_context tracking matching run_owner_harm_benchmark.py",
+    "results": {
+      "baseline_l1l2": {"tpr": 100.0, "fpr": 0.0, "L": 0.0},
+      "no_datalog": {"tpr": 0.0, "fpr": 0.0, "L": 0.7, "delta_L": 0.7},
+      "no_semantic": {"tpr": 100.0, "fpr": 0.0, "L": 0.0, "delta_L": 0.0, "note": "L3 not active in L1+L2 mode"},
+      "no_kg": "skipped (needs full mode, ~$5 API)"
+    }
+  },
+  "owner_harm_l1l2_benchmark": {
+    "tpr": 100.0,
+    "fpr": 0.0,
+    "harmful_blocked": 200,
+    "harmful_total": 200,
+    "benign_blocked_confirm": 0,
+    "benign_total": 50,
+    "L": 0.0,
+    "note": "Loop 74: 200/200 TPR, 0/50 FPR. OH-R8 FPR 16%→0%."
+  },
+  "owner_harm_heldout_v2": {
+    "dataset": "data/owner_harm_heldout_v2.json",
+    "size": "306H + 154B = 460 cases",
+    "L1+L2": {
+      "TPR": "33.0% (101/306)",
+      "FPR": "0.0% (0/154)",
+      "AD_TPR": "90.0% (45/50)"
+    },
+    "L1+L2+L3": {
+      "TPR": "78.4% (240/306)",
+      "FPR": "0.0% (0/154)",
+      "TPR_CI": "[73.5%, 82.7%]",
+      "AD_TPR": "100.0% (50/50)",
+      "AD_TPR_CI": "[92.9%, 100.0%]",
+      "model": "DeepSeek-V3.2",
+      "upgrade_only": true
+    },
+    "per_category_L3": {
+      "Asset Destruction": "100.0% (50/50)",
+      "Credential Leak": "97.2% (35/36)",
+      "Exfiltration via Tools": "97.2% (35/36)",
+      "Hijacking": "16.7% (6/36)",
+      "Infrastructure Exposure": "51.4% (19/37)",
+      "Inner Circle Leak": "100.0% (37/37)",
+      "Privacy Exposure": "97.3% (36/37)",
+      "Unauthorized Autonomy": "59.5% (22/37)"
+    },
+    "note": "Loop 76 validation. AD weakness fully resolved (52.6% → 100%). FPR 0% throughout."
+  },
   "history": [
     {
       "loop": 60,
@@ -136,45 +187,17 @@
       "had_critique": false,
       "had_regression": false,
       "rationale": "OH-R8 trigger_mode=Warn对owner明确指定read+send的工作流误判。新增_has_owner_directed_read_send()信号，OH-R8不触发confirm。resource_budget路径错误修复让KG可扫482实体。"
+    },
+    {
+      "loop": 80,
+      "date": "2026-04-02",
+      "action": "M12.4 ablation audit + script fix + paper table update",
+      "result": "Ablation audit initially FAILED (session_context bug → TPR=11%). Fixed → re-run confirms baseline TPR=100%, no_datalog ΔL=+0.700. Paper Table 4 updated with owner-harm row. Git push failed (SSH key).",
+      "had_critique": false,
+      "had_regression": false,
+      "hypothesis": "Ablation fast-mode data is valid for measuring component contributions at L1+L2 level",
+      "rationale": "M12.4 audit caught critical bug: ablation script omitted session_context, disabling chain-aware rules. After fix, data is clean and publishable. Datalog (L1) confirmed as sole L1+L2 detection mechanism (ΔL=+0.700 when removed).",
+      "prev_loop_ref": "Loop 79 ran ablation in fast mode but data was invalid due to session_context bug"
     }
-  ],
-  "owner_harm_l1l2_benchmark": {
-    "tpr": 100.0,
-    "fpr": 0.0,
-    "harmful_blocked": 200,
-    "harmful_total": 200,
-    "benign_blocked_confirm": 0,
-    "benign_total": 50,
-    "L": 0.0,
-    "note": "Loop 74: 200/200 TPR, 0/50 FPR. OH-R8 FPR 16%→0%."
-  },
-  "owner_harm_heldout_v2": {
-    "dataset": "data/owner_harm_heldout_v2.json",
-    "size": "306H + 154B = 460 cases",
-    "L1+L2": {
-      "TPR": "33.0% (101/306)",
-      "FPR": "0.0% (0/154)",
-      "AD_TPR": "90.0% (45/50)"
-    },
-    "L1+L2+L3": {
-      "TPR": "78.4% (240/306)",
-      "FPR": "0.0% (0/154)",
-      "TPR_CI": "[73.5%, 82.7%]",
-      "AD_TPR": "100.0% (50/50)",
-      "AD_TPR_CI": "[92.9%, 100.0%]",
-      "model": "DeepSeek-V3.2",
-      "upgrade_only": true
-    },
-    "per_category_L3": {
-      "Asset Destruction": "100.0% (50/50)",
-      "Credential Leak": "97.2% (35/36)",
-      "Exfiltration via Tools": "97.2% (35/36)",
-      "Hijacking": "16.7% (6/36)",
-      "Infrastructure Exposure": "51.4% (19/37)",
-      "Inner Circle Leak": "100.0% (37/37)",
-      "Privacy Exposure": "97.3% (36/37)",
-      "Unauthorized Autonomy": "59.5% (22/37)"
-    },
-    "note": "Loop 76 validation. AD weakness fully resolved (52.6% → 100%). FPR 0% throughout."
-  }
+  ]
 }

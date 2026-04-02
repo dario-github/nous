@@ -13,6 +13,7 @@
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{booktabs}
+\usepackage{multirow}
 \usepackage{hyperref}
 \usepackage{listings}
 \usepackage{balance}
@@ -245,23 +246,27 @@ To quantify each layer's contribution, we measure performance with individual la
 
 \begin{table}[t]
 \centering
-\caption{Layer ablation on AgentHarm val (36h + 36b)}
+\caption{Layer ablation on AgentHarm val (36h + 36b) and owner-harm training (200h + 50b)}
 \label{tab:ablation_layers}
-\begin{tabular}{lccc}
+\begin{tabular}{llccc}
 \toprule
-\textbf{Configuration} & \textbf{TPR} & \textbf{FPR} & \textbf{$L$} \\
+\textbf{Benchmark} & \textbf{Configuration} & \textbf{TPR} & \textbf{FPR} & \textbf{$L$} \\
 \midrule
-Full system (L1+L2+L3)     & 100.0\% & 0.0\%  & 0.000 \\
-L1+L2 only (no semantic)   & 55.6\%  & 47.2\% & 0.453 \\
-L1 only (no triviality)    & 55.6\%  & 47.2\% & 0.453 \\
-L3 only (semantic only)    & ---     & ---    & --- \\
+\multirow{3}{*}{AgentHarm}
+ & Full system (L1+L2+L3)     & 100.0\% & 0.0\%  & 0.000 \\
+ & L1+L2 only (no semantic)   & 55.6\%  & 47.2\% & 0.453 \\
+ & L1 only (no triviality)    & 55.6\%  & 47.2\% & 0.453 \\
+\midrule
+\multirow{2}{*}{Owner-harm}
+ & Full system (L1+L2)        & 100.0\% & 0.0\%  & 0.000 \\
+ & No Datalog ($-$L1)         & 0.0\%   & 0.0\%  & 0.700 \\
 \bottomrule
 \end{tabular}
 \vspace{0.5em}
-\small L1 without L3 catches structural patterns but cannot disambiguate semantic intent, causing high FPR. L2 (triviality filter) primarily affects latency, not accuracy.
+\small On AgentHarm, L1 without L3 catches structural patterns but cannot disambiguate semantic intent (high FPR). On owner-harm, L1 (Datalog) is the sole detection mechanism: removing it causes complete detection loss ($\Delta L = +0.700$). L2 (triviality filter) primarily affects latency, not accuracy.
 \end{table}
 
-On the owner-centric benchmark, the picture inverts: L1 alone achieves 100\%/0\% (Table~\ref{tab:owner_harm}), as chain-aware Datalog rules directly encode owner-harm patterns. The semantic gate is never invoked. This demonstrates that each layer dominates different threat categories: L1 for structurally detectable patterns, L3 for semantically ambiguous cases.
+On the owner-centric benchmark, the picture inverts: L1 alone achieves 100\%/0\% (Table~\ref{tab:owner_harm}), as chain-aware Datalog rules directly encode owner-harm patterns. Removing Datalog entirely causes complete detection failure ($\Delta L = +0.700$; Table~\ref{tab:ablation_layers}), confirming that L1 is the sole detection mechanism for structurally detectable owner-harm threats. The semantic gate (L3) is never invoked for the training set but contributes $+$45.4 percentage points of TPR on the held-out set (33.0\% $\to$ 78.4\%; Table~\ref{tab:owner_heldout}), demonstrating that each layer dominates different threat categories: L1 for structurally detectable patterns, L3 for semantically ambiguous cases.
 
 \subsection{System Configuration Sensitivity}
 
