@@ -6,3 +6,7 @@ dist/
 .env
 *.db
 src/data/
+
+# large benchmark datasets
+benchmarks/data/longmemeval_s_cleaned.json
+benchmarks/data/longmemeval_s_cleaned.json.gz
