@@ -370,7 +370,64 @@ Auto Research v1 的典型问题：
 
 ---
 
-## 5. 反过拟合机制
+## 5. 关键计划双审计机制
+
+关键计划默认必须经过 **Gemini 3.1 Pro + Opus** 双模型批判审计，不能只过单模型。
+
+### 5.1 什么算“关键计划”
+
+以下任一命中，即视为关键计划：
+
+- 改变研究主方向
+- 改变论文主叙事 / target venue
+- 启动新的高成本实验线
+- 修改主评分器 / 主验收口径 / holdout 设计
+- 改写长期 playbook / Stable Learning 准入规则
+- 引入新的实验室角色、gate、核心 protocol
+
+### 5.2 双审计分工
+
+#### Gemini 3.1 Pro
+
+负责：
+
+- 外部资料对照
+- 大上下文一致性检查
+- 漏掉的重要相关工作 / 反例 / alternative framing
+- 研究路线是否脱离 SOTA
+
+#### Opus
+
+负责：
+
+- 关键论证链是否站得住
+- 方案内部矛盾
+- reviewer 视角的攻击面
+- 计划是否其实在自嗨 / 过拟合 / 假创新
+
+### 5.3 双审计输出要求
+
+每次双审计至少输出：
+
+- strongest case for the plan
+- strongest case against the plan
+- missing evidence
+- kill / continue / revise recommendation
+
+### 5.4 通过条件
+
+关键计划只有在以下条件满足时才能晋级执行：
+
+1. Gemini 3.1 Pro 完成外部一致性与 SOTA 对照审计
+2. Opus 完成批判性 / reviewer 视角审计
+3. 两者的关键反对意见都被显式记录
+4. Sponsor 明确选择：continue / revise / stop
+
+若只完成单边审计，则只能视为“草案”，不能视为正式计划。
+
+---
+
+## 6. 反过拟合机制
 
 Auto Research v2 必须默认内置以下反过拟合设计。
 

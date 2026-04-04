@@ -309,7 +309,30 @@ Critic 默认检查：
 
 ---
 
-## 7. 默认运行规则
+## 7. 关键计划双审计规则
+
+从 Bootstrap 开始，以下内容默认进入 **Gemini 3.1 Pro + Opus 双审计**：
+
+- 新实验室结构方案
+- 新方法论闭环
+- 新主研究方向
+- 新 target venue / 主叙事切换
+- 高成本实验计划
+- 改动主评分器 / holdout / stable learning 准入规则
+
+默认流程：
+
+1. 先由 Conductor 形成计划草案
+2. Gemini 3.1 Pro 做外部资料 / SOTA / 大上下文审计
+3. Opus 做批判性 / reviewer 视角 / 内部逻辑审计
+4. 汇总分歧与共识
+5. Sponsor 决定 continue / revise / stop
+
+没有双审计的关键计划，不进入正式执行。
+
+---
+
+## 8. 默认运行规则
 
 ### Rule 1：一次只押 1 个主问题
 
