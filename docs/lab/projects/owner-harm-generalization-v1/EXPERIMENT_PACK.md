@@ -2,71 +2,82 @@
 
 ## 1. 目标 hypothesis
 
-- **Hypothesis IDs**：H1 vs H2
-- **要验证的关键差异**：KG context 在 owner-harm v3 held-out 上是否带来可测的泛化增益，还是 semantic layer 本身已承担主要收益。
+- **Hypothesis IDs**：H1 vs H2（H3 为资源分配约束）
+- **要验证的关键差异**：34 个 Hijacking false negatives 到底主要是 **当前单次调用 gate 的架构性边界**，还是大量属于 **当前架构内本可解决的 addressable failures**。
 
-## 2. 最小实验设计
+## 2. 最小研究设计
 
-- **数据 / 任务**：
-  - owner-harm v3 held-out（300 harmful + 150 benign）
-  - 按既有 held-out protocol 跑完整三层 gate
-- **baseline**：
-  1. `with_kg`：当前完整配置（L1+L2+L3 + KG/Cozo context）
-  2. `no_kg`：保持其他条件不变，仅禁用 KG / db context
-- **ablation**：
-  - 主对照：with_kg vs no_kg on held-out
-  - 次级归因：按 held-out 8 个子类输出 per-category TPR / FP 变化
-- **hidden holdout / 外部验证**：
-  - 当前 v3 held-out 视为验证集，不允许为其结果新增规则
-  - 若结果支持新叙事，只允许改 paper，不允许改 held-out 任务定义
+- **研究对象**：
+  - owner-harm v3 held-out 中全部 Hijacking false negatives（当前基数：34）
+- **核心任务**：
+  1. 逐例复盘每个 FN 的输入形态、信息流路径、恶意指令嵌入方式、gate 当时可见内容
+  2. 为每例标注：
+     - `structural`: 关键危险信号不在当前单次 gate 的可见范围内
+     - `addressable`: 关键危险信号已可见，但当前实现未充分利用
+     - `uncertain`: 需要更多实现细节才能下判断
+  3. 把 34 例归纳为 reviewer-facing taxonomy：
+     - file-embedded injection
+     - cross-step / deferred malicious intent
+     - tool-mediated hidden context
+     - instruction laundering / role indirection
+     - other
+- **对照 / 证伪方式**：
+  - 若大多数样本被标为 `structural`，则支持 H1
+  - 若大量样本被标为 `addressable`，则支持 H2，并削弱当前 paper 的边界叙事
 
 ## 3. 执行方式
 
-- **脚本 / 命令**：
-  - 优先复用现有 benchmark runner / `m12_component_ablation.py` 的安全修正版
-  - 必须确保 provider 注入逻辑与已修复版本一致，避免 FAIL_OPEN 假阳性/假阴性
-- **依赖**：
-  - semantic gate provider 可用
-  - held-out 数据可读
-  - 若 `with_kg` 需要 Cozo / embedded KG，需先确认本机依赖状态
-- **预估时间**：
-  - no_kg held-out：中等
-  - with_kg held-out：取决于 Cozo/KG 依赖恢复情况
-- **预估成本**：
-  - 属于本周已批准付费实验窗口内
+- **输入材料**：
+  - held-out Hijacking FN 样本
+  - Loop 82/83 日志
+  - 当前 paper 的方法与 limitations 表述
+- **分析协议**：
+  - 先按“gate 实际看到了什么”做可见性分析，再做失败机制归因
+  - 禁止先假设“这一定是 structural”，必须逐例给出证据
+  - 对每例至少写出：
+    - gate 可见信号
+    - gate 不可见但决定性信号
+    - 为什么当前架构能/不能解决
+- **实现依赖**：
+  - 不要求新跑高成本 benchmark
+  - 优先复用现有日志、样本、结果表
 
 ## 4. 成功 / 失败判据
 
 - **成功判据**：
-  1. 得到 with_kg 与 no_kg 在 held-out 上的可复现对照结果
-  2. 结果足以支持以下三种结论之一：
-     - KG 明显帮助 held-out generalization
-     - KG 无显著帮助
-     - KG 仅对少数子类有帮助
-  3. 可将结论写入 paper 的 contribution / limitation / discussion，而不是只停留在内部日志
+  1. 形成覆盖 34 例的可审计 taxonomy
+  2. 能支持 paper 中一条明确、诚实、可防 reviewer 攻击的句子：
+     - 要么“这确实是当前架构边界”
+     - 要么“并非纯架构边界，我们之前说得太满了”
+  3. 给出一个最小架构扩展方向草图（例如 taint tracking / content-aware gating），而不是空泛 future work
 - **失败判据**：
-  1. 依赖/脚本问题导致无法得到可信 with_kg 结果
-  2. 结果存在 provider 注入/FAIL_OPEN 一类实现污染，无法解释
-  3. 为了追求结果，流程开始诱导修补 held-out 规则
+  1. 只能给模糊印象，无法逐例回链
+  2. taxonomy 依赖主观描述，没有样本级证据
+  3. 为了让叙事好看，偷偷把 addressable failures 归进 structural
 - **提前停止条件**：
-  1. 如果 `with_kg` 依赖无法在受控时间内恢复，则先产出“no_kg 已证 + with_kg blocked by dependency”的审计结论
-  2. 如果结果解释需要修改 holdout 定义或补规则，则立即停止并记为 overfitting risk
+  1. 如果拿不到逐例样本或关键日志，先产出“证据链不足”的审计结论
+  2. 如果分析很快发现大部分案例是当前架构可见且可解，则立即停止“强边界”叙事，转为实现不足分析
 
 ## 5. 风险
 
-- **实现风险**：
-  - `with_kg` 路径可能受 Cozo / embedded KG 依赖限制
-  - 历史上 ablation script 曾有 provider 注入 bug，必须显式复核
-- **评估风险**：
-  - training-set no_kg = 0 增益容易被误解成“KG 一直没用”
-  - held-out 对照若不输出子类归因，容易得出过度简化结论
+- **方法风险**：
+  - “structural” 与 “addressable” 容易被主观划分，必须强制样本级证据
+- **叙事风险**：
+  - 容易把 limitation 包装成贡献；必须让 falsification 条件足够真实
 - **过拟合风险**：
-  - 最大风险不是实验失败，而是看到 held-out 弱点后顺手补规则
-  - 本项目禁止把 held-out 当优化目标；只允许测量和归因
+  - 分析过程中可能自然冒出修补想法；本项目禁止顺手修补 held-out
 
-## 6. 预期输出
+## 6. 次级问题（降级保留，不在本轮主执行）
 
-- `with_kg vs no_kg` held-out 总表
-- per-category held-out 对照表
-- 是否需要修改 paper 中 KG 叙事的 reviewer-facing note
-- 一份由 Critic 通过/否决的 Review Memo
+- KG held-out ablation 仍保留为 P2，但只有满足以下前提才允许重启：
+  1. 说清 KG 注入点与 paper 表述是否一致
+  2. 加入 `with_flat_context` baseline
+  3. 预注册 effect-size threshold
+  4. 做最小 power analysis
+
+## 7. 预期输出
+
+- 34 个 Hijacking FN 的样本级判定表
+- reviewer-facing failure taxonomy
+- 一段可写入 paper 的 architecture-boundary / limitation 文案
+- 一份由 Critic 审过的 Review Memo

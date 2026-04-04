@@ -2,12 +2,13 @@ project: owner-harm-generalization-v1
 status: active
 owner: Dario
 conductor: pending
-phase: charter-approved
-current_gate: dual-audit
-primary_question: "Does KG context improve held-out generalization on owner-harm v3?"
+phase: revised-after-dual-audit
+current_gate: review-memo
+primary_question: "Can we characterize the 34 Hijacking false negatives as a real architectural boundary of single-call runtime gating?"
 target_venue: "SaTML (primary), USENIX Security (stretch)"
 constraints:
   - "Do not patch held-out errors during this project"
-  - "Treat held-out as validation, not optimization target"
+  - "Treat held-out as validation and boundary-analysis input, not optimization target"
   - "Key plans require Gemini 3.1 Pro + Opus dual audit"
-next_required_artifact: "REVIEW_MEMO.md"
+  - "KG remains P2 until mechanism/baseline/power prerequisites are met"
+next_required_artifact: "Reviewer-facing Hijacking taxonomy note"
