@@ -3,7 +3,7 @@ status: active
 owner: Dario
 conductor: pending
 phase: revised-after-dual-audit
-current_gate: review-memo
+current_gate: taxonomy-evidence
 primary_question: "Can we characterize the 34 Hijacking false negatives as a real architectural boundary of single-call runtime gating?"
 target_venue: "SaTML (primary), USENIX Security (stretch)"
 constraints:
@@ -11,4 +11,4 @@ constraints:
   - "Treat held-out as validation and boundary-analysis input, not optimization target"
   - "Key plans require Gemini 3.1 Pro + Opus dual audit"
   - "KG remains P2 until mechanism/baseline/power prerequisites are met"
-next_required_artifact: "Reviewer-facing Hijacking taxonomy note"
+next_required_artifact: "sample-level hijacking evidence table"
