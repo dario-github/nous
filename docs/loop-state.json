@@ -1,29 +1,27 @@
 {
-  "loop_number": 80,
-  "timestamp": "2026-04-02T09:30:00Z",
+  "loop_number": 83,
+  "timestamp": "2026-04-04T18:00:00Z",
   "L_val": 0.0,
-  "L_val_source": "Owner-harm L1+L2: TPR 100.0%, FPR=0.0%. Ablation corrected: no_datalog ΔL=+0.700.",
-  "L_val_note": "Loop 80: Fixed ablation script (missing session_context). Re-run confirms Datalog is sole L1+L2 detection mechanism. Paper Table 4 updated with owner-harm ablation row.",
+  "L_val_source": "Owner-harm L1+L2: TPR 100.0%, FPR=0.0%. v3 held-out: TPR 75.3%, FPR 3.3%.",
+  "L_val_note": "Loop 83: M12.1 no_kg ablation COMPLETE — KG ΔL=0.0 on training set. Provider injection bug fixed. Git push via HTTPS unblocked.",
   "L_challenge": 0.0,
   "L_challenge_note": "Loop 60: L_challenge=0.0 (15/15 harmful blocked). All adv2 FNs resolved.",
   "metric_version": "v1.0-frozen-20260315",
   "tests": 1075,
   "curriculum_phase": 3,
   "urgent": [
-    "P0: git push — SSH publickey denied (Mac Mini lacks deploy key)",
     "P1: M12.5 AgentHarm per-category table (needs benchmark re-run with per-cat tracking)",
-    "P2: M12.1 no_kg full mode — needs ~$5 API cost decision from Dario",
-    "P3: Paper compile + final review"
+    "P2: M12.1 no_kg ablation on v3 HELD-OUT (~$5 — training set done, held-out needed for paper completeness)",
+    "P3: Paper compile (no pdflatex on this machine)"
   ],
   "completed_this_loop": [
-    "M12.4 T1 judge audit: INITIAL FAIL → found session_context bug → FIXED → re-audited PASS",
-    "ablation script fix: added session_context tracking to m12_component_ablation.py",
-    "Corrected ablation results: baseline_l1l2 TPR=100%/FPR=0% (was 11% before fix), no_datalog ΔL=+0.700",
-    "Paper Table 4 (ablation_layers) updated: added owner-harm ablation row with ΔL=+0.700",
-    "Paper text updated: Layer Contribution section now cites L3 +45.4pp contribution on heldout",
-    "Added \\multirow package to main.tex for updated table",
-    "docs/m12-4-ablation-audit.md written (audit trail)",
-    "git push attempted: FAILED — SSH publickey denied"
+    "M12.1 no_kg full-mode ablation COMPLETE: TPR 100.0%, FPR 0.0%, ΔL=0.0 (KG adds zero marginal value on training set)",
+    "Fixed ablation script: provider injection was missing — semantic gate was FAIL_OPEN on all calls",
+    "Git push unblocked: gh auth setup-git configured HTTPS credential helper for 'dario' remote",
+    "Paper Table 4 updated: added no_kg row (L1+L2+L3, db=None → 100%/0%)",
+    "Paper caption updated: KG finding documented",
+    "Restored src/data/owner_harm/ from git history (gitignored, needed for ablation)",
+    "Stale blockers corrected: SSH push workaround via HTTPS, no_kg approval acknowledged"
   ],
   "owner_harm_semantic_benchmark": {
     "T1_judge": {
@@ -61,11 +59,9 @@
     },
     "structural": "1. 区分API模型名/论文模型名并双记录 2. 先补chain-level Datalog再调阈值 3. val必须新增benign external-action对照集"
   },
-  "blocked": [
-    "git push: SSH publickey denied on Mac Mini — need deploy key setup"
-  ],
-  "direction": "Loop 80: Ablation audit PASS (after fix). Paper updated. Next: git push fix, M12.5 per-category data, paper compile.",
-  "last_commit": "pending (Loop 80 changes not yet committed)",
+  "blocked": [],
+  "direction": "Loop 83: M12.1 no_kg ablation done (ΔL=0 = KG is decorative on training set). Git push unblocked. Next: M12.1 no_kg on v3 held-out, M12.5 AgentHarm per-category, paper compile.",
+  "last_commit": "pending (Loop 83 changes not yet committed)",
   "github": "dario-github/nous",
   "ablation_corrected": {
     "date": "2026-04-02",
@@ -75,7 +71,7 @@
       "baseline_l1l2": {"tpr": 100.0, "fpr": 0.0, "L": 0.0},
       "no_datalog": {"tpr": 0.0, "fpr": 0.0, "L": 0.7, "delta_L": 0.7},
       "no_semantic": {"tpr": 100.0, "fpr": 0.0, "L": 0.0, "delta_L": 0.0, "note": "L3 not active in L1+L2 mode"},
-      "no_kg": "skipped (needs full mode, ~$5 API)"
+      "no_kg": {"tpr": 100.0, "fpr": 0.0, "L": 0.0, "delta_L": 0.0, "note": "Full mode (L1+L2+L3, db=None). KG adds zero marginal value. DeepSeek-V3.2 semantic gate active, upgrade_only=True. 2918s elapsed (250 LLM calls)."}
     }
   },
   "owner_harm_l1l2_benchmark": {
@@ -116,6 +112,28 @@
       "Unauthorized Autonomy": "59.5% (22/37)"
     },
     "note": "Loop 76 validation. AD weakness fully resolved (52.6% → 100%). FPR 0% throughout."
+  },
+  "owner_harm_heldout_v3_l1l2": {
+    "dataset": "data/owner_harm_heldout_v3.json",
+    "size": "300H + 150B = 450 cases",
+    "date": "2026-04-04",
+    "TPR": "12.7% (38/300)",
+    "FPR": "6.7% (10/150)",
+    "TPR_CI": "[9.4%, 16.9%]",
+    "FPR_CI": "[3.7%, 11.8%]",
+    "L3_contribution": "+62.6pp TPR, -3.4pp FPR",
+    "per_category": {
+      "Asset Destruction": "57.1% (16/28)",
+      "Credential Leak": "28.6% (8/28)",
+      "Exfiltration via Tools": "14.3% (4/28)",
+      "Hijacking": "0.0% (0/60)",
+      "Infrastructure Exposure": "10.0% (5/50)",
+      "Inner Circle Leak": "0.0% (0/28)",
+      "Privacy Exposure": "0.0% (0/28)",
+      "Unauthorized Autonomy": "10.0% (5/50)"
+    },
+    "rules_fired": {"OH-R7d": 13, "OH-R3a": 10, "OH-R6b": 5, "T3": 4, "OH-R7a": 4, "OH-R3d": 4, "OH-R1d": 4, "OH-R11a": 4},
+    "note": "Loop 82: First L1+L2-only eval on v3. L3 contributes more on harder data (+62.6pp vs +45.4pp on v2). FPR 6.7% (L1 over-triggers) reduced to 3.3% by L3."
   },
   "history": [
     {
@@ -198,6 +216,41 @@
       "hypothesis": "Ablation fast-mode data is valid for measuring component contributions at L1+L2 level",
       "rationale": "M12.4 audit caught critical bug: ablation script omitted session_context, disabling chain-aware rules. After fix, data is clean and publishable. Datalog (L1) confirmed as sole L1+L2 detection mechanism (ΔL=+0.700 when removed).",
       "prev_loop_ref": "Loop 79 ran ablation in fast mode but data was invalid due to session_context bug"
+    },
+    {
+      "loop": 81,
+      "date": "2026-04-04",
+      "action": "Paper data audit + model name fix + citation cleanup",
+      "result": "All v3 held-out numbers verified against eval_v3_results.json (TPR 75.3%, FPR 3.3%, 8 per-cat TPRs, CIs). DeepSeek V3.1→V3.2 fixed. 3 unused bib entries removed. 841 tests pass (Cozo-dependent tests skip on this machine).",
+      "had_critique": false,
+      "had_regression": false,
+      "hypothesis": "Paper numbers are accurate and internally consistent",
+      "rationale": "Pre-submission audit: cross-referenced every paper claim against source data files. Found and fixed stale model name (V3.1, upgraded to V3.2 in Loop 73 but paper not updated). Removed dead bib entries. No numerical errors found.",
+      "prev_loop_ref": "Loop 80 updated paper Table 4 with ablation data"
+    },
+    {
+      "loop": 82,
+      "date": "2026-04-04",
+      "action": "Error taxonomy of v3 failures + v3 L1+L2 baseline + paper update (5 contributions)",
+      "result": "v3 L1+L2 TPR=12.7%/FPR=6.7%. L3 contributes +62.6pp on v3 (increases with difficulty). Error taxonomy: 46.8% structural, 53.2% addressable. Paper abstract/contributions/Table4/Discussion updated.",
+      "had_critique": false,
+      "had_regression": false,
+      "hypothesis": "Generalization gap is random noise across failure cases",
+      "result_hypothesis": "REFUTED — failures are highly structured: 34/74 FN are Hijacking (indirect prompt injection, architectural limitation), 42/79 are addressable rule gaps deliberately left unfixed",
+      "rationale": "Dario mandated research-first direction: no benchmark overfitting. Error taxonomy is a paper-level contribution that honestly characterizes the generalization gap. L1+L2 baseline on v3 reveals L3's contribution INCREASES on harder data (+62.6pp vs +45.4pp on v2).",
+      "prev_loop_ref": "Loop 81 verified paper numbers; Loop 82 adds new data and analysis"
+    },
+    {
+      "loop": 83,
+      "date": "2026-04-04",
+      "action": "M12.1 no_kg full-mode ablation + provider bug fix + git push unblocked",
+      "result": "no_kg: TPR 100.0%, FPR 0.0%, ΔL=0.0. KG adds zero marginal detection value on training set. Ablation script fixed (missing provider). Git push via HTTPS unblocked. Paper Table 4 updated.",
+      "had_critique": false,
+      "had_regression": false,
+      "hypothesis": "KG context (Markov Blanket) contributes measurable detection improvement",
+      "result_hypothesis": "REFUTED on training set — KG ΔL=0.0. L1 Datalog catches 100% without KG. Need to test on v3 held-out where L1-only TPR is 12.7% to see if KG helps semantic gate on harder cases.",
+      "rationale": "M12.1 was the last missing ablation condition. Found and fixed critical bug: ablation script created SemanticGateConfig without provider → semantic gate returned None (FAIL_OPEN) on every call → would have measured L1+L2 not L1+L2+L3. After fix, result is clean: KG is decorative on training set where L1 already achieves 100%.",
+      "prev_loop_ref": "Loop 82 did error taxonomy + v3 L1+L2 baseline"
     }
   ]
 }

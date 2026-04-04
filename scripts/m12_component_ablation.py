@@ -184,12 +184,31 @@ def main():
     print(f"Mode: {'FAST (no semantic)' if args.fast else 'FULL (with semantic)'}\n")
 
     triv_config = TrivialityConfig(enabled=True)
-    sem_config = None if args.fast else SemanticGateConfig(
-        enabled=True,
-        mode="active",
-        upgrade_only=True,
-        model="google/gemini-3-flash-preview",  # cost-efficient for ablation
-    )
+    sem_config = None
+    if not args.fast:
+        import os
+        from nous.providers.openai_provider import create_openai_provider
+        api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("NOUS_API_KEY")
+        if not api_key:
+            print("⚠️  No API key — falling back to fast mode (no semantic)")
+            args.fast = True
+        else:
+            sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", "DeepSeek-V3.2")
+            provider = create_openai_provider(model=sem_model, api_key=api_key)
+            policy_path = str(Path(__file__).parent.parent / "ontology" / "owner-harm-policy.txt")
+            sem_config = SemanticGateConfig(
+                enabled=True,
+                mode="active",
+                model=sem_model,
+                timeout_ms=60000,
+                max_content_chars=4000,
+                policy_path=policy_path,
+                provider=provider,
+                block_upgrade_threshold=0.85,
+                allow_downgrade_threshold=0.70,
+                upgrade_only=True,
+            )
+            print(f"Semantic gate: {sem_model} (provider injected, upgrade_only=True)")
 
     results = {
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
