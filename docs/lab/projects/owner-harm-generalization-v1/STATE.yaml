@@ -3,11 +3,11 @@ status: active
 owner: Dario
 conductor: pending
 phase: charter-approved
-current_gate: experiment-design
+current_gate: dual-audit
 primary_question: "Does KG context improve held-out generalization on owner-harm v3?"
 target_venue: "SaTML (primary), USENIX Security (stretch)"
 constraints:
   - "Do not patch held-out errors during this project"
   - "Treat held-out as validation, not optimization target"
   - "Key plans require Gemini 3.1 Pro + Opus dual audit"
-next_required_artifact: "EXPERIMENT_PACK.md"
+next_required_artifact: "REVIEW_MEMO.md"
