@@ -36,6 +36,7 @@ from nous.verdict import (
     match_all_constraints,
     route_verdict,
 )
+from nous.verifier import VerifierConfig, VerifierResult, verify, apply_verifier_result
 
 
 # ── KG Context Builder (P1 from GPT-5.4 critique) ─────────────────────────
@@ -202,6 +203,7 @@ class GateResult:
     semantic_verdict: Optional[dict] = None          # M7.3
     layer_path: str = "datalog_only"                 # M7.3
     kg_context: Optional[dict] = None                # E2: Markov Blanket selective context (injected into semantic gate)
+    verifier_result: Optional[dict] = None           # Layer 4: Post-Gate Verifier flags
 
     def to_dict(self) -> dict:
         d = {
@@ -258,6 +260,7 @@ def gate(
     semantic_config: Optional[SemanticGateConfig] = None,
     kg_context: Optional[dict] = None,
     session_context: Optional[list] = None,  # Loop 66: 先前工具调用历史
+    verifier_config: Optional[VerifierConfig] = None,  # Layer 4: Post-Gate Verifier
 ) -> GateResult:
     """
     三层决策 pipeline 入口。
@@ -412,6 +415,26 @@ def gate(
                     verdict, datalog_verdict_str, sem_verdict, semantic_config,
                 )
 
+        # Step 4.7: Layer 4 — Post-Gate Verifier (独立审计员)
+        # 不依赖 gate 自报盲区，用确定性规则独立推导 gate 看不到什么
+        verifier_result_obj: Optional[VerifierResult] = None
+        if verifier_config is not None and verifier_config.enabled:
+            try:
+                verifier_result_obj = verify(
+                    tool_call=tool_call,
+                    facts=facts,
+                    gate_verdict=verdict.action,
+                    config=verifier_config,
+                )
+                if verifier_result_obj.recommendation != "pass":
+                    verdict = apply_verifier_result(verdict, verifier_result_obj)
+                    layer_path = f"{layer_path}+verifier"
+            except Exception as _verifier_err:
+                # FAIL_OPEN: verifier 异常不影响 pipeline
+                _gate_logging.getLogger("nous.gate").debug(
+                    "Verifier error (fail-open): %s", _verifier_err
+                )
+
         # Step 5: 构建 ProofTrace
         latency_ms = (time.perf_counter() - t_start) * 1000
         proof_trace = _build_proof_trace(match_results, verdict.action, latency_ms)
@@ -460,6 +483,7 @@ def gate(
             semantic_verdict=sem_verdict,
             layer_path=layer_path,
             kg_context=kg_context,  # preserved for post-gate enrichment
+            verifier_result=verifier_result_obj.to_dict() if verifier_result_obj else None,
         )
 
         # Loop 42: 事件推送到 gate_events.jsonl
