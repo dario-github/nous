@@ -3,7 +3,7 @@ status: active
 owner: Dario
 conductor: pending
 phase: revised-after-dual-audit
-current_gate: taxonomy-evidence
+current_gate: evidence-complete
 primary_question: "Can we characterize the 34 Hijacking false negatives as a real architectural boundary of single-call runtime gating?"
 target_venue: "SaTML (primary), USENIX Security (stretch)"
 constraints:
@@ -12,3 +12,11 @@ constraints:
   - "Key plans require Gemini 3.1 Pro + Opus dual audit"
   - "KG remains P2 until mechanism/baseline/power prerequisites are met"
 next_required_artifact: "sample-level hijacking evidence table"
+decisions:
+  - date: 2026-04-06
+    topic: structured-reason-output
+    decision: "先完成 34 条证据表，再设计 reason schema 架构升级"
+    rationale: "先搞清楚漏在哪，再设计要强制输出什么字段"
+  - date: 2026-04-05
+    topic: questionnaire-01
+    decision: "窄但可靠 > 宽但不稳；防漏判 > 防误伤；主因是架构盲区；先讲清边界；每日7题"
