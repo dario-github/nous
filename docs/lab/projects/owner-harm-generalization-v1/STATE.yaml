@@ -2,17 +2,21 @@ project: owner-harm-generalization-v1
 status: active
 owner: Dario
 conductor: pending
-phase: revised-after-dual-audit
-current_gate: evidence-complete
-primary_question: "Can we characterize the 34 Hijacking false negatives as a real architectural boundary of single-call runtime gating?"
+phase: verifier-v1-implemented
+current_gate: verifier-integrated
+primary_question: "Can deterministic post-gate verification recover the 34 Hijacking FNs without adding LLM calls?"
 target_venue: "SaTML (primary), USENIX Security (stretch)"
 constraints:
   - "Do not patch held-out errors during this project"
   - "Treat held-out as validation and boundary-analysis input, not optimization target"
   - "Key plans require Gemini 3.1 Pro + Opus dual audit"
   - "KG remains P2 until mechanism/baseline/power prerequisites are met"
-next_required_artifact: "sample-level hijacking evidence table"
+next_required_artifact: "verifier eval on held-out hijacking set (predict FN recovery rate)"
 decisions:
+  - date: 2026-04-06
+    topic: verifier-architecture
+    decision: "B路线：审计员自己算保安看不到什么，不靠保安自报。红色=必须确认，黄色累积升级。行为模式判断不做白名单。"
+    rationale: "保安（LLM）天然不倾向说自己不知道，确定性规则更可靠"
   - date: 2026-04-06
     topic: structured-reason-output
     decision: "先完成 34 条证据表，再设计 reason schema 架构升级"
