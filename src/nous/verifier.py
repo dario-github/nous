@@ -20,9 +20,11 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from dataclasses import dataclass, field
-from typing import Optional
+from pathlib import Path
+from typing import Callable, Optional
 
 logger = logging.getLogger("nous.verifier")
 
@@ -67,16 +69,116 @@ class VerifierResult:
         }
 
 
+# ── D2: 文件内容危险模式（V1 触发后二次检查）────────────────────────────
+
+# 文件内容中的危险信号
+_FILE_CONTENT_DANGER_PATTERNS = [
+    # 网络外联
+    re.compile(r'\bcurl\b', re.IGNORECASE),
+    re.compile(r'\bwget\b', re.IGNORECASE),
+    re.compile(r'\bnc\b\s+-', re.IGNORECASE),           # netcat
+    re.compile(r'\bnetcat\b', re.IGNORECASE),
+    re.compile(r'https?://\S+', re.IGNORECASE),          # any URL
+    # 文件系统破坏
+    re.compile(r'rm\s+-rf?\s+/', re.IGNORECASE),
+    re.compile(r'\brmdir\b', re.IGNORECASE),
+    re.compile(r'\bmkfs\b', re.IGNORECASE),
+    re.compile(r'\bdd\s+if=', re.IGNORECASE),
+    # 凭证操作
+    re.compile(r'authorized_keys', re.IGNORECASE),
+    re.compile(r'ssh-rsa\s+', re.IGNORECASE),
+    re.compile(r'ssh-ed25519\s+', re.IGNORECASE),
+    re.compile(r'\bpasswd\b', re.IGNORECASE),
+    re.compile(r'PRIVATE\s+KEY', re.IGNORECASE),
+    re.compile(r'Bearer\s+\$', re.IGNORECASE),           # token exfil
+    re.compile(r'Authorization:\s', re.IGNORECASE),
+    # 持久化/提权
+    re.compile(r'chmod\s+[0-7]*7[0-7]*', re.IGNORECASE),  # world-writable
+    re.compile(r'\bsudo\b', re.IGNORECASE),
+    re.compile(r'\bcrontab\b', re.IGNORECASE),
+    re.compile(r'/etc/cron', re.IGNORECASE),
+    # 编码隐藏
+    re.compile(r'\bbase64\b.*(?:\bdecode\b|\s-d\b)', re.IGNORECASE),
+    re.compile(r'\beval\b\s*\(', re.IGNORECASE),
+    re.compile(r'\beval\b\s+"?\$', re.IGNORECASE),
+    # 数据库破坏
+    re.compile(r'DROP\s+(?:TABLE|DATABASE)', re.IGNORECASE),
+    re.compile(r'TRUNCATE\s+TABLE', re.IGNORECASE),
+]
+
+# 文件大小上限（超过不读，FAIL_OPEN → 保留原 V1 flag）
+_FILE_CONTENT_MAX_BYTES = 64 * 1024  # 64KB
+
+
+def _resolve_file_path(raw_path: str) -> Optional[str]:
+    """把 ~/xxx 和 ./xxx 展开成绝对路径。"""
+    try:
+        expanded = os.path.expanduser(raw_path)
+        p = Path(expanded).resolve()
+        return str(p)
+    except Exception:
+        return None
+
+
+def _scan_file_content(file_path: str, read_fn: Optional[Callable] = None) -> Optional[list[str]]:
+    """读取文件并扫描危险模式。
+
+    Returns:
+        匹配到的危险模式描述列表；None 表示读取失败（FAIL_OPEN）。
+        空列表表示文件内容干净。
+    """
+    try:
+        if read_fn is not None:
+            content = read_fn(file_path)
+        else:
+            resolved = _resolve_file_path(file_path)
+            if resolved is None or not os.path.isfile(resolved):
+                return None
+            size = os.path.getsize(resolved)
+            if size > _FILE_CONTENT_MAX_BYTES:
+                return None  # 太大不读，保留 V1 flag
+            with open(resolved, "r", errors="replace") as f:
+                content = f.read(_FILE_CONTENT_MAX_BYTES)
+
+        if not content:
+            return []  # 空文件 = 无危险
+
+        matches = []
+        for pattern in _FILE_CONTENT_DANGER_PATTERNS:
+            m = pattern.search(content)
+            if m:
+                matches.append(m.group()[:80])
+        return matches
+
+    except Exception as e:
+        logger.debug("File content scan failed (FAIL_OPEN): %s", e)
+        return None
+
+
+def _extract_file_path_from_command(bash_cmd: str) -> Optional[str]:
+    """从 bash 命令中提取被执行的文件路径。"""
+    match = _FILE_EXEC_PATTERN.search(bash_cmd)
+    if match:
+        # 匹配格式: "bash ~/emails/rotate-keys.sh"
+        # 提取路径部分（第二个 token）
+        parts = match.group().split(None, 1)
+        if len(parts) >= 2:
+            return parts[1]
+    return None
+
+
 @dataclass
 class VerifierConfig:
     """审计员配置。"""
     enabled: bool = True
     yellow_threshold: int = 2       # 黄色累计达到此数 → 升级
     v1_enabled: bool = True         # 运行文件但没看内容
+    v1_file_scan: bool = True       # D2: V1 触发后读文件内容做二次检查
     v2_enabled: bool = True         # "按照某处的指示做"
     v3_enabled: bool = True         # 读文件后执行命令
     v4_enabled: bool = True         # 行为模式（下载后运行/往外发数据）
     v5_enabled: bool = True         # 高危操作（已有逻辑，补充检查）
+    read_fn: Optional[Callable] = None  # 自定义文件读取函数（测试用）
 
 
 # ── 规则实现 ──────────────────────────────────────────────────────────────
@@ -123,26 +225,55 @@ _HIGH_RISK_PATTERNS = [
 ]
 
 
-def _check_v1_file_exec_blind(tool_call: dict, facts: dict) -> Optional[VerifierFlag]:
+def _check_v1_file_exec_blind(
+    tool_call: dict,
+    facts: dict,
+    *,
+    file_scan: bool = True,
+    read_fn: Optional[Callable] = None,
+) -> Optional[VerifierFlag]:
     """V1: 命令要运行文件，但 gate 没看过文件内容。
 
-    触发条件：bash/python/etc + 文件路径
-    gate 能看到命令字符串，但看不到文件内容。
+    D2 升级：V1 触发后，读取文件内容做确定性危险模式匹配。
+    - 文件有危险信号 → 保持 red，附带具体证据
+    - 文件干净 → 降级为 pass（不产生 flag）
+    - 文件读取失败 → FAIL_OPEN，保留原 red flag
     """
-    # 检查 tool_call 参数中的 bash 命令
     bash_cmd = _extract_bash_command(tool_call)
     if not bash_cmd:
         return None
 
     match = _FILE_EXEC_PATTERN.search(bash_cmd)
-    if match:
-        return VerifierFlag(
-            rule_id="V1",
-            severity="red",
-            reason="命令要运行一个文件，但保安没看过文件内容",
-            evidence=match.group(),
-        )
-    return None
+    if not match:
+        return None
+
+    file_path = _extract_file_path_from_command(bash_cmd)
+
+    # D2: 尝试读文件内容做二次检查
+    if file_scan and file_path:
+        danger_matches = _scan_file_content(file_path, read_fn=read_fn)
+
+        if danger_matches is not None:  # 读取成功
+            if danger_matches:  # 有危险信号
+                return VerifierFlag(
+                    rule_id="V1",
+                    severity="red",
+                    reason=f"文件内容含危险操作: {', '.join(danger_matches[:3])}",
+                    evidence=f"{match.group()} → file contains: {'; '.join(danger_matches[:3])}",
+                )
+            else:  # 文件干净
+                logger.debug("V1: file %s scanned clean, suppressing flag", file_path)
+                return None  # 不产生 flag → 降低 FP
+
+        # danger_matches is None → 读取失败，FAIL_OPEN → 保留原 flag
+
+    # 原始 V1 行为（没开 file_scan 或读取失败）
+    return VerifierFlag(
+        rule_id="V1",
+        severity="red",
+        reason="命令要运行一个文件，但保安没看过文件内容",
+        evidence=match.group(),
+    )
 
 
 def _check_v2_delegated_instructions(tool_call: dict, facts: dict) -> Optional[VerifierFlag]:
@@ -344,7 +475,14 @@ def verify(
 
         for check_fn in checks:
             try:
-                flag = check_fn(tool_call, facts)
+                if check_fn is _check_v1_file_exec_blind:
+                    flag = check_fn(
+                        tool_call, facts,
+                        file_scan=cfg.v1_file_scan,
+                        read_fn=cfg.read_fn,
+                    )
+                else:
+                    flag = check_fn(tool_call, facts)
                 if flag is not None:
                     result.flags.append(flag)
             except Exception as e:
