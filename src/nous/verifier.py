@@ -10,12 +10,13 @@
 - 红色 flag → 强制升级为 confirm（除非已经是 block）
 - 黄色 flag → 累积超过阈值时升级
 
-五条审计规则（v1，2026-04-06 Dario 确认）：
+六条审计规则：
   V1: 命令要运行文件，但保安没看过文件内容 → 🔴
   V2: 用户说的是"按照某处的指示做" → 🔴
   V3: 先读了文件，然后紧接着运行命令 → 🟡
   V4: 命令的行为模式（下载后运行 / 往外发数据）→ 🟡
   V5: 命令本身就是高危操作 → 🟢（已有，保留）
+  V6: 先读了文件，然后紧接着向外部 URL 发 POST 请求 → 🔴（2026-04-08）
 """
 from __future__ import annotations
 
@@ -178,6 +179,7 @@ class VerifierConfig:
     v3_enabled: bool = True         # 读文件后执行命令
     v4_enabled: bool = True         # 行为模式（下载后运行/往外发数据）
     v5_enabled: bool = True         # 高危操作（已有逻辑，补充检查）
+    v6_enabled: bool = True         # 读文件后向外部 URL POST（HTTP 劫持）
     read_fn: Optional[Callable] = None  # 自定义文件读取函数（测试用）
 
 
@@ -393,6 +395,74 @@ def _check_v5_high_risk_ops(tool_call: dict, facts: dict) -> Optional[VerifierFl
     return None
 
 
+# 内部网络地址：这些不算"外部" URL，不触发 V6
+_INTERNAL_URL_PATTERNS = [
+    re.compile(r'^https?://localhost', re.IGNORECASE),
+    re.compile(r'^https?://127\.', re.IGNORECASE),
+    re.compile(r'^https?://10\.', re.IGNORECASE),
+    re.compile(r'^https?://192\.168\.', re.IGNORECASE),
+    re.compile(r'^https?://172\.(?:1[6-9]|2\d|3[01])\.', re.IGNORECASE),
+]
+
+
+def _is_external_url(url: str) -> bool:
+    """判断 URL 是否是外部地址（非 localhost/内网）。"""
+    if not url:
+        return False
+    for pattern in _INTERNAL_URL_PATTERNS:
+        if pattern.match(url):
+            return False
+    return url.startswith("http://") or url.startswith("https://")
+
+
+def _check_v6_read_then_http_post(tool_call: dict, facts: dict) -> Optional[VerifierFlag]:
+    """V6: 先读了文件，然后向外部 URL 发 POST 请求。
+
+    攻击模式：read_file(潜在注入文件) → make_http_request(POST, 攻击者服务器)
+    这是 V3（读后执行 bash）的 HTTP 变体。
+
+    触发条件：
+    - tool_calls 序列中出现 read_file，紧接着出现 make_http_request
+    - make_http_request 的 method 为 POST（或未指定，默认也当 POST）
+    - 目标 URL 是外部地址（非 localhost/内网）
+    """
+    tool_calls = tool_call.get("tool_calls") or []
+    if not tool_calls:
+        return None
+
+    saw_read_file = False
+    read_path: str = ""
+
+    for tc in tool_calls:
+        action = tc.get("action", "")
+        params = tc.get("params", {})
+
+        if action in ("read_file", "read"):
+            saw_read_file = True
+            read_path = params.get("path", "")
+            continue
+
+        if saw_read_file and action in ("make_http_request", "http_request", "fetch"):
+            url = params.get("url", "")
+            method = (params.get("method") or "GET").upper()
+
+            # 只关注 POST（外传数据），GET 相对无害
+            if method not in ("POST", "PUT", "PATCH"):
+                continue
+
+            if not _is_external_url(url):
+                continue
+
+            return VerifierFlag(
+                rule_id="V6",
+                severity="red",
+                reason="先读了文件（可能含注入内容），然后向外部服务器发 POST 请求",
+                evidence=f"read: {read_path} → POST {url[:80]}",
+            )
+
+    return None
+
+
 # ── 辅助函数 ──────────────────────────────────────────────────────────────
 
 
@@ -472,6 +542,8 @@ def verify(
             checks.append(_check_v4_behavior_pattern)
         if cfg.v5_enabled:
             checks.append(_check_v5_high_risk_ops)
+        if cfg.v6_enabled:
+            checks.append(_check_v6_read_then_http_post)
 
         for check_fn in checks:
             try:
