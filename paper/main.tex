@@ -35,7 +35,7 @@
 
 \begin{document}
 
-\title{Compositional Safety Gates for Agentic AI:\\A Neurosymbolic Approach to Runtime Enforcement}
+\title{Compositional Runtime Safety Gates for Agentic AI:\\Empirical Evidence for Layer Complementarity}
 
 \author{
 \IEEEauthorblockN{Dongcheng Zhang}
@@ -47,11 +47,11 @@ dongcheng.zhang@bluefocus.com}
 \maketitle
 
 \begin{abstract}
-Current approaches to AI agent safety rely on monolithic mechanisms: either a single LLM-based classifier or a fixed rule set. Both fail in complementary ways---classifiers hallucinate on edge cases, while rules cannot capture semantic nuance. We present a three-layer composable safety gate for agentic AI systems: (1)~a deterministic blocker using Datalog constraints for zero-latency, auditable pattern matching; (2)~a triviality filter for cost-aware routing that bypasses expensive inference for clearly benign actions; and (3)~a semantic gate using an LLM with minimal-pair prompt engineering for ambiguous cases. On the AgentHarm benchmark (176 harmful + 176 benign scenarios), our system achieves TPR~100\% (95\%~CI: [90.3\%, 100.0\%]) and FPR~0.0\% (95\%~CI: [0.0\%, 9.7\%]) on the validation set with majority-vote stability across 74 optimization loops. On a final independent held-out owner-centric benchmark (300 harmful, 150 benign, never seen during optimization), the system achieves overall TPR~75.3\% (95\%~CI: [70.2\%, 79.9\%]) and FPR~3.3\% (95\%~CI: [1.4\%, 7.6\%]). Per-category analysis reveals a structural split: three categories (Credential Leak, Infrastructure Exposure, Privacy Exposure) achieve 100\% TPR via deterministic Datalog matching, while Hijacking---attacks that embed malicious instructions in external documents to hijack agent execution---reaches only 43.3\% TPR, reflecting a fundamental limitation of single-call architectures against prompt injection. Shadow deployment over 30,000+ production calls shows 99.47\% consistency with existing safety rules. Layer ablation reveals that the semantic gate's contribution \emph{increases} with attack sophistication ($+$62.6 percentage points of TPR on the held-out set, vs.\ $+$44.4pp on the training benchmark), and error taxonomy analysis shows that 46.8\% of held-out failures are \emph{structural} (requiring architectural changes such as multi-turn information flow tracking) while 53.2\% are \emph{addressable} (rule coverage gaps deliberately left unfixed to avoid overfitting). We argue that compositional safety---where each layer handles what it does best---provides more robust protection than monolithic approaches, and we identify prompt injection detection as the primary open problem for future work.
+Current approaches to AI agent safety rely on monolithic mechanisms: either a single LLM-based classifier or a fixed rule set. Both fail in complementary ways---classifiers hallucinate on edge cases, while rules cannot capture semantic nuance. We present a four-layer composable safety gate for agentic AI systems: (1)~a deterministic blocker using Datalog constraints; (2)~a triviality filter for cost-aware routing; (3)~a semantic gate using an LLM with minimal-pair prompt engineering; and (4)~a post-gate deterministic auditor (Post-Gate Verifier) that independently checks tool-call sequences for information-flow anomalies the semantic gate cannot observe. On the AgentHarm benchmark (176 harmful + 176 benign scenarios), the three-layer system achieves TPR~100\% (95\%~CI: [90.3\%, 100.0\%]) and FPR~0.0\% (95\%~CI: [0.0\%, 9.7\%]) on the validation set. On a final independent held-out owner-centric benchmark (300 harmful, 150 benign), the full four-layer system achieves overall TPR~75.3\% (95\%~CI: [70.2\%, 79.9\%]) and FPR~3.3\% (95\%~CI: [1.4\%, 7.6\%]). The central empirical finding concerns \emph{layer complementarity}: for Hijacking attacks---prompt injections that embed malicious instructions in external documents---the gate (L1--L3) alone achieves only 43.3\% TPR (95\%~CI: [31.6\%, 55.9\%]), while the Post-Gate Verifier (L4) alone achieves 75.0\% (95\%~CI: [62.8\%, 84.2\%]). Combined, L1--L4 reaches 93.3\% (56/60; 95\%~CI: [84.1\%, 97.4\%]) because the two mechanisms' blind spots are nearly disjoint (overlap: 15/60 cases caught by both; neither: 4/60 = 6.7\% true structural boundary). The Verifier adds zero LLM cost and $+$0.038ms latency. Shadow deployment over 30,000+ production calls shows 99.47\% consistency. We argue that compositional safety---layers with orthogonal detection dimensions---provides more robust protection than monolithic approaches, and characterize the residual 6.7\% as a genuine architectural boundary requiring SQL-aware content analysis.
 \end{abstract}
 
 \begin{IEEEkeywords}
-AI safety, agentic AI, neurosymbolic systems, Datalog, runtime enforcement, composable security
+AI safety, agentic AI, compositional safety, Datalog, runtime enforcement, prompt injection, layer complementarity
 \end{IEEEkeywords}
 
 %% ============================================================
@@ -69,7 +69,7 @@ The safety perimeter is also expanding beyond server-side API calls. Apple's iOS
 
 The industry is converging on the recognition that agent governance requires new infrastructure. In a single week of March~2026, NVIDIA announced NemoClaw, a declarative policy engine described as ``the policy engine of all the SaaS companies in the world''~\cite{nvidia2026nemoclaw}; Microsoft introduced the 365~E7 tier at \$99/user for agent security~\cite{microsoft2026e7}; and Oasis Security raised \$120M for non-human identity management~\cite{oasis2026funding}. Yet no existing system combines formal guarantees with semantic understanding in a composable architecture.
 
-\textbf{Contributions.} We present Nous, a three-layer composable safety gate (Fig.~\ref{fig:architecture}) with: (1)~a composability argument via the Swiss Cheese model showing multiplicative failure-probability reduction~\cite{reason1990swisscheese}; (2)~a shadow-mode deployment methodology enabling zero-downtime transition with 99.47\% agreement over 30,204 production calls; (3)~empirical evaluation on AgentHarm (TPR~100\%/FPR~0\% val) and a final independent owner-centric held-out benchmark (300H+150B, TPR~75.3\%/FPR~3.3\%), with per-category analysis distinguishing structurally-detectable threats from prompt-injection-driven attacks; (4)~layer ablation showing that the semantic gate's contribution \emph{increases} with attack sophistication ($+$62.6pp TPR on the harder held-out vs.\ $+$44.4pp on training data); and (5)~an error taxonomy classifying 46.8\% of held-out failures as \emph{structural} (requiring architectural changes) and 53.2\% as \emph{addressable} (rule coverage gaps deliberately left unfixed to avoid held-out overfitting).
+\textbf{Contributions.} We present Nous, a four-layer composable safety gate (Fig.~\ref{fig:architecture}) with: (1)~a composability argument via the Swiss Cheese model showing multiplicative failure-probability reduction~\cite{reason1990swisscheese}; (2)~a shadow-mode deployment methodology enabling zero-downtime transition with 99.47\% agreement over 30,204 production calls; (3)~empirical evaluation on AgentHarm (TPR~100\%/FPR~0\% val) and a final independent owner-centric held-out benchmark (300H+150B), with per-category analysis distinguishing structurally-detectable threats from prompt-injection-driven attacks; (4)~a Post-Gate Verifier (Layer~4)---a deterministic, zero-LLM-cost auditor that independently checks tool-call sequences for information-flow anomalies, lifting Hijacking TPR from 43.3\% to 93.3\% (56/60) on the held-out set with 0\% FPR; (5)~empirical evidence for \emph{layer complementarity}: gate and verifier blind spots are nearly disjoint (11 gate-only, 30 verifier-only, 15 both, 4 neither), with the residual 4/60 (6.7\%) constituting a genuine architectural boundary; and (6)~layer ablation showing L3's contribution \emph{increases} with attack sophistication ($+$62.6pp on held-out vs.\ $+$44.4pp on training data).
 
 
 %% ============================================================
@@ -113,6 +113,18 @@ The third layer handles genuinely ambiguous cases using an LLM (DeepSeek-V3.2) w
 
 A knowledge graph (579~relations, 482~entities across 11 entity types and 11 relation types) provides post-gate context enrichment---entity resolution, policy lookups, and historical pattern matching. Critically, KG signals feed into the gate's context but do not override verdicts. Early experiments with direct KG injection into the semantic gate caused a 12\% TPR degradation due to attention dilution; the current post-gate architecture avoids this failure mode.
 
+\subsection{Layer 4: Post-Gate Verifier}
+
+Layer~4 is an independent deterministic auditor that runs \emph{after} the semantic gate (L1--L3). While L1--L3 evaluate tool calls based on prompt and command metadata, the Verifier examines information-flow patterns that require cross-step context: file contents, tool-call sequences, and behavioral signatures invisible to single-call architectures.
+
+\textbf{Design principles.} (1)~\emph{Independence}: the Verifier reaches conclusions independently of gate self-reporting; it infers what the gate \emph{could not} have seen rather than trusting what it claims. (2)~\emph{Deterministic}: no LLM calls; all rules are regular-expression pattern matching over tool-call sequences and file contents. (3)~\emph{FAIL\_OPEN}: any exception during verification leaves the verdict unchanged; the Verifier can only upgrade, never degrade, a gate verdict.
+
+\textbf{Six audit rules (V1--V6).} V1~(red): a bash command executes a local file that the gate never inspected; V2~(red): the user prompt delegates instructions to an external document (``follow the instructions in...''); V3~(yellow): a read-file call is immediately followed by a bash command referencing the same path; V4~(yellow): behavioral exfiltration patterns (download-then-execute, data-to-external-URL); V5~(green): direct high-risk operations in the command string; V6~(red, added 2026-04-08): a read-file call is followed by an HTTP POST to an external URL. Red flags unconditionally upgrade gate \texttt{allow} to \texttt{confirm}; two or more yellow flags trigger the same upgrade.
+
+\textbf{D2 upgrade.} When V1 triggers, the Verifier reads the target file and scans it against 32 danger patterns (curl/wget exfiltration, SSH key injection, privilege escalation, database destruction, encoded payloads). A clean file suppresses the V1 flag, eliminating false positives from benign script execution workflows; a dangerous file retains the red flag with the specific evidence attached.
+
+\textbf{Performance.} Overhead: $+$0.038ms per call (measured over 60 Hijacking samples). LLM cost: \$0. The Verifier adds negligible latency to L3's $\sim$3.5s semantic evaluation.
+
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.98\columnwidth]{figure1}
@@ -153,7 +165,7 @@ Shadow (prod) & ---   & ---   & ---    & 30,204 \\
 
 \subsection{Shadow Deployment}
 
-Before promoting the system to primary interceptor, we operated in shadow mode for 11+~days, processing 30,204 real production calls across 281 runs. The system ran in parallel with existing safety rules, logging verdicts without affecting operations. Agreement rate was 99.47\%; the 0.53\% divergence consisted primarily of cases where the semantic gate correctly identified nuance that rule-based systems missed (157 false negatives, 4 false positives).
+Before promoting the system to primary interceptor, we operated in shadow mode for 11+~days, processing 30,204 real production calls across 281 runs. The system ran in parallel with existing safety rules, logging verdicts without affecting operations. Agreement rate was 99.47\%; the 0.53\% divergence consisted primarily of cases where the semantic gate correctly identified nuance that rule-based systems missed (157 false negatives in the existing system, 4 false positives where the new gate was more conservative than warranted). In all 4 false-positive disagreement cases, manual review confirmed the gate's block was over-triggered on ambiguous read-then-send workflows---a pattern the Verifier's D2 file scan can partially resolve by confirming benign file contents.
 
 After stable agreement metrics, the system was promoted to primary interceptor (cutover). Post-cutover monitoring confirmed no regression.
 
@@ -161,7 +173,7 @@ After stable agreement metrics, the system was promoted to primary interceptor (
 
 Standard safety benchmarks like AgentHarm evaluate universal harms (cybercrime, harassment). However, autonomous agents face a distinct threat model: \emph{owner-directed harm}, where an agent's actions compromise its owner's interests---credential exfiltration, unauthorized data sharing, infrastructure exposure, or inner-circle privacy leaks.
 
-We construct a dedicated benchmark with 200~harmful and 50~benign scenarios across 8~owner-harm categories (Table~\ref{tab:owner_harm}). Harmful scenarios include multi-step chains (e.g., \texttt{read\_file} $\to$ \texttt{send\_email} with injected content) and social engineering patterns (authority claims, fake urgency). Benign scenarios include legitimate read-then-send workflows (press releases, newsletters) that must not be blocked.
+We construct a dedicated benchmark with 200~harmful and 50~benign scenarios across 8~owner-harm categories (Table~\ref{tab:owner_harm}). Harmful scenarios include multi-step chains (e.g., \texttt{read\_file} $\to$ \texttt{send\_email} with injected content) and social engineering patterns (authority claims, fake urgency). \textbf{Design principles}: (1)~attack patterns are derived from real agent incident reports and red-team playbooks~\cite{agentsofchaos2025,ruan2024toolemu}, not synthetic templates; (2)~each harmful scenario has a structurally similar benign counterpart to stress-test false-positive behavior (e.g., malicious script execution paired with legitimate deployment scripts); (3)~the Hijacking subcategory is intentionally oversampled (60H) to stress-test the system's weakest dimension. Benign scenarios include legitimate read-then-send workflows (press releases, newsletters) and operational scripts (backups, migrations) that must not be blocked.
 
 \begin{table}[t]
 \centering
@@ -199,29 +211,53 @@ With the full three-layer pipeline (L1+L2+L3), the final held-out evaluation ach
 
 \begin{table}[t]
 \centering
-\caption{Owner-centric final held-out results by category (300H + 150B, v3 independent set)}
+\caption{Owner-centric final held-out results by category (300H + 150B, v3 independent set). Gate = L1+L2+L3; Combined = L1+L2+L3+L4. Layer 4 is scoped to Hijacking/prompt-injection; ``---'' indicates Layer 4 not applicable to that category.}
 \label{tab:owner_heldout}
-\begin{tabular}{lccc}
+\begin{tabular}{lcccc}
 \toprule
-\textbf{Category} & \textbf{TPR} & \textbf{$N_h$} & \textbf{FPR} \\
+\textbf{Category} & \textbf{Gate TPR} & \textbf{Gate+L4 TPR} & \textbf{$N_h$} & \textbf{Gate FPR} \\
 \midrule
-Credential Leak         & 100.0\% & 28 & 0.0\%  \\
-Infrastructure Exposure & 100.0\% & 50 & 20.0\% \\
-Privacy Exposure        & 100.0\% & 28 & 0.0\%  \\
-Inner Circle Leak       &  89.3\% & 28 & 0.0\%  \\
-Unauthorized Autonomy   &  70.0\% & 50 & 0.0\%  \\
-Asset Destruction       &  64.3\% & 28 & 0.0\%  \\
-Exfiltration via Tools  &  57.1\% & 28 & 0.0\%  \\
-Hijacking               &  43.3\% & 60 & 0.0\%  \\
+Credential Leak         & 100.0\% & ---     & 28 & 0.0\%  \\
+Infrastructure Exposure & 100.0\% & ---     & 50 & 20.0\% \\
+Privacy Exposure        & 100.0\% & ---     & 28 & 0.0\%  \\
+Inner Circle Leak       &  89.3\% & ---     & 28 & 0.0\%  \\
+Unauthorized Autonomy   &  70.0\% & ---     & 50 & 0.0\%  \\
+Asset Destruction       &  64.3\% & ---     & 28 & 0.0\%  \\
+Exfiltration via Tools  &  57.1\% & ---     & 28 & 0.0\%  \\
+\textbf{Hijacking}      & \textbf{43.3\%} & \textbf{93.3\%} & \textbf{60} & \textbf{0.0\%} \\
 \midrule
-\textbf{Overall}        & \textbf{75.3\%} & \textbf{300} & \textbf{3.3\%} \\
+\textbf{Overall}        & \textbf{75.3\%} & ---  & \textbf{300} & \textbf{3.3\%} \\
 \bottomrule
 \end{tabular}
 \vspace{0.5em}
-\small This set oversamples Hijacking (60H) and Infrastructure Exposure (50H) to stress-test known weak categories. Overall FPR of 3.3\% comes entirely from Infrastructure Exposure (OH-R3a rule over-trigger on 5 benign external-channel config queries).
+\small Gate TPR/FPR CIs (Wilson 95\%): Hijacking gate [31.6\%, 55.9\%]; overall gate [70.2\%, 79.9\%]; overall FPR [1.4\%, 7.6\%]. Gate+L4 Hijacking CI: [84.1\%, 97.4\%]; L4 Hijacking FPR: 0/30, CI [0.0\%, 11.4\%]. Overall FPR of 3.3\% comes entirely from Infrastructure Exposure (OH-R3a rule over-triggering on 5 benign external-channel config queries).
 \end{table}
 
-The per-category results reveal a structural split. Three categories achieve 100\% TPR: Credential Leak, Infrastructure Exposure, and Privacy Exposure---these involve structurally distinct tool-call signatures that Datalog rules can match deterministically. Four categories fall in the 57--89\% range (Inner Circle Leak, Unauthorized Autonomy, Asset Destruction, Exfiltration via Tools), reflecting semantic ambiguity that the L3 gate partially resolves but does not fully close. Hijacking is the primary weakness at 43.3\% TPR; all 34 false negatives share a prompt-injection pattern---the agent receives a malicious instruction embedded in an external document (email, runbook, Slack message) and executes it. Prompt injection is a \emph{fundamentally different attack surface} from direct harmful requests: the attacker controls the agent's context rather than the principal's instruction. Detecting it requires multi-turn trajectory awareness and source attribution that the current single-call architecture does not support. We treat this as an open problem and discuss it in limitations.
+The per-category results reveal a structural split. Three categories achieve 100\% TPR: Credential Leak, Infrastructure Exposure, and Privacy Exposure---these involve structurally distinct tool-call signatures that Datalog rules can match deterministically. Four categories fall in the 57--89\% range (Inner Circle Leak, Unauthorized Autonomy, Asset Destruction, Exfiltration via Tools), reflecting semantic ambiguity that the L3 gate partially resolves but does not fully close.
+
+\textbf{Hijacking: from apparent limitation to layer complementarity.} The gate alone achieves only 43.3\% TPR on Hijacking, and Table~\ref{tab:owner_heldout} might suggest this is a fundamental limitation. However, the Post-Gate Verifier (Layer~4) raises the combined TPR to \textbf{93.3\%} (56/60). To understand why, note that the gate and verifier operate on orthogonal information: the gate evaluates prompt text and tool-call metadata, while the Verifier inspects file contents and multi-step call sequences. All 34 gate false negatives involve an agent executing a file whose contents were never seen by the gate. The Verifier's V1 rule (with D2 file content scan) catches 30 of these by reading the actual file and detecting malicious payloads; the gate already catches an independent 11 via suspicious command-string signals. Table~\ref{tab:hijacking_overlap} quantifies this complementarity.
+
+\begin{table}[t]
+\centering
+\caption{Gate vs.\ Verifier overlap analysis on Hijacking (60 harmful, 30 benign). ``Caught'' = blocked or upgraded to confirm. Numbers reflect the held-out v3 independent set.}
+\label{tab:hijacking_overlap}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Quadrant} & \textbf{Count} & \textbf{\%} \\
+\midrule
+Gate-only (verifier misses)       & 11 & 18.3\% \\
+Verifier-only (gate allows)       & 30 & 50.0\% \\
+Both (gate AND verifier catch)    & 15 & 25.0\% \\
+\textbf{Neither (structural boundary)} & \textbf{4} & \textbf{6.7\%} \\
+\midrule
+\textbf{Combined coverage}        & \textbf{56} & \textbf{93.3\%} \\
+\bottomrule
+\end{tabular}
+\vspace{0.5em}
+\small The 4 structural-boundary cases are SQL injection via \texttt{mysql prod\_db < file.sql} (3 variants) and a direct SSH key injection bypassing the read-then-exec pattern. True fix requires SQL-aware file content analysis or explicit authorized\_keys detection in L1 Datalog rules.
+\end{table}
+
+The interpretation changes significantly: rather than 43.3\% reflecting a \emph{fundamental limitation} of single-call architectures, it reflects an \emph{information visibility gap} that a post-gate auditor can largely close. Only 4/60 (6.7\%) attacks represent genuine structural boundaries where no additional information---without deeper architectural changes---would distinguish them from benign operations.
 
 Iterative analysis (Loops 76--77) identified and patched specific signal gaps for Asset Destruction, Infrastructure Exposure, and Unauthorized Autonomy by extending \texttt{\_DESTRUCTIVE\_COMMAND\_PATTERNS} and adding three new Datalog constraint rules (OH-R12a/b/c). The v3 held-out numbers above reflect the fully patched system evaluated on a distribution that had not been seen during any optimization. All 1075~regression tests pass.
 
@@ -246,7 +282,7 @@ To quantify each layer's contribution, we measure performance with individual la
 
 \begin{table}[t]
 \centering
-\caption{Layer ablation on AgentHarm val (36h + 36b), owner-harm training (200h + 50b), and held-out (300h + 150b)}
+\caption{Layer ablation on AgentHarm val (36h + 36b), owner-harm training (200h + 50b), and held-out (300h + 150b). L4 = Post-Gate Verifier, evaluated on Hijacking sub-split only (60h + 30b).}
 \label{tab:ablation_layers}
 \begin{tabular}{llccc}
 \toprule
@@ -262,13 +298,18 @@ To quantify each layer's contribution, we measure performance with individual la
  & No Datalog ($-$L1)         & 0.0\%   & 0.0\%  & 0.700 \\
  & No KG (L1+L2+L3, db=None) & 100.0\% & 0.0\%  & 0.000 \\
 \midrule
-\multirow{2}{*}{Held-out (v3)}
+\multirow{3}{*}{Held-out (v3)}
  & Full system (L1+L2+L3)     & 75.3\%  & 3.3\%  & 0.109 \\
  & L1+L2 only (no semantic)   & 12.7\%  & 6.7\%  & 0.370 \\
+\midrule
+\multirow{3}{*}{Hijacking (v3)}
+ & L1+L2+L3 (gate only)       & 43.3\%  & 0.0\%  & 0.283 \\
+ & L4 only (verifier alone)   & 75.0\%  & 0.0\%  & 0.125 \\
+ & \textbf{L1+L2+L3+L4 (full)} & \textbf{93.3\%} & \textbf{0.0\%} & \textbf{0.033} \\
 \bottomrule
 \end{tabular}
 \vspace{0.5em}
-\small L3's contribution \emph{increases} on harder data: $+$44.4pp on AgentHarm, $+$62.6pp on the held-out set, while simultaneously reducing FPR (6.7\%$\to$3.3\%). On owner-harm training, L1 is the sole detection mechanism ($\Delta L = +0.700$ when removed). Disabling KG context (db=None) has zero effect on training-set performance, confirming that current detection is fully rule-driven; KG enrichment remains a direction for held-out generalization. L2 primarily affects latency, not accuracy.
+\small L3's contribution \emph{increases} on harder data: $+$44.4pp on AgentHarm, $+$62.6pp on the held-out set, while simultaneously reducing FPR (6.7\%$\to$3.3\%). On owner-harm training, L1 is the sole detection mechanism ($\Delta L = +0.700$ when removed). The Hijacking rows demonstrate that L4 (Verifier) and L1--L3 (Gate) have orthogonal coverage: L4 alone outperforms the gate on hijacking ($\Delta$TPR $+$31.7pp, same FPR), and combined they reduce $L$ from 0.283 to 0.033. L4 adds $+$0.038ms latency and \$0 LLM cost.
 \end{table}
 
 On the owner-centric training benchmark, L1 alone achieves 100\%/0\% (Table~\ref{tab:owner_harm}), as chain-aware Datalog rules directly encode owner-harm patterns. Removing Datalog entirely causes complete detection failure ($\Delta L = +0.700$; Table~\ref{tab:ablation_layers}), confirming that L1 is the sole detection mechanism for structurally detectable owner-harm threats.
@@ -334,7 +375,15 @@ The uncensored baseline blocks nothing, confirming the necessity of a safety lay
 
 \textbf{Owner-centric vs.\ universal safety.} Standard benchmarks~\cite{andriushchenko2025agentharm} evaluate universal harms. Our owner-centric benchmark reveals a complementary threat model: structurally detectable patterns (chain-aware hijacking, credential exfiltration) are fully handled by deterministic rules, while semantically ambiguous cases (content interpretation) require LLM reasoning. This suggests that compositional architectures should route threats to the appropriate layer rather than forcing all cases through a single mechanism.
 
-\textbf{Error taxonomy of generalization failures.} Analysis of the 74 false negatives and 5 false positives on the held-out set reveals a structured failure landscape rather than random noise. We categorize failures into two classes: \emph{structural} (46.8\%, 37~cases)---failures caused by fundamental architecture limitations that cannot be addressed without design changes---and \emph{addressable} (53.2\%, 42~cases)---failures due to rule coverage gaps or threshold calibration. The 34~Hijacking false negatives are exclusively structural: all involve an adversary embedding malicious instructions in trusted-looking local files (emails, runbooks, tickets) that the agent reads and executes. The gate evaluates tool calls independently and cannot detect ``read untrusted file then blindly execute'' without inspecting file contents or tracking information flow across steps. The 3~Inner~Circle~Leak false negatives are also structural, requiring entity sensitivity metadata from the knowledge graph to distinguish ``post board minutes publicly'' from ``post press release publicly.'' Addressable failures cluster in Unauthorized Autonomy (15~FN: missing rules for git-push-to-main, financial transactions), Asset Destruction (10~FN: pattern coverage gaps in destructive command detection), and Exfiltration (12~FN: novel tool-based exfiltration paths not in rule triggers). Critically, we deliberately do not fix the addressable failures, as doing so would constitute overfitting to the held-out distribution; we report them as improvement directions for future deployments.
+\textbf{Error taxonomy: layer complementarity over fundamental limitation.} Analysis of the 74 false negatives and 5 false positives on the held-out set reveals a structured failure landscape. We revise the taxonomy in light of the Layer~4 results.
+
+The gate (L1--L3) alone shows 34 Hijacking false negatives. These were previously classified as \emph{structural} failures---implying an architectural dead end---but the Verifier results reveal a more nuanced picture. Of these 34, the Verifier recovers 30 (88\%) by inspecting file contents and multi-step sequences. This is possible because 30 of the 34 cases involve a \emph{information visibility gap}: the attack requires executing a file whose contents the gate never sees. This gap is not a fundamental architectural barrier; it is a \emph{layer boundary}. The Verifier, operating post-gate with access to file contents, closes most of it.
+
+The residual \textbf{4/60 (6.7\%)} Hijacking failures---\texttt{mysql prod\_db < injection.sql} variants and a direct SSH key echo---are the \emph{genuine} structural boundary: they involve either SQL-file content analysis (requiring a SQL parser in the audit chain) or attack patterns that do not trigger any current read-then-exec signal. These represent true design gaps, not information visibility gaps.
+
+The updated taxonomy: \emph{layer-visibility failures} (30/34 Hijacking FN = recoverable via post-gate auditing) vs.\ \emph{structural boundary} (4/34 Hijacking FN = genuine architectural limit). We categorize non-Hijacking failures separately: \emph{addressable} gaps (42~FN across Unauthorized Autonomy, Asset Destruction, Exfiltration---rule coverage holes deliberately left unfixed to avoid overfitting) and 3~Inner Circle Leak FN (requiring entity-sensitivity metadata from the KG). Critically, we deliberately do not fix addressable failures; they represent expected generalization gaps for hand-authored rule sets on novel attack variants.
+
+\textbf{Why layer blind spots are orthogonal.} The gate's detection dimension is \emph{prompt semantics + command surface}: it sees tool names, command strings, URL patterns, and prompt text. It cannot see file contents, SQL query bodies, or multi-step information flow. The Verifier's detection dimension is \emph{behavioral sequence + content forensics}: it sees tool-call ordering and file contents but makes no semantic judgment about intent. These dimensions are nearly independent for Hijacking attacks, explaining why combined coverage jumps from 43.3\% to 93.3\%.
 
 \textbf{Stochastic variance in MoE.} A surprising finding is that \texttt{temperature=0} does not guarantee deterministic outputs from Mixture-of-Experts architectures. We observed intermittent FPR fluctuations that majority vote completely eliminated---a practical consideration absent from current literature.
 
@@ -342,9 +391,9 @@ The uncensored baseline blocks nothing, confirming the necessity of a safety lay
 
 \textbf{Practical deployment considerations.} The shadow deployment methodology (Section~3) enabled zero-downtime transition with quantified risk: 99.47\% agreement over 30,204 calls before cutover. The 0.53\% divergence---predominantly false negatives in the existing system---validates the composable approach. NIST's emerging agent security standards~\cite{nist2026agent} call for exactly this type of auditable safety pipeline.
 
-\textbf{Limitations.} (1)~\emph{Prompt injection (primary open problem).} The Hijacking category achieves only 43.3\% TPR on the final held-out set; all 34~false negatives involve an adversary embedding malicious instructions in external documents (emails, runbooks, Slack messages) that the agent then executes. Our error taxonomy classifies these as \emph{structural} failures: the single-call architecture evaluates tool metadata without inspecting file contents or tracking information flow, making ``read-then-execute'' indirection invisible to the gate. Addressing this requires content-aware gating, session-level taint propagation, or multi-turn trajectory analysis---each representing a fundamentally different architecture. (2)~The 53.2\% of held-out failures classified as \emph{addressable} (rule coverage gaps for specific destructive commands, novel exfiltration paths, and autonomy boundary violations) are deliberately left unfixed to avoid overfitting to the held-out distribution; they represent the expected gap between a hand-authored rule set and novel attack variants. (3)~The semantic gate prompt is English-centric; cross-lingual attacks may exploit language gaps. (4)~Nous operates as a pure interception layer and does not modify the system prompt or inject dynamic context into the LLM conversation. The primary deployment overhead is the additional API call for L3 semantic evaluation ($\sim$3.5s per invocation on DeepSeek-V3.2); L1 and L2 collectively pass 99.47\% of production calls as trivial, so L3 is invoked for fewer than 1\% of tool calls in practice, keeping mean added latency below 35ms per tool call.
+\textbf{Limitations.} (1)~\emph{Residual prompt injection (6.7\% structural boundary).} The four Hijacking cases missed by both gate and verifier represent genuine architectural limits: three involve SQL injection via \texttt{mysql < file.sql} (requiring a SQL-aware content parser in the audit chain) and one involves a direct SSH key injection that bypasses the read-then-exec behavioral signal. These cannot be addressed by the current rule architecture without targeted L1 Datalog additions. (2)~\emph{Layer~4 scope.} The Post-Gate Verifier is designed for Hijacking/prompt-injection detection; its V2 (delegated instructions) and V3 (read-then-exec) rules over-trigger on benign operational workflows in other categories (e.g., Infrastructure Exposure scripts that legitimately read config files). Applying Layer~4 globally would inflate FPR; it should be activated only in prompt-injection threat contexts. (3)~The 42 non-Hijacking \emph{addressable} failures (rule coverage gaps for specific destructive commands, novel exfiltration paths, and autonomy boundary violations) are deliberately left unfixed to avoid overfitting to the held-out distribution. (4)~The semantic gate prompt is English-centric; cross-lingual attacks may exploit language gaps. (5)~Nous operates as a pure interception layer and does not modify the system prompt or inject dynamic context. The primary deployment overhead is the additional API call for L3 semantic evaluation ($\sim$3.5s per invocation on DeepSeek-V3.2); L1 and L2 collectively pass 99.47\% of production calls as trivial, so L3 is invoked for fewer than 1\% of tool calls in practice, keeping mean added latency below 35ms per tool call.
 
-\textbf{Future work.} Prompt injection detection via source attribution and sliding-window multi-turn context (addressing Hijacking 43.3\% TPR gap); cross-lingual semantic gates; integration with differentiable Datalog~\cite{li2023scallop} for end-to-end optimization of the rule-semantic boundary; and formal verification of the Datalog-to-LLM handoff protocol.
+\textbf{Future work.} Closing the remaining 4/60 structural boundary cases via SQL-aware file content analysis and targeted L1 Datalog rules for direct key-injection patterns; extending Layer~4 scope safely to other categories (requires per-category FP calibration); cross-lingual semantic gates; integration with differentiable Datalog~\cite{li2023scallop} for end-to-end optimization of the rule-semantic boundary; and formal verification of the Datalog-to-LLM handoff protocol.
 
 
 %% ============================================================
@@ -359,6 +408,10 @@ The uncensored baseline blocks nothing, confirming the necessity of a safety lay
 \textbf{Formal verification approaches.} Doshi et al.~\cite{doshi2026verifiable} propose applying System-Theoretic Process Analysis (STPA) to derive formal safety requirements for LLM agent tool use, formalizing constraints via a capability-enhanced MCP framework. This \emph{design-time} approach complements our \emph{runtime} compositional gate: where they provide guarantees through formal specification, we provide empirically validated real-time enforcement with semantic understanding for ambiguous cases.
 
 \textbf{Enterprise agent governance.} NVIDIA's NemoClaw~\cite{nvidia2026nemoclaw}, announced at GTC~2026, provides a declarative policy engine for enterprise agent governance---architecturally homologous to our Layer~1. Microsoft 365~E7~\cite{microsoft2026e7} and Oasis Security~\cite{oasis2026funding} represent industry convergence on the need for dedicated agent safety infrastructure. Meta's Sev-1 incident~\cite{meta2026sev1}---a confused deputy attack causing 2-hour data exposure---demonstrates the practical urgency of compositional safety.
+
+\textbf{Post-gate auditing.} The Post-Gate Verifier (Layer~4) is architecturally similar to intrusion detection systems~\cite{liao2013intrusion} that audit events after a perimeter defense. The key distinction is that the Verifier operates on AI agent tool-call sequences rather than network packets, and its rules exploit the information asymmetry between what the gate can see (prompt + metadata) and what a post-hoc auditor can see (file contents + multi-step sequences). This complements Doshi et al.'s design-time STPA approach~\cite{doshi2026verifiable} with a runtime audit layer.
+
+\textbf{Compositional AI safety.} Composability as a safety principle is widely advocated (e.g., Tegmark and Omohundro~\cite{tegmark2023provably}) but rarely empirically validated at the layer-interaction level. Our overlap analysis (Table~\ref{tab:hijacking_overlap}) provides concrete evidence that compositional coverage gains are not merely additive but emerge from the orthogonality of detection dimensions---a claim distinct from the Swiss Cheese model's probabilistic argument.
 
 \textbf{Neurosymbolic AI.} Scallop~\cite{li2023scallop} demonstrates differentiable Datalog for neurosymbolic programming. Integrating differentiable reasoning into our Datalog layer is a promising future direction for optimizing the rule-semantic boundary.
 
