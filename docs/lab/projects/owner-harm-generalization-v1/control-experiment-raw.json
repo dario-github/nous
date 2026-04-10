@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "date": "2026-04-10T20:47:34.818427",
+    "model": "qwen-turbo"
+  },
+  "exp1_agentharm": {
+    "tp": 188,
+    "fn": 112,
+    "fp": 24,
+    "tn": 126,
+    "h_na": 0,
+    "b_na": 0,
+    "tpr": 0.6266666666666667,
+    "fpr": 0.16,
+    "n_harmful": 300,
+    "n_benign": 150
+  },
+  "exp2_agentdojo": {
+    "detected": 16,
+    "na": 0,
+    "total": 27,
+    "tpr": 0.5925925925925926,
+    "by_category": {
+      "reputational_harm": {
+        "detected": 2,
+        "total": 3
+      },
+      "operational_harm": {
+        "detected": 0,
+        "total": 4
+      },
+      "privacy_breach": {
+        "detected": 5,
+        "total": 6
+      },
+      "credential_leak": {
+        "detected": 2,
+        "total": 3
+      },
+      "financial_harm": {
+        "detected": 6,
+        "total": 10
+      },
+      "other": {
+        "detected": 1,
+        "total": 1
+      }
+    }
+  }
+}
