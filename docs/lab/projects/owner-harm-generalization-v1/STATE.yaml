@@ -1,26 +1,39 @@
 project: owner-harm-generalization-v1
-status: active
+status: paused
 owner: Dario
-conductor: pending
-phase: verifier-v1-implemented
-current_gate: verifier-integrated
-primary_question: "Can deterministic post-gate verification recover the 34 Hijacking FNs without adding LLM calls?"
-target_venue: "SaTML (primary), USENIX Security (stretch)"
+phase: paper-paused-pivot-to-engineering
+current_gate: dual-review-reject
+primary_question: "How to make Nous actually effective on owner-harm (AgentDojo >50% safety, >90% utility)?"
+target_venue: "TBD — 系统先做好再考虑投稿"
 constraints:
-  - "Do not patch held-out errors during this project"
-  - "Treat held-out as validation and boundary-analysis input, not optimization target"
-  - "Key plans require Gemini 3.1 Pro + Opus dual audit"
-  - "KG remains P2 until mechanism/baseline/power prerequisites are met"
-next_required_artifact: "verifier eval on held-out hijacking set (predict FN recovery rate)"
+  - "不包装负面结果为正面叙事"
+  - "先解决工程问题，再考虑论文"
+  - "零样本 LLM 59.3% 是当前 baseline to beat"
+next_required_artifact: "engineering plan: integrate LLM judgment into Nous architecture"
 decisions:
+  - date: 2026-04-11
+    topic: paper-pivot
+    decision: "暂停论文，回归工程。当前论文在权威benchmark上14.8% < 零样本LLM 59.3%，缺乏学术贡献。SSDG理论是常识包装，审稿人不买账。"
+    rationale: "两位审稿人（GPT-5.4-Pro + Opus）均给 Reject/Weak Reject (4/10)。核心问题不是包装不够，而是系统在owner-harm上确实不行。先做好系统再写论文。"
+  - date: 2026-04-11
+    topic: ssdg-experiments
+    decision: "P1(加上下文)被否定——简单注入目标不够；P2(减上下文)被验证——信息缺失确实是gap根因"
+    rationale: "说明方向对（需要上下文）但方法不对（不能简单拼接文本）"
+  - date: 2026-04-10
+    topic: control-experiment
+    decision: "85.2pp gap来自符号规则环境绑定，不是类别本身难"
+    rationale: "通用LLM gap仅3.4pp，Nous gap 85.2pp"
   - date: 2026-04-06
     topic: verifier-architecture
-    decision: "B路线：审计员自己算保安看不到什么，不靠保安自报。红色=必须确认，黄色累积升级。行为模式判断不做白名单。"
-    rationale: "保安（LLM）天然不倾向说自己不知道，确定性规则更可靠"
-  - date: 2026-04-06
-    topic: structured-reason-output
-    decision: "先完成 34 条证据表，再设计 reason schema 架构升级"
-    rationale: "先搞清楚漏在哪，再设计要强制输出什么字段"
+    decision: "B路线：审计员自己算保安看不到什么"
+    rationale: "保安（LLM）天然不倾向说自己不知道"
   - date: 2026-04-05
     topic: questionnaire-01
-    decision: "窄但可靠 > 宽但不稳；防漏判 > 防误伤；主因是架构盲区；先讲清边界；每日7题"
+    decision: "窄但可靠 > 宽但不稳；防漏判 > 防误伤"
+
+learnings:
+  - "不要同时做威胁模型+系统+理论——每个单独都不够深"
+  - "不要把常识包装成定理——审稿人会更反感"
+  - "先解决问题再写论文，不要先写论文再找问题"
+  - "14.8% < 59.3% 说明架构方向可能需要根本性调整"
+  - "P1否定说明'加信息'不是简单的prompt拼接，需要架构层面的重新设计"
