@@ -64,8 +64,16 @@ class NousFilteredRuntime(FunctionsRuntime):
     _verifier_config: Optional[Any] = None   # VerifierConfig | None
     _semantic_config: Optional[Any] = None   # SemanticGateConfig | None
 
+    # P1 实验：当前任务的用户原始目标（每个任务开始前调用 set_user_goal 设置）
+    _user_goal: str = ""
+
     def __init__(self, functions: Sequence[Function] = []) -> None:
         super().__init__(functions)
+
+    @classmethod
+    def set_user_goal(cls, goal: str) -> None:
+        """设置当前任务的用户目标（P1 实验用，注入到 gate 的 tool_call 元数据）。"""
+        cls._user_goal = goal or ""
 
     @classmethod
     def configure(
@@ -101,6 +109,9 @@ class NousFilteredRuntime(FunctionsRuntime):
         from nous.gate import gate
 
         tool_call = _to_nous_format(function, kwargs)
+        # P1 实验：注入用户原始任务目标（_user_goal 前缀 _ 表示元数据，不是工具参数）
+        if self.__class__._user_goal:
+            tool_call["_user_goal"] = self.__class__._user_goal
         verdict = "allow"
         latency_ms = 0.0
         layer_path = "datalog_only"
