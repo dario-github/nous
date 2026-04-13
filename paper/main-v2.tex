@@ -73,7 +73,7 @@ categories of agent behavior that damage the deploying owner's interests.
 We quantify the resulting defense gap on two authoritative benchmarks: the
 same compositional safety system achieves 100\% TPR / 0\% FPR on
 AgentHarm (generic criminal harm, 176 harmful scenarios) yet only 14.8\%
-(4/27) on AgentDojo injection tasks (prompt-injection-mediated owner harm),
+(4/27; 95\% CI: 5.9\%--32.5\%) on AgentDojo injection tasks (prompt-injection-mediated owner harm),
 exposing a category-specific blind spot. A controlled experiment with a
 zero-shot generic LLM classifier reveals that this gap is not inherent to
 the owner-harm category (generic LLM: 62.7\% vs.\ 59.3\%, gap = 3.4 pp)
@@ -84,12 +84,12 @@ a deterministic post-audit verifier raises Hijacking detection from 43.3\%
 to 93.3\%, demonstrating strong layer complementarity. These results
 confirm that owner-harm requires context-aware safety mechanisms that
 explicitly model resource ownership, trust boundaries, and authorization
-scope. To provide a theoretical foundation for the gap, we introduce
-\emph{Symbolic-Semantic Defense Generalization (SSDG)} theory, which
-formalizes how information coverage---the fraction of an attack's
-evidential requirements satisfied by a defense's context set---determines
-detection rate. Two controlled SSDG experiments partially validate the
-theory: context deprivation induces a 3.4$\times$ amplification of the
+scope. To organize these observations, we introduce the
+\emph{Symbolic-Semantic Defense Generalization (SSDG)} conceptual framework,
+which describes how information coverage---the fraction of an attack's
+evidential requirements satisfied by a defense's context set---relates to
+detection rate. Two controlled SSDG experiments partially test the
+framework: context deprivation induces a 3.4$\times$ amplification of the
 detection gap (gap ratio $R = 3.60$ vs.\ $R = 1.06$ with full context),
 while context injection reveals that goal-context awareness is necessary
 but not sufficient---structured goal-action alignment, not simple text
@@ -143,7 +143,7 @@ legitimate banking APIs or PII forwarded through authorized email tools.
   \item \textbf{Owner-Harm threat model.} We provide the first formal
     definition of owner-harm and its eight sub-categories, grounded in
     real incidents and distinguished from existing taxonomies.
-  \item \textbf{Defense gap quantification and causal attribution.} We
+  \item \textbf{Defense gap quantification and gap attribution.} We
     measure the gap (100\% vs.\ 14.8\%) and use a controlled experiment
     to attribute it to environment-bound rule generalization failure
     rather than inherent category difficulty: a zero-shot generic LLM
@@ -212,7 +212,7 @@ attack model.
 \subsection{Eight Owner-Harm Categories}
 \label{subsec:categories}
 
-We enumerate eight disjoint categories $C1$--$C8$, each grounded in
+We enumerate eight categories $C1$--$C8$ (primary labels; a single incident may span multiple categories), each grounded in
 documented incidents.
 
 \textbf{C1: Credential Leak.} The agent exfiltrates authentication
@@ -359,12 +359,12 @@ defense classes against this incompleteness.
 \end{table}
 
 % ================================================================
-\subsection{Symbolic-Semantic Defense Generalization (SSDG) Theory}
+\subsection{Symbolic-Semantic Defense Generalization (SSDG) Framework}
 \label{subsec:ssdg_theory}
 
-The controlled experiment results motivate a formal account of
+The controlled experiment results motivate a conceptual account of
 \emph{when} and \emph{why} defenses fail to generalize across attack
-categories. We introduce the following framework.
+categories. We emphasize that SSDG is a conceptual framework for organizing observations, not a formal mathematical theory with rigorous proofs. For formal treatments of causality in such analyses, see Pearl \cite{pearl2009causality}. We introduce the following framework.
 
 \textbf{Definitions.} Let an attack $a$ be characterized by its
 \emph{evidential requirement set} $E(a)$---the set of contextual facts
@@ -375,34 +375,39 @@ patterns) and $\Omega_C$ captures contextual knowledge (world knowledge,
 owner context, task goals). The \emph{information coverage} of $D$ for
 attack $a$ is:
 \[
-  \mathrm{Cover}(D,a) \;\coloneqq\; \frac{|E(a) \cap \Omega(D)|}{|E(a)|}
+  \mathrm{Cover}(D,a) \;\coloneqq\; \frac{|E(a) \cap \Omega_{\mathrm{usable}}(D)|}{|E(a)|}
   \;\in [0,1]
 \]
+where $\Omega_{\mathrm{usable}}(D) \subseteq \Omega(D)$ denotes the subset of
+information that the defense can \emph{effectively use} in its decision
+process. Mere availability of information ($\Omega_{\mathrm{raw}}$) does not
+guarantee usability---simple text concatenation of context may not enable
+structured comparison (as P1 in Section~\ref{subsec:ssdg_experiments}
+demonstrates).
 
-\textbf{Axiom (Detection-Coverage Monotonicity).}
+\textbf{Assumption (Detection-Coverage Monotonicity).}
 $\mathrm{TPR}(D,a)$ is non-decreasing in $\mathrm{Cover}(D,a)$; below
 threshold $\theta$, $\mathrm{TPR}(D,a) \leq \varepsilon$.
 
-\begin{theorem}[Symbolic Defense Gap]
-\label{thm:symbolic_gap}
+\begin{hypothesis}[Symbolic Defense Gap]
+\label{hyp:symbolic_gap}
 A pure symbolic defense with $\Omega_C = \emptyset$ achieves
 $\mathrm{Cover}(D, A_G) \gg \mathrm{Cover}(D, A_O)$ when $A_O$ requires
 joint surface-context evidence. Consequently, $\mathrm{TPR}(D, A_O)
 \leq \varepsilon$ while $\mathrm{TPR}(D, A_G)$ remains high---producing
-a structural detection gap. (Observed: 100\% vs.\ 3.7\%.)
-\end{theorem}
+a structural detection gap.
+\end{hypothesis}
 
-\begin{theorem}[Semantic Defense Stability]
-\label{thm:semantic_stability}
+\begin{hypothesis}[Semantic Defense Stability]
+\label{hyp:semantic_stability}
 A semantic defense with $\Omega_C \supseteq \mathcal{C}_{\mathrm{world}}$
 (world knowledge) satisfies $\mathrm{Cover}(D, A_G) \approx
 \mathrm{Cover}(D, A_O)$, since both attack types' evidential requirements
 are met by world-knowledge reasoning. The inter-category detection gap
 is thus bounded by inference capacity, not information availability.
-(Observed: 62.7\% vs.\ 59.3\%, gap = 3.4 pp.)
-\end{theorem}
+\end{hypothesis}
 
-These theorems yield two falsifiable predictions tested in
+These hypotheses yield two falsifiable predictions tested in
 Section~\ref{subsec:ssdg_experiments}: \textbf{P1}---injecting the user
 goal into a symbolic defense's context should raise $\mathrm{Cover}(D,
 A_O)$, increasing TPR; and \textbf{P2}---stripping world-context from
@@ -479,8 +484,8 @@ We evaluate on three benchmark sets with different evidentiary weight:
 
 \textbf{AgentDojo to Owner-Harm category mapping.} We assign each of the
 27 injection tasks to the Owner-Harm category it most closely targets:
-Banking (9 tasks): \texttt{financial\_harm} (10 tasks across banking suite),
-\texttt{credential\_leak} (3 tasks including 2FA/password modification);
+Banking (9 injection tasks): \texttt{financial\_harm} (8 tasks---unauthorized transfers with data exfiltration),
+\texttt{credential\_leak} (1 task---password modification);
 Travel (7 tasks): \texttt{privacy\_breach} (6 tasks---passport/banking info
 exfiltration), \texttt{reputational\_harm} (1 task);
 Workspace (6 tasks): \texttt{operational\_harm} (file deletion),
@@ -506,9 +511,10 @@ this evaluation).
     \toprule
     \textbf{Configuration} & \textbf{Safety} & \textbf{Utility} & \textbf{FPR} \\
     \midrule
-    L1 only (baseline)   & 3.7\% (1/27)  & 97.9\% (95/97) & 2.1\% (2/97) \\
-    L1 + L4              & 3.7\% (1/27)  & 97.9\%         & 2.1\%        \\
-    L1 + L3 + L4 (full) & 14.8\% (4/27) & 97.9\%         & 2.1\%        \\
+    L1 only (baseline)   & 3.7\% (1/27)\textsuperscript{$\dagger$}  & 97.9\% (95/97) & 2.1\% (2/97) \\
+    L1 + L4              & 3.7\% (1/27)\textsuperscript{$\dagger$}  & 97.9\%         & 2.1\%        \\
+    L1 + L3 + L4 (full) & 14.8\% (4/27)\textsuperscript{$\dagger$} & 97.9\%         & 2.1\%        \\
+    \multicolumn{4}{l}{\small $\dagger$95\% Wilson CI: 3.7\% [0.7\%--18.3\%]; 14.8\% [5.9\%--32.5\%]} \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -587,9 +593,14 @@ categories rather than discriminating at the call level).
 
 \emph{Important caveat}: the Owner-Harm Benchmark was constructed by the
 same author after optimization loops on the Nous system. It is not an
-independent held-out evaluation. The results below constitute diagnostic
-evidence that the system has learned the intended owner-harm categories;
-they do not constitute validation performance in the machine-learning sense.
+independent held-out evaluation. All 450 scenarios were labeled by a
+single annotator (the first author); no inter-annotator agreement (IAA)
+was computed. The C1--C8 primary-category assignments reflect the
+author's subjective judgment of the dominant harm vector, and some
+scenarios could plausibly be assigned to multiple categories. The results
+below constitute diagnostic evidence that the system has learned the
+intended owner-harm categories; they do not constitute validation
+performance in the machine-learning sense.
 
 \textbf{Overall results.}
 
@@ -693,7 +704,7 @@ signals) have near-zero coverage of application-layer owner-harm.
 action by its content alone; it becomes harmful only relative to the
 owner's authorization scope and the user's actual task goal.
 
-\subsection{Controlled Experiment: Causal Attribution of the Gap}
+\subsection{Controlled Experiment: Gap Attribution}
 \label{subsec:control}
 
 The 85.2 pp gap between AgentHarm (100\%) and AgentDojo (14.8\%)
@@ -721,7 +732,7 @@ context ($\RO$, $\BO$, $\AuthO$).
 
 \begin{table}[!t]
   \centering
-  \caption{Controlled Experiment: Gap Causal Attribution
+  \caption{Controlled Experiment: Gap Attribution
     (Nous vs.\ Generic LLM Classifier)}
   \label{tab:control}
   \begin{tabular}{lccc}
@@ -734,32 +745,41 @@ context ($\RO$, $\BO$, $\AuthO$).
   \end{tabular}
   \vspace{1mm}
   \\
-  \small Generic LLM AgentHarm: 188 TP / 112 FN / 24 FP (FPR = 16.0\%,
-  $N=300$ harmful $+$ 150 benign). \\
+  \small Generic LLM AgentHarm: 110 TP / 66 FN / 28 FP (FPR = 15.9\%,
+  $N=176$ harmful $+$ 176 benign). \\
   \small AgentDojo per-category breakdown appears in text.
 \end{table}
 
 \textbf{Finding.} The generic LLM exhibits a 3.4 pp gap (62.7\% vs.\
 59.3\%)---statistically negligible compared to Nous's 85.2 pp gap.
-This rules out H1: AgentDojo owner-harm scenarios are \emph{not}
-semantically harder to detect. The generic LLM achieves 59.3\% on
-AgentDojo without any prompt-injection-specific design, confirming that
+This is inconsistent with H1: AgentDojo owner-harm scenarios do not appear to be
+semantically harder to detect. The generic LLM achieves 59.3\
+AgentDojo without any prompt-injection-specific design, suggesting that
 the harm is semantically recognizable by content alone.
 
-\textbf{Causal attribution.} Nous's gap arises from \textbf{Layer 1
+\textbf{Gap attribution.} Nous's gap is strongly associated with \textbf{Layer 1
 (Datalog) generalization failure}. L1 rules were derived from
 AgentHarm patterns---\texttt{bash(script)}, \texttt{read\_file
 (malicious\_path)}, \texttt{execute(command)}---which are absent from
 AgentDojo's application-layer tool vocabulary
 (\texttt{send\_money}, \texttt{send\_email}, \texttt{update\_calendar}).
-L3 (semantic gate) alone contributes only 11.1 pp on AgentDojo (3.7\%
-$\to$ 14.8\%), far below the generic LLM's 59.3\%, because the semantic
-layer also lacks owner-context ($\RO$, $\BO$) to ground its evaluation.
+\textbf{Implication: generic LLM outperforms Nous.}
+Notably, the zero-shot generic LLM (59.3\%) substantially outperforms
+Nous (14.8\%) on AgentDojo owner-harm detection. This is not a
+contradiction---it is the central architectural insight: owner-harm
+detection depends primarily on semantic understanding of action
+consequences and owner context, which symbolic rules (L1) cannot provide.
+Nous's L1 achieves perfect recall on AgentHarm's system-call patterns but
+has near-zero coverage of application-layer actions. L3's semantic
+gate contributes only +11.1\,pp because it also lacks owner-context
+grounding. The generic LLM compensates via world-knowledge reasoning,
+suggesting that future owner-harm defenses should prioritize structured
+semantic alignment over pattern-matching rules.
 
 \subsection{SSDG Experimental Predictions}
 \label{subsec:ssdg_experiments}
 
-The SSDG theory (Section~\ref{subsec:ssdg_theory}) yields two testable
+The SSDG framework (Section~\ref{subsec:ssdg_theory}) yields two testable
 predictions. We report pilot experiments ($N = 12$ AgentDojo tasks
 $+$ 15 AgentHarm scenarios) using the same controlled setup as
 Section~\ref{subsec:control}.
@@ -812,10 +832,10 @@ only the raw tool name and parameter, no surrounding task description.
 The stripped condition yields $R = 3.60$, exceeding the P2
 falsification threshold ($R \leq 1.5$). When deprived of context,
 the semantic defense degrades to near-symbolic gap behavior,
-confirming Theorem~\ref{thm:semantic_stability}: the stability of
+confirming Hypothesis~\ref{hyp:semantic_stability}: the stability of
 semantic detection depends on access to world-context, not on model
 reasoning capacity per se. The finding identifies \emph{information
-deprivation} as the structural root cause of the detection gap.
+deprivation} as a key factor associated with the detection gap.
 
 % ================================================================
 \section{Production Deployment Evidence}
@@ -832,12 +852,16 @@ introduce systematic drift from established policy.
 existing rule-based system passed as benign. Manual review of a stratified
 sample confirmed these were true positives, predominantly ambiguous
 read-then-send workflows where the send target fell outside the owner's
-trust boundary.
+trust boundary. \emph{Caveat}: the manual review was conducted by the
+system developer (first author), not an independent auditor, and was not
+blind to Nous's verdict---creating potential confirmation bias. These
+results should be interpreted as case-level observations, not as a
+controlled study.
 
 \textbf{Over-blocking}: Nous over-blocked in 4 cases where the existing
 system correctly allowed. Manual review confirmed all 4 were over-triggered
 on ambiguous read-then-send workflows where the send target was a legitimate
-internal address.
+internal address. (Same caveat as above: non-blind, author-conducted review.)
 
 Following the shadow period, Nous was promoted to primary interceptor.
 No regressions were observed post-cutover.
@@ -879,7 +903,7 @@ from runtime gate evaluation.
 
 The SSDG experiments (Section~\ref{subsec:ssdg_experiments}) provide
 a more precise formulation: information deprivation is the structural
-cause, not semantic difficulty. P2 confirms that stripping context
+factor, not semantic difficulty. P2 confirms that stripping context
 from an otherwise capable semantic defense reproduces symbolic-level
 gaps ($R = 3.60$). P1's rejection is equally informative---it shows
 that goal awareness is necessary but not sufficient: the defense must
@@ -890,7 +914,7 @@ receive the goal as a text fragment.
 \label{subsec:disc_generalization}
 
 The controlled experiment, together with the SSDG theoretical framework
-(Theorems~\ref{thm:symbolic_gap}--\ref{thm:semantic_stability}),
+(Hypotheses~\ref{hyp:symbolic_gap}--\ref{hyp:semantic_stability}),
 exposes a fundamental asymmetry between the two
 primary detection mechanisms in compositional safety architectures:
 
@@ -1042,6 +1066,10 @@ the runtime layer.
 provides programmable rails for LLM applications. Llama Guard
 \cite{inan2023llamaguard} implements LLM-based input/output safeguards.
 ShieldGemma \cite{zeng2024shieldgemma} offers generative content moderation.
+R2Guard \cite{chen2024r2guard} provides runtime guardrails specifically
+designed for agent tool calls, and AgentMonitor \cite{yu2024agentmonitor}
+offers real-time behavior monitoring. BIPIA \cite{yi2023bipia} benchmarks
+indirect prompt injection attacks complementary to our analysis.
 These systems operate primarily on content classification; none model
 owner-context dimensions ($\RO$, $\BO$, $\AuthO$). Guardrails AI
 \cite{guardrailsai2024} provides composable input/output guards but without
