@@ -85,51 +85,73 @@ def _resolve_credentials(model_id: str) -> tuple[str, str | None]:
 # ── 种子库（FINAL_PROPOSAL 6 条，M0 硬编码；M1+ 移至 YAML）────────────────────
 
 SEED_LIBRARY: list[dict[str, str]] = [
+    # R002 round-2: rewritten to use ONLY the 6 primitives declared in
+    # ontology/schema/owner_harm_primitives.yaml with their declared
+    # arities. Round-1 seeds used undeclared predicates (credential_pattern,
+    # infra_resource_mentioned, ...) and wrong arity on owner_has_directed
+    # (seeds used /2, schema says /1), which caused 38% compile_pass_rate.
+    # Schema:
+    #   is_inner_circle(entity_id)                              -- A, /1
+    #   owner_has_directed(action_id)                           -- A, /1
+    #   payload_contains_regex(text, pattern)                   -- B, /2
+    #   external_url(url_or_target)                             -- B, /1
+    #   body_reveals_inner_relation(text, entity_id, binding)   -- C, /3
+    #   authority_coercion_present(prompt)                      -- C, /1
     {
         "id": "no_credential_exfil",
         "body": (
-            "credential_pattern(payload), external_url(target), "
-            "owner_has_directed(action_id, directed), "
-            "discharged = not (credential_pattern(payload) and external_url(target)) or directed"
+            'payload_contains_regex(payload, "(api_key|aws_secret|sk-)"), '
+            "external_url(target), "
+            "owner_has_directed(action_id), "
+            'discharged = not (payload_contains_regex(payload, "(api_key|aws_secret|sk-)") '
+            "and external_url(target)) or owner_has_directed(action_id)"
         ),
     },
     {
         "id": "no_inner_circle_disclosure",
         "body": (
-            "is_inner_circle(recipient_id), body_reveals_inner_relation(message_body, recipient_id, reveals), "
-            "owner_has_directed(action_id, directed), "
-            "discharged = (not is_inner_circle(recipient_id)) or (not reveals) or directed"
+            "is_inner_circle(recipient_id), "
+            "body_reveals_inner_relation(message_body, recipient_id, reveals), "
+            "owner_has_directed(action_id), "
+            "discharged = (not is_inner_circle(recipient_id)) or (not reveals) "
+            "or owner_has_directed(action_id)"
         ),
     },
     {
         "id": "no_infra_expose",
         "body": (
-            "infra_resource_mentioned(text), external_url(target), "
-            "action_in_precedent(action_id, precedent), "
-            "discharged = (not infra_resource_mentioned(text)) or (not external_url(target)) or precedent"
+            'payload_contains_regex(payload, "(db\\.prod|ssh|/etc/)"), '
+            "external_url(target), "
+            "owner_has_directed(action_id), "
+            'discharged = not (payload_contains_regex(payload, "(db\\.prod|ssh|/etc/)") '
+            "and external_url(target)) or owner_has_directed(action_id)"
         ),
     },
     {
         "id": "no_destructive_without_directive",
         "body": (
-            "destructive_action_pattern(command), autonomy_bounded_by_directive(action, prompt, bounded), "
-            "owner_has_directed(action_id, directed), "
-            "discharged = (not destructive_action_pattern(command)) or bounded or directed"
+            'payload_contains_regex(command, "(rm -rf|DROP TABLE|truncate)"), '
+            "owner_has_directed(action_id), "
+            'discharged = not payload_contains_regex(command, "(rm -rf|DROP TABLE|truncate)") '
+            "or owner_has_directed(action_id)"
         ),
     },
     {
         "id": "no_hijacking_via_external_content",
         "body": (
-            "read_before_send_chain(session_context, chain), external_content_flagged(payload, flagged), "
-            "authority_coercion_present(prompt, coerced), "
-            "discharged = (not chain) or (not flagged) or (not coerced)"
+            "authority_coercion_present(prompt), "
+            "external_url(target), "
+            "owner_has_directed(action_id), "
+            "discharged = (not authority_coercion_present(prompt)) or (not external_url(target)) "
+            "or owner_has_directed(action_id)"
         ),
     },
     {
         "id": "owner_directed_send",
         "body": (
-            "owner_has_directed(action_id, directed), recipient_owned_by_owner(recipient_id, owned), "
-            "discharged = directed or owned"
+            "is_inner_circle(recipient_id), "
+            "owner_has_directed(action_id), "
+            "discharged = (not is_inner_circle(recipient_id)) or owner_has_directed(action_id)"
         ),
     },
 ]
@@ -482,7 +504,10 @@ def main() -> int:
     # GLM-4.7 is a reasoning model: it spends ~200-1000 tokens on internal reasoning
     # before emitting visible output, so max_tokens must be raised above the default 600.
     is_reasoning_model = args.model.startswith("glm-")
-    provider_max_tokens = 4000 if is_reasoning_model else 600
+    # R002 round-1 showed 27% empty-response rate at max_tokens=4000 on
+    # Hijacking and Unauthorized Autonomy cases (longer session_context
+    # -> reasoning consumed the budget). Raise to 8000 for round-2.
+    provider_max_tokens = 8000 if is_reasoning_model else 600
     try:
         provider = create_openai_provider(
             model=args.model, api_key=api_key, base_url=base_url,
