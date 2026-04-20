@@ -150,6 +150,24 @@ def parse_synthesis_response(
             message=f"invalid JSON: {e}",
         )
 
+    # Normalize: reasoning LLMs behave inconsistently with the inner
+    # obligation.decision field. Two observed failure modes:
+    #   (a) omit it entirely;
+    #   (b) put the rule's "discharged = ..." formula there instead of a
+    #       verdict (allow/confirm/block), confused by the double meaning
+    #       of "decision".
+    # In both cases the outer decision is correct, so overwrite the inner
+    # when it's missing or not one of the three allowed verdicts.
+    _VALID_VERDICTS = {"allow", "confirm", "block"}
+    if (
+        isinstance(data, dict)
+        and isinstance(data.get("synthesized_obligation"), dict)
+        and data.get("decision") in _VALID_VERDICTS
+    ):
+        inner = data["synthesized_obligation"].get("decision")
+        if inner not in _VALID_VERDICTS:
+            data["synthesized_obligation"]["decision"] = data["decision"]
+
     try:
         return SynthesisResult.model_validate(data)
     except Exception as e:
