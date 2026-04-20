@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """M0 Sanity R002 — Grammar-constrained synthesis pilot.
 
-Calls DeepSeek-V3.2 (via existing src/nous/providers/openai_provider.py) on 500
+Calls GLM-4.7 (via Zai openai-compatible) on 500
 randomly-sampled v3 cases; proposer emits {decision, synthesized_obligation} JSON.
 
 Measures:
@@ -16,14 +16,15 @@ Target: parse-failure rate < 1% (per EXPERIMENT_PLAN R002 gate).
 If > 1%, invoke Cozo->Lark fork decision per `docs/cozo-lark-fork-decision.md`.
 
 USAGE:
-    NOUS_API_KEY=xxx python3 scripts/m0_synthesis_pilot.py \\
+    python3 scripts/m0_synthesis_pilot.py \\
         --cases data/owner_harm_heldout_v3.json \\
         --sample-size 500 \\
-        --output docs/m0-synthesis-pilot-2026-04-19.json
+        --output docs/m0-synthesis-pilot-2026-04-20.json \\
+        --yes
 
 SAFETY:
-- Checks NOUS_API_KEY is set; exits with clear message if not
-- Prints estimated cost ($0.01/call x 500 = $5) and prompts Enter to proceed
+- Resolves credentials from env vars or ~/.openclaw/openclaw.json at runtime (never written to files)
+- Prints estimated cost ($0.002/call x 500 = $1) and prompts Enter to proceed (skip with --yes)
 - Caches responses to avoid re-calling on retry
 """
 from __future__ import annotations
@@ -45,6 +46,40 @@ from nous.lsvj.schema import load_schema_from_yaml
 from nous.lsvj.synthesis import build_synthesis_prompt, parse_synthesis_response, SynthesisResult
 from nous.lsvj.compiler import compile_check
 from nous.providers.openai_provider import create_openai_provider
+
+
+def _resolve_credentials(model_id: str) -> tuple[str, str | None]:
+    """Resolve API key + base URL, preferring env vars then openclaw.json."""
+    # env priority
+    key = os.environ.get("NOUS_API_KEY") or os.environ.get("OPENAI_API_KEY")
+    url = os.environ.get("NOUS_BASE_URL") or os.environ.get("OPENAI_BASE_URL")
+    if key:
+        return key, url
+
+    # fallback: openclaw config
+    openclaw_path = Path.home() / ".openclaw/openclaw.json"
+    if not openclaw_path.exists():
+        raise RuntimeError(
+            "No API credentials: set NOUS_API_KEY or ensure ~/.openclaw/openclaw.json exists"
+        )
+    cfg = json.loads(openclaw_path.read_text())
+    providers = cfg.get("models", {}).get("providers", {})
+
+    # route by model prefix
+    if model_id.startswith("glm-"):
+        prov = providers.get("zai", {})
+        prov_name = "zai"
+    elif model_id.startswith("kimi-"):
+        prov = providers.get("kimi", {})
+        prov_name = "kimi"
+    else:
+        raise RuntimeError(f"Unknown model prefix for credential resolution: {model_id}")
+
+    key = prov.get("apiKey")
+    url = prov.get("baseUrl")
+    if not key:
+        raise RuntimeError(f"openclaw.json provider '{prov_name}' missing apiKey for {model_id}")
+    return key, url
 
 
 # ── 种子库（FINAL_PROPOSAL 6 条，M0 硬编码；M1+ 移至 YAML）────────────────────
@@ -273,18 +308,33 @@ def _process_case(
     cache: dict[str, str],
     output_path: str,
     dry_run: bool,
+    model: str = "glm-4.7",
 ) -> dict[str, Any]:
     """处理单个 case，返回结果记录。"""
     case_id = str(case.get("id", f"case_{idx:05d}"))
     category = str(case.get("category", "unknown"))
 
-    tool_call = case.get("tool_call", {})
+    # v3 schema uses tool_calls (list); legacy uses tool_call (dict). Normalize.
+    tool_call = case.get("tool_call")
+    if tool_call is None:
+        tcs = case.get("tool_calls")
+        if isinstance(tcs, list) and tcs:
+            last = tcs[-1]
+            if isinstance(last, dict):
+                tool_call = {
+                    "tool_name": last.get("action") or last.get("tool_name", "unknown"),
+                    "action_type": last.get("action") or last.get("action_type", "unknown"),
+                    "params": last.get("params", {}),
+                }
     if not isinstance(tool_call, dict):
         tool_call = {"tool_name": str(tool_call), "action_type": str(tool_call), "params": {}}
 
+    # v3: use `prompt` field as the user-utterance session context
     session_context = case.get("session_context", [])
     if not isinstance(session_context, list):
         session_context = []
+    if not session_context and case.get("prompt"):
+        session_context = [{"role": "user", "content": str(case["prompt"])}]
 
     base: dict[str, Any] = {
         "case_id": case_id,
@@ -303,7 +353,7 @@ def _process_case(
         else:
             try:
                 prompt = build_synthesis_prompt(tool_call, session_context, schema, SEED_STRINGS)
-                raw_response = provider(prompt, timeout_ms=30_000, model_override="DeepSeek-V3.2")
+                raw_response = provider(prompt, timeout_ms=300_000, model_override=model)
                 _append_cache(output_path, case_id, raw_response)
             except Exception as e:
                 base["error"] = str(e)[:200]
@@ -354,18 +404,25 @@ def main() -> int:
         "--dry-run", action="store_true",
         help="Skip LLM calls; validate setup end-to-end with stub responses",
     )
+    parser.add_argument(
+        "--model", default="glm-4.7-flashx",
+        help="Model name (default: glm-4.7-flashx — faster reasoning variant); controls credential routing",
+    )
+    parser.add_argument(
+        "--yes", action="store_true",
+        help="Skip the Enter-to-confirm prompt (for batch/automated use)",
+    )
     args = parser.parse_args()
 
-    # ── API Key 检查 ─────────────────────────────────────────────────────────
-    api_key = os.environ.get("NOUS_API_KEY") or os.environ.get("OPENAI_API_KEY")
-    if not api_key and not args.dry_run:
-        print(
-            "ERROR: NOUS_API_KEY not set.\n"
-            "  export NOUS_API_KEY=<your-key>\n"
-            "  Use --dry-run for setup validation without spending money.",
-            file=sys.stderr,
-        )
-        return 1
+    # ── 凭据解析（env 优先，然后 ~/.openclaw/openclaw.json）─────────────────
+    api_key: str | None = None
+    base_url: str | None = None
+    if not args.dry_run:
+        try:
+            api_key, base_url = _resolve_credentials(args.model)
+        except RuntimeError as e:
+            print(f"ERROR: {e}\n  Use --dry-run for setup validation without spending money.", file=sys.stderr)
+            return 1
 
     # ── 加载 schema ──────────────────────────────────────────────────────────
     schema_path = Path(__file__).parent.parent / "ontology" / "schema" / "owner_harm_primitives.yaml"
@@ -392,7 +449,7 @@ def main() -> int:
 
         results: list[dict] = []
         for idx, case in enumerate(cases):
-            r = _process_case(case, idx, schema, None, {}, args.output, dry_run=True)
+            r = _process_case(case, idx, schema, None, {}, args.output, dry_run=True, model=args.model)
             results.append(r)
 
         summary = aggregate_results(results)
@@ -407,19 +464,30 @@ def main() -> int:
         return 0
 
     # ── 实际运行：成本预览 + 确认 ────────────────────────────────────────────
-    estimated_cost = n_to_run * 0.01
+    estimated_cost = n_to_run * 0.002
     print(f"Plan: sample {n_to_run} cases from {args.cases}")
-    print(f"Estimated cost: ${estimated_cost:.2f}  (${0.01:.2f}/call x {n_to_run})")
+    print(f"Model: {args.model}  (credential source: openclaw.json / env)")
+    print(f"Estimated cost: ${estimated_cost:.2f}  (${0.002:.3f}/call x {n_to_run})")
     print("Responses cached to avoid re-calling on retry.")
-    try:
-        input("Press Enter to confirm, Ctrl-C to abort... ")
-    except KeyboardInterrupt:
-        print("\nAborted.")
-        return 1
+    if not args.yes:
+        try:
+            input("Press Enter to confirm, Ctrl-C to abort... ")
+        except KeyboardInterrupt:
+            print("\nAborted.")
+            return 1
+    else:
+        print("[--yes] skipping confirmation")
 
     # ── 创建 provider ────────────────────────────────────────────────────────
+    # GLM-4.7 is a reasoning model: it spends ~200-1000 tokens on internal reasoning
+    # before emitting visible output, so max_tokens must be raised above the default 600.
+    is_reasoning_model = args.model.startswith("glm-")
+    provider_max_tokens = 4000 if is_reasoning_model else 600
     try:
-        provider = create_openai_provider(model="DeepSeek-V3.2", api_key=api_key)
+        provider = create_openai_provider(
+            model=args.model, api_key=api_key, base_url=base_url,
+            max_tokens=provider_max_tokens,
+        )
     except Exception as e:
         print(f"[error] failed to create provider: {e}", file=sys.stderr)
         return 1
@@ -434,7 +502,7 @@ def main() -> int:
     t_start = time.time()
 
     for idx, case in enumerate(cases[:n_to_run]):
-        r = _process_case(case, idx, schema, provider, cache, args.output, dry_run=False)
+        r = _process_case(case, idx, schema, provider, cache, args.output, dry_run=False, model=args.model)
         results.append(r)
 
         if (idx + 1) % 50 == 0 or idx + 1 == n_to_run:

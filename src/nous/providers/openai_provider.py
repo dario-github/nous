@@ -13,6 +13,7 @@ def create_openai_provider(
     api_key: Optional[str] = None,
     base_url: Optional[str] = None,
     max_retries: int = 2,
+    max_tokens: int = 600,
 ) -> callable:
     """Create an OpenAI-compatible LLM provider for semantic_gate.
 
@@ -21,6 +22,7 @@ def create_openai_provider(
         api_key: API key (defaults to NOUS_API_KEY → OPENAI_API_KEY env var)
         base_url: API base URL (defaults to NOUS_BASE_URL env var, then OpenAI default)
         max_retries: Number of retries on transient errors (default: 2)
+        max_tokens: Max tokens for completion (default: 600; raise to 2000+ for reasoning models)
 
     Returns:
         Callable matching LLMProvider protocol: (prompt, timeout_ms, model) -> str
@@ -60,7 +62,7 @@ def create_openai_provider(
                 response = client.chat.completions.create(
                     model=model,
                     messages=[{"role": "user", "content": prompt}],
-                    max_tokens=600,
+                    max_tokens=max_tokens,
                     temperature=0.0,
                     timeout=max(timeout_ms / 1000, 10.0),
                 )

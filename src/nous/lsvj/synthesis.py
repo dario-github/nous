@@ -133,8 +133,17 @@ def parse_synthesis_response(
     Returns:
         SynthesisResult（成功）或 ParseError（JSON 格式错误 / schema 不符）
     """
+    # Strip markdown code-fence wrapping that reasoning models routinely emit:
+    #   ```json\n{...}\n```   or   ```\n{...}\n```
+    text = response_text.strip()
+    if text.startswith("```"):
+        first_nl = text.find("\n")
+        if first_nl != -1:
+            text = text[first_nl + 1:]
+        if text.rstrip().endswith("```"):
+            text = text.rstrip()[:-3].rstrip()
     try:
-        data = json.loads(response_text)
+        data = json.loads(text)
     except json.JSONDecodeError as e:
         return CompileParseError(
             stage="synthesis_parse",
