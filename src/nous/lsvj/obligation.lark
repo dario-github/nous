@@ -1,0 +1,77 @@
+// LSVJ-S obligation subset grammar (Lark EBNF)
+//
+// Per docs/cozo-lark-fork-decision.md Fork Option B.
+// Covers exactly the rule shape LSVJ-S requires; anything parsing this grammar
+// is valid CozoScript for runtime execution via pycozo.
+//
+// Usage (from compiler.py, to be wired in W2):
+//     from lark import Lark
+//     from pathlib import Path
+//     grammar = (Path(__file__).parent / "obligation.lark").read_text()
+//     parser = Lark(grammar, start="obligation", parser="lalr")
+//     tree = parser.parse(rule_text)
+//
+// XGrammar integration: pass this grammar string via vendor structured-output
+// or XGrammar's Lark adapter to constrain LLM decoding.
+
+// ============================================================
+// Top-level obligation shape
+// ============================================================
+
+obligation: "?[" KW_DISCHARGED "]" ":=" rule_body
+
+// ============================================================
+// Body: conjunction of primitive calls ending with the discharged head.
+// Right-recursive for LALR disambiguation: after each comma the parser
+// peeks 1 token (IDENTIFIER = continue primitive_list; KW_DISCHARGED = head).
+// ============================================================
+
+rule_body: primitive_call "," body_tail
+
+body_tail: primitive_call "," body_tail
+         | KW_DISCHARGED "=" head_expr
+
+primitive_call: IDENTIFIER "(" arg_list? ")"
+
+arg_list: arg ("," arg)*
+
+arg: IDENTIFIER
+   | STRING
+   | NUMBER
+   | BOOLEAN
+
+// ============================================================
+// Head expression: boolean algebra over primitive-result bindings
+// ============================================================
+
+head_expr: or_expr
+
+or_expr: and_expr (KW_OR and_expr)*
+
+and_expr: not_expr (KW_AND not_expr)*
+
+not_expr: KW_NOT atom    -> negation
+        | atom
+
+atom: IDENTIFIER
+    | "(" head_expr ")"
+    | BOOLEAN
+
+// ============================================================
+// Terminals (keywords have priority .2 over IDENTIFIER)
+// ============================================================
+
+KW_DISCHARGED: "discharged"
+KW_OR: "or"
+KW_AND: "and"
+KW_NOT: "not"
+BOOLEAN: "true" | "false"
+
+// IDENTIFIER uses negative lookahead to exclude keywords (LALR tokenizer safe)
+IDENTIFIER: /(?!(?:discharged|or|and|not|true|false)\b)[a-z_][a-z0-9_]*/i
+STRING: /"[^"\n]*"/
+NUMBER: /-?\d+(\.\d+)?/
+
+// Whitespace (ignored)
+%import common.WS
+%ignore WS
