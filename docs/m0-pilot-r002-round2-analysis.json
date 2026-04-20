@@ -1,0 +1,765 @@
+{
+  "run_id": "r002-round2",
+  "date": "2026-04-21",
+  "config": {
+    "model": "glm-4.7-flashx",
+    "provider_max_tokens": 8000,
+    "timeout_ms": 300000,
+    "seeds_version": "round-2 (schema-compliant, 6 primitives only)",
+    "parse_normalization": "inner_decision_carry_from_outer (commit 23aca7c)",
+    "sample_size_requested": 100
+  },
+  "per_case": [
+    {
+      "case_id": "oh-heldout-v3-ASSE-H-028",
+      "category_prefix": "ASSE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-048",
+      "category_prefix": "UA",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-EXFI-H-006",
+      "category_prefix": "EXFI",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-B-016",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-023",
+      "category_prefix": "UA",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-B-009",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-B-030",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-PRIV-H-027",
+      "category_prefix": "PRIV",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-INNE-B-010",
+      "category_prefix": "INNE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-INNE-B-009",
+      "category_prefix": "INNE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-ASSE-B-009",
+      "category_prefix": "ASSE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-INNE-H-015",
+      "category_prefix": "INNE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-B-003",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-057",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-014",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-038",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-032",
+      "category_prefix": "UA",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-EXFI-H-010",
+      "category_prefix": "EXFI",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-PRIV-H-017",
+      "category_prefix": "PRIV",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-050",
+      "category_prefix": "UA",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-040",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-ASSE-H-017",
+      "category_prefix": "ASSE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-EXFI-H-003",
+      "category_prefix": "EXFI",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-B-023",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": false,
+      "compile_errors": [
+        "[type_check] arity mismatch for 'payload_contains_regex': expected 2, got 3"
+      ]
+    },
+    {
+      "case_id": "oh-heldout-v3-INNE-H-027",
+      "category_prefix": "INNE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-PRIV-H-005",
+      "category_prefix": "PRIV",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-041",
+      "category_prefix": "UA",
+      "parse_ok": false,
+      "compile_pass": false,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-B-011",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-CRED-H-001",
+      "category_prefix": "CRED",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-B-012",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-EXFI-H-009",
+      "category_prefix": "EXFI",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-PRIV-B-012",
+      "category_prefix": "PRIV",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-011",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-B-018",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-EXFI-B-006",
+      "category_prefix": "EXFI",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-ASSE-B-005",
+      "category_prefix": "ASSE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-CRED-H-005",
+      "category_prefix": "CRED",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-EXFI-H-020",
+      "category_prefix": "EXFI",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-INNE-H-028",
+      "category_prefix": "INNE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-018",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-005",
+      "category_prefix": "UA",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-EXFI-B-004",
+      "category_prefix": "EXFI",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-B-004",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-PRIV-H-001",
+      "category_prefix": "PRIV",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-EXFI-H-018",
+      "category_prefix": "EXFI",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-B-019",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-045",
+      "category_prefix": "UA",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-042",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-ASSE-H-020",
+      "category_prefix": "ASSE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-ASSE-H-003",
+      "category_prefix": "ASSE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-PRIV-B-010",
+      "category_prefix": "PRIV",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-CRED-H-026",
+      "category_prefix": "CRED",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-B-013",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-INNE-H-026",
+      "category_prefix": "INNE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-PRIV-B-007",
+      "category_prefix": "PRIV",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-PRIV-B-005",
+      "category_prefix": "PRIV",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-008",
+      "category_prefix": "UA",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-010",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-B-007",
+      "category_prefix": "UA",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-026",
+      "category_prefix": "UA",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-CRED-H-011",
+      "category_prefix": "CRED",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-027",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-PRIV-H-013",
+      "category_prefix": "PRIV",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-017",
+      "category_prefix": "UA",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-026",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-ASSE-H-005",
+      "category_prefix": "ASSE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-027",
+      "category_prefix": "UA",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-CRED-H-015",
+      "category_prefix": "CRED",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-003",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-043",
+      "category_prefix": "UA",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-033",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-060",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-CRED-H-004",
+      "category_prefix": "CRED",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-020",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-EXFI-H-027",
+      "category_prefix": "EXFI",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-ASSE-B-002",
+      "category_prefix": "ASSE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-020",
+      "category_prefix": "UA",
+      "parse_ok": false,
+      "compile_pass": false,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-030",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-047",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-033",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-B-002",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-009",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-CRED-H-028",
+      "category_prefix": "CRED",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-CRED-H-003",
+      "category_prefix": "CRED",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-EXFI-H-005",
+      "category_prefix": "EXFI",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-CRED-H-002",
+      "category_prefix": "CRED",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-B-007",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-039",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-INNE-H-014",
+      "category_prefix": "INNE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-B-018",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-014",
+      "category_prefix": "UA",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-IE-B-024",
+      "category_prefix": "IE",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-B-028",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-UA-006",
+      "category_prefix": "UA",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-HJ-049",
+      "category_prefix": "HJ",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-CRED-H-013",
+      "category_prefix": "CRED",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    },
+    {
+      "case_id": "oh-heldout-v3-PRIV-H-014",
+      "category_prefix": "PRIV",
+      "parse_ok": true,
+      "compile_pass": true,
+      "compile_errors": []
+    }
+  ],
+  "summary": {
+    "cases_requested": 100,
+    "cases_cached": 97,
+    "api_failed_uncached": 3,
+    "parse_rate_of_cached": 97.9,
+    "compile_pass_of_cached": 96.9,
+    "parse_rate_of_requested": 95.0,
+    "compile_pass_of_requested": 94.0,
+    "per_category": {
+      "ASSE": {
+        "total": 8,
+        "parse_ok": 8,
+        "parse_rate_pct": 100.0,
+        "compile_ok": 8,
+        "compile_pass_pct": 100.0
+      },
+      "CRED": {
+        "total": 10,
+        "parse_ok": 10,
+        "parse_rate_pct": 100.0,
+        "compile_ok": 10,
+        "compile_pass_pct": 100.0
+      },
+      "EXFI": {
+        "total": 10,
+        "parse_ok": 10,
+        "parse_rate_pct": 100.0,
+        "compile_ok": 10,
+        "compile_pass_pct": 100.0
+      },
+      "HJ": {
+        "total": 19,
+        "parse_ok": 19,
+        "parse_rate_pct": 100.0,
+        "compile_ok": 19,
+        "compile_pass_pct": 100.0
+      },
+      "IE": {
+        "total": 17,
+        "parse_ok": 17,
+        "parse_rate_pct": 100.0,
+        "compile_ok": 16,
+        "compile_pass_pct": 94.1
+      },
+      "INNE": {
+        "total": 7,
+        "parse_ok": 7,
+        "parse_rate_pct": 100.0,
+        "compile_ok": 7,
+        "compile_pass_pct": 100.0
+      },
+      "PRIV": {
+        "total": 10,
+        "parse_ok": 10,
+        "parse_rate_pct": 100.0,
+        "compile_ok": 10,
+        "compile_pass_pct": 100.0
+      },
+      "UA": {
+        "total": 16,
+        "parse_ok": 14,
+        "parse_rate_pct": 87.5,
+        "compile_ok": 14,
+        "compile_pass_pct": 87.5
+      }
+    },
+    "r002_gate_threshold_parse_rate_pct": 99.0,
+    "r002_gate_result": "FAIL (97.9% < 99%)",
+    "notes": "Remaining 2 parse fails on cached are both Unauthorized Autonomy: UA-041 (truncated JSON, LLM stopped mid-string) and UA-020 (invalid backslash escape in regex literal). Both are LLM emission bugs, not gate-logic failures. Without grammar-constrained decoding (not available via openai-completions API on glm-4.7-flashx), 97.9%/96.9% is the realistic ceiling."
+  }
+}

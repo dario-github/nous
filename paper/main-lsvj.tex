@@ -340,9 +340,22 @@ authority is independent of proposer capability.
 
 \paragraph{b.1 --- Parse.}
 The rule is fed to the Cozo parser. Parse failure yields
-\texttt{confirm}. \placeholder{R002 target: parse-failure rate
-$\le 1\%$ with grammar-constrained decoding; measured in
-Section~\ref{sec:exp:b1}.}
+\texttt{confirm}. In the R002 pilot (100 cases sampled from v3
+held-out, \texttt{glm-4.7-flashx} proposer, no grammar-constrained
+decoding), we observed 97/100 responses captured (3 API failures)
+and, on captured responses, \textbf{97.9\%} parse rate ($95/97$,
+after carrying the outer \texttt{decision} field into the inner
+\texttt{obligation.decision} when the LLM format-confused) and
+\textbf{96.9\%} end-to-end gate-admission rate ($94/97$).
+Per-category parse rate is $100\%$ on 7/8 categories; Unauthorized
+Autonomy is the sole lagger at $87.5\%$ ($14/16$) due to two
+residual LLM-emission bugs (one truncated JSON mid-string, one
+unescaped backslash in a regex literal). These are proposer-emission
+limits, not gate-logic failures; the gate correctly rejects them via
+b.1. The original $\le 1\%$ failure target assumed grammar-constrained
+decoding (e.g.\ XGrammar~\citep{xgrammar2024}), which is not available
+via the \texttt{openai-completions} API on our deployment; reaching
+the target will require a grammar-decoder integration (future work).
 
 \paragraph{b.2 --- Type-check.}
 Every primitive call must match a declared primitive with correct
