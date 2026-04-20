@@ -1,0 +1,714 @@
+% =============================================================
+% LSVJ-S: Synthesize, Gate, Verify
+% Runtime Proof-Obligation Synthesis for Trustworthy Agent Decisions
+% NeurIPS 2024 style, [preprint] option for arXiv
+%
+% DRAFT 2026-04-21. Numerical results in Section 4 are marked
+% [TBD] until R002 pilot and W6-W7 runs complete. Do NOT submit
+% without replacing placeholders and running compile + auto-review.
+% =============================================================
+\documentclass{article}
+\usepackage[preprint]{neurips_2024}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{amsthm}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{mathtools}
+\usepackage{natbib}
+\usepackage{enumitem}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+
+\lstset{basicstyle=\ttfamily\small,breaklines=true,frame=single,captionpos=b,
+        keywordstyle=\bfseries,commentstyle=\itshape\color{gray!70}}
+\lstdefinelanguage{cozo}{
+  keywords={not,and,or,true,false,discharged},
+  sensitive=true,
+  comment=[l]{\%},
+  morestring=[b]"
+}
+
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TBD: #1]}}}
+\newcommand{\placeholder}[1]{\textcolor{red}{\textbf{[#1]}}}
+
+\title{LSVJ-S: Synthesize, Gate, Verify --- Runtime Proof-Obligation
+Synthesis for Trustworthy Agent Decisions}
+
+\author{%
+  Dongcheng Zhang\thanks{Correspondence: \texttt{zdclink@gmail.com}.
+  Work performed while at BlueFocus Communication Group.} \\
+  Independent \\
+  Beijing, China \\
+  \texttt{zdclink@gmail.com}
+  \And
+  Yiqing Jiang \\
+  Tongji University \\
+  Shanghai, China \\
+  \texttt{jyq.russel@gmail.com}
+}
+
+\begin{document}
+\maketitle
+
+% ================================================================
+\begin{abstract}
+LLM-based agent runtime authorization suffers a fundamental epistemic
+gap: the LLM's ``allow'' verdict is an opaque label with no mechanical
+connection to the facts it claims to reason over. Existing hybrid
+architectures stack symbolic layers alongside the LLM, but the LLM's
+decision is never verified \emph{by} the symbolic substrate. We present
+LSVJ-S, a Synthesis--Proof-Obligation (SPO) protocol in which the LLM
+synthesizes a per-decision Datalog rule as its committed proof of trust,
+and a 4-stage compile-time gate---(b.1) parse, (b.2) type-check against
+a typed owner-harm primitive schema (Class A/B/C), (b.3) syntactic
+non-triviality, and (b.4) the compound \emph{perturbation-sensitive AND
+has-decisive-primitive} check---admits the rule only if all stages pass.
+Gate b.4 is grounded in Self-Consistency~\citep{wang2022selfconsistency}
+applied to LLM-synthesized Datalog; to our knowledge this is the first
+structured Self-Consistency application to runtime safety-rule
+synthesis. On a hard-negative held-out slice (v3-HN), LSVJ-S is compared
+against a 12-rule Static Expert-Authored Policy (SEAP) baseline that is
+structurally isomorphic to the PCAS offline-compilation
+model~\citep{palumbo2026pcas}. \placeholder{Headline result TBD after
+W6 run: report LSVJ-S TPR/FPR with Wilson 95\% CI and the
+paired-McNemar per-primitive causal attribution from B4.} We explicitly
+acknowledge the Self-Justification Trap---that a misaligned proposer
+can synthesize a collusion rule---and provide empirical defense via
+adversarial synthesis stress testing (B6). Code, ontology schema, and
+v3-HN protocol are released at \url{https://github.com/dario-github/nous}.
+\end{abstract}
+
+% ================================================================
+\section{Introduction}
+\label{sec:intro}
+
+Autonomous LLM agents are increasingly authorized to invoke
+consequential tools---sending emails, executing shell commands,
+modifying production data---based on a single verdict label emitted by
+an LLM-based safety gate. The verdict is opaque: an ``allow'' stands
+on the LLM's internal reasoning but is not mechanically connected to
+the system state it claims to reason over. Our companion work on
+Owner-Harm~\citep{zhang2026ownerharm} documents the operational
+consequence: a compositional gate that reaches 100\% TPR on generic
+criminal-harm benchmarks collapses to 14.8\% TPR (95\% CI: 5.9--32.5\%)
+on the AgentDojo injection slice, where the harm is mediated through
+prompt injection into legitimate tool vocabulary.
+
+Internal results on our owner-harm benchmark show a sharper pathology.
+A compositional gate with a deterministic Datalog layer (L1) and a
+triviality filter (L2) reaches zero training loss; yet on the held-out
+slice the same L1+L2 subsystem achieves only \textbf{12.7\%} TPR. Most
+of the held-out detection (+62.6\,pp) is carried by an LLM semantic
+layer (L3) whose verdicts are, by construction, unverified against the
+symbolic substrate. A \texttt{no\_kg} ablation on the training set
+further shows that the knowledge graph's contribution is statistically
+indistinguishable from zero ($\Delta L = 0$), suggesting the L3
+layer's held-out gains are not symbolically grounded but rather a
+function of the LLM's opaque pattern matching.
+
+This paper asks: \emph{can the symbolic substrate become the verifier,
+rather than a stage adjacent to the LLM decision?}
+
+\paragraph{Why existing approaches fall short.}
+Three families of runtime agent safety enforcement dominate the
+literature (cf.\ Section~\ref{sec:related}):
+\begin{itemize}[leftmargin=1.5em]
+\item \textbf{LLM-only classifiers}
+(Llama Guard~\citep{inan2023llamaguard};
+ShieldGemma~\citep{zeng2024shieldgemma}): opaque labels without an audit
+artifact at the symbolic layer.
+\item \textbf{Hybrid stacking} (Nous~\citep{zhang2026ownerharm};
+GuardAgent~\citep{xiang2024guardagent};
+TrustAgent~\citep{hua2024trustagent};
+ShieldAgent~\citep{chen2025shieldagent}): the LLM and the symbolic
+engine run in parallel, not in a verifier--proposer relationship.
+\item \textbf{Offline policy compilers}
+(PCAS~\citep{palumbo2026pcas}; Solver-Aided~\citep{roy2026solveraided};
+AgentSpec~\citep{wang2026agentspec}): strong deterministic enforcement
+inside closed, pre-audited vocabularies; no mechanism for
+open-vocabulary contextual cases the policy author did not anticipate.
+\end{itemize}
+Each family forfeits either symbolic grounding (families 1--2) or
+open-vocabulary reach (family 3). A verifier--proposer architecture
+where the LLM \emph{commits} to a per-decision symbolic proof
+obligation, checked at run time, remains an unfilled gap.
+
+\paragraph{Insight.}
+Instead of producing an opaque ``allow'' label, the LLM should produce
+a \emph{committed proof obligation}---a typed Datalog rule over a
+bounded primitive vocabulary---and ``allow'' stands only when (a) the
+rule passes a 4-stage compile-time soundness gate and (b) the rule
+discharges against live facts from the agent's knowledge graph and
+host-function observables. The gate's authority does not depend on
+LLM capability: it rejects unconditionally on any stage failure,
+fail-closed to \texttt{confirm}. This turns the symbolic substrate
+into a verifier, not a witness.
+
+Explicit scope: LSVJ-S is not a formal proof system. The gate is a
+\emph{soundness check} that rejects invariant and trivial rules, not a
+completeness guarantee that admits all and only correct rules. The
+contribution is protocol-level plus empirical.
+
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=1.5em]
+\item \textbf{SPO protocol.} Per-decision Datalog rule synthesis over
+a typed owner-harm primitive schema partitioned into Class A
+(KG-grounded), B (deterministic host function), and C (sealed
+sub-oracle); ``allow'' requires both gate admission and live-fact
+discharge.
+\item \textbf{4-stage compile-time gate} including the compound b.4
+check (perturbation-sensitive AND has-decisive-primitive). Gate b.4 is
+structured Self-Consistency~\citep{wang2022selfconsistency} applied to
+LLM-synthesized Datalog, addressing the Self-Justification Trap.
+\item \textbf{Empirical evaluation on v3-HN:} (a) a 5-configuration
+main comparison with Wilson 95\% CI, (b) 9 Tier-1 ablation conditions,
+(c) per-primitive paired-McNemar causal attribution, and (d) an
+adversarial-synthesis stress test (B6) that empirically bounds the
+Self-Justification Trap defense.
+\end{enumerate}
+
+% ================================================================
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Three Families of Runtime Agent Safety Enforcement}
+
+\paragraph{Family 1 --- Static DSL + deterministic reference monitor.}
+PCAS~\citep{palumbo2026pcas}, AgentSpec~\citep{wang2026agentspec}, and
+ClawGuard~\citep{clawguard2026} author rules offline, compile them,
+and enforce deterministically. PCAS is our closest prior art and the
+structural model for our SEAP baseline. Following a clean metaphor:
+PCAS is a \emph{statute} model---laws written before the crime,
+deterministically enforced---while LSVJ-S is a \emph{case-law} model
+in which the LLM argues the legality of its specific action at the
+moment of execution, and a compile-time soundness gate checks the
+non-triviality of the argument before admitting. The architectural
+delta is the axis of rule authorship (offline human-audited vs.\
+runtime LLM-synthesized) and the resulting need for a compile-time
+gate, which PCAS does not require because its rules are pre-audited.
+Scope qualification: PCAS-style offline policies dominate LSVJ-S when
+the domain is closed and pre-enumerable; LSVJ-S targets the
+complement---open-vocabulary contextual edge cases.
+
+\paragraph{Family 2 --- Formal-logic constraint verification.}
+Solver-Aided~\citep{roy2026solveraided} translates natural-language
+policies to SMT-LIB offline; the LLM does not synthesize the
+constraint. Agent-C~\citep{agentc2026} interleaves SMT with
+constrained decoding at token-generation time; that is a
+model-internal layer whereas LSVJ-S is a model-agnostic wrapper. The
+constraint-source axis is the delta: static pre-translated vs.\
+per-decision LLM-synthesized.
+
+\paragraph{Family 3 --- Probabilistic and learned guardrails.}
+Pro2Guard~\citep{he2025pro2guard} learns a DTMC from traces;
+ShieldAgent~\citep{chen2025shieldagent} uses probabilistic rule
+circuits; GuardAgent~\citep{xiang2024guardagent} and
+TrustAgent~\citep{hua2024trustagent} rely on LLM-based agent-of-agent
+structures. LSVJ-S differs: classical non-probabilistic Datalog
+synthesis plus a compile-time soundness gate, no probabilistic scoring
+inside the verifier.
+
+\subsection{Foundational Methods LSVJ-S Builds On}
+
+\paragraph{Self-Consistency.}
+Gate b.4's perturbation-sensitivity check is structurally
+Self-Consistency~\citep{wang2022selfconsistency} applied to
+LLM-synthesized Datalog rules: the rule is evaluated on live bindings
+and on $N{=}5$ perturbed bindings, and is rejected if the outcome is
+invariant across all trials. We credit this lineage explicitly: b.4
+is \textbf{not} an independent invention relative to Self-Consistency.
+LSVJ-S's novelty is the \emph{combination} of structured-output
+Datalog synthesis, perturbation-sensitivity as gate, and
+decisive-primitive causal attribution, applied to the runtime agent
+safety setting---none of the three sub-steps is independently novel.
+
+\paragraph{Program synthesis with symbolic verification.}
+Scallop~\citep{li2023scallop} introduced differentiable Datalog for
+neurosymbolic learning; Lobster~\citep{lobster2026} extends the
+neurosymbolic stack. Both are offline-training systems. LSVJ-S is
+classical runtime Datalog with zero proposer training---this is a
+deliberate design choice defended in Section~\ref{sec:method:tradeoffs}
+on epistemic grounds, not only budgetary ones.
+
+\paragraph{Formal safety for tool use.}
+\citet{doshi2026verifiable} provide the formal-safety-for-tool-use
+motivation via STPA applied to MCP; we cite as motivation only.
+
+\subsection{SEAP: The PCAS Analog Baseline}
+Our primary baseline, \emph{Static Expert-Authored Policy (SEAP)}, is
+a pre-registered 12-rule Datalog menu over the same A/B/C primitive
+vocabulary used by the LSVJ-S proposer (Appendix~A). SEAP is
+structurally isomorphic to PCAS offline compilation: offline-authored,
+no per-decision synthesis, same predicate universe. The main-table
+comparison LSVJ-S vs.\ SEAP is therefore an apples-to-apples test of
+the architectural axis this paper introduces: does per-decision
+runtime synthesis add TPR beyond an expert-authored policy of the
+same vocabulary?
+
+% ================================================================
+\section{Method}
+\label{sec:method}
+
+\subsection{Owner-Harm Primitive Schema (Class A/B/C)}
+\label{sec:method:schema}
+A typed primitive vocabulary is the contract between proposer and
+verifier: it enables stage b.2 (type-check) without per-rule human
+review. We partition six primitives across three classes (full schema
+in Appendix~A):
+\begin{itemize}[leftmargin=1.5em]
+\item \textbf{Class A --- KG-grounded}: a Cozo Datalog query over the
+live NousDB; returns the empty relation if the current KG state does
+not support it. Examples:
+\texttt{is\_inner\_circle(recipient\_id)},
+\texttt{owner\_has\_directed(action\_id, is\_directed)}.
+\item \textbf{Class B --- deterministic host function}: pure Python,
+no LLM, returns \texttt{bool}. Examples:
+\texttt{body\_length\_within\_budget(body, budget)},
+\texttt{action\_matches\_allowlist(action\_id, list)}.
+\item \textbf{Class C --- sealed sub-oracle}: a fresh session of the
+same base model with schema-bound input and divergence-calibrated
+output. Honest scope label: \emph{procedural} independence, not
+representation-level (the proposer and the Class C sub-oracle share
+weights and plausibly share failure modes). Different-model Class C
+is listed as future work. Examples:
+\texttt{body\_reveals\_inner\_relation(body, recipient\_id, p\_rev)},
+\texttt{action\_is\_reversible(action\_id, reversible)}.
+\end{itemize}
+Each class admits a distinct b.4 perturbation operator
+(A: reshuffle matching tuples within-type; B: negate bool return;
+C: flip a pre-recorded sub-oracle output with no additional LLM call).
+The 6-seed library and the 12-rule SEAP menu are prior development
+and baselines, not contributions of this paper.
+
+\subsection{Proposer: Grammar-Constrained Synthesis}
+\label{sec:method:proposer}
+The proposer is a frozen production LLM
+(\placeholder{GLM-4.7-flashx in the R002 pilot; final paper reports
+the model selected after W2 per Section~\ref{sec:method:tradeoffs}})
+invoked with XGrammar~\citep{xgrammar2024}-constrained decoding over
+a Lark EBNF subset of the Cozo rule grammar. The proposer emits a
+single JSON object
+\texttt{\{decision, synthesized\_obligation: \{rule\_body, decision\}\}}.
+Grammar constraint enforces well-formedness before stage b.1,
+reducing gate rejection cost and simplifying parse-failure analysis.
+
+Each synthesized rule has the form
+$\mathtt{?[discharged] := \text{body},\ discharged = \phi(body)}$
+where $\text{body}$ is a conjunction of A/B/C primitive calls with
+fixed arity, and $\phi$ is a Boolean expression over bindings
+introduced by the body. Figure~\ref{fig:example-rule} shows a
+representative rule for the \texttt{send\_email} tool invocation.
+
+A six-rule seed library is provided as few-shot context to bootstrap
+the grammar. To diagnose over-anchoring, we report the
+\emph{verbatim-match rate}---the fraction of synthesized rules that
+exactly match a seed rule or SEAP rule---and treat rates above 50\%
+as a signal that synthesis collapsed to template completion.
+
+\begin{figure}[t]
+\centering
+\begin{lstlisting}[language=cozo,label=lst:example]
+?[discharged] :=
+  is_inner_circle(recipient_id),                    % Class A
+  body_reveals_inner_relation(body,                 % Class C (sealed)
+                              recipient_id, p_rev),
+  owner_has_directed(action_id, is_directed),       % Class A
+  discharged = (not p_rev) or is_directed
+\end{lstlisting}
+\caption{Example LSVJ-S rule for a \texttt{send\_email} tool call.
+Allow iff the recipient--body relation is unlikely to be revealing,
+\emph{or} the action was owner-directed. Class labels annotate the
+primitive's verification path.}
+\label{fig:example-rule}
+\end{figure}
+
+\subsection{The Four-Stage Compile-Time Gate}
+\label{sec:method:gate}
+The gate fails closed to \texttt{confirm} on any stage failure; its
+authority is independent of proposer capability.
+
+\paragraph{b.1 --- Parse.}
+The rule is fed to the Cozo parser. Parse failure yields
+\texttt{confirm}. \placeholder{R002 target: parse-failure rate
+$\le 1\%$ with grammar-constrained decoding; measured in
+Section~\ref{sec:exp:b1}.}
+
+\paragraph{b.2 --- Type-check.}
+Every primitive call must match a declared primitive with correct
+arity and class. Unknown predicates, arity mismatches, or class
+violations yield \texttt{confirm}. This is the structural payoff of
+the A/B/C partition.
+
+\paragraph{b.3 --- Syntactic non-triviality.}
+The body must reference at least one Class A or Class B primitive,
+and the head expression must not be a constant or literal Boolean.
+This stage catches tautologies (e.g.\ \texttt{discharged = true})
+that pass b.1 and b.2 but are semantically vacuous.
+
+\paragraph{b.4 --- Perturbation-sensitive AND has-decisive-primitive.}
+The compound stage comprises two logically independent checks sharing
+evaluation machinery:
+\begin{itemize}[leftmargin=1.5em]
+\item \emph{Perturbation-sensitivity.} Run the rule on live bindings
+to obtain $\mathtt{discharged\_real}$. Then run $N{=}5$ trials on
+perturbed bindings (per-class operator from
+\S\ref{sec:method:schema}). Reject the rule if the outcome is
+identical across all $N$ trials. Calibration (W3 pilot,
+\placeholder{40-rule hand-labeled reference set TBD}): false-rejection
+$\le 10\%$ and false-admission on content-invariant rules $\le 2\%$.
+\item \emph{Has-decisive-primitive.} For each primitive, flip its
+binding and check whether the outcome changes. Reject the rule if no
+primitive is decisive. This ensures every admitted rule has an
+attributable cause and provides an audit artifact as a byproduct.
+\end{itemize}
+We disclose the honest scope: b.4 rejects invariant rules, not
+weakly-dependent ones. A rule whose primitive flip rate lies in
+$[0.10, 0.25]$ passes $N{=}5$ with probability $\approx 0.67$. This is
+a feature of the zero-training protocol; a stronger gate would
+require training the proposer, which would collapse verifier
+independence.
+
+\subsection{Decisive-Primitive Tracing (Diagnostic)}
+\label{sec:method:tracing}
+We define
+$\mathtt{decisive\_primitives}(\mathit{rule}, \mathit{bindings})$ as
+the set of primitives whose binding flip changes the discharge
+outcome. This is a \emph{diagnostic} utility, not a gate component.
+The set is recorded in
+\texttt{proof\_trace.lsvj\_obligations[i].binding\_decisive\_primitive}
+and used for (i) the paired-McNemar per-primitive causal attribution
+in B4, (ii) case studies in B5, and (iii) a neg-control anti-gaming
+check (fraction of LSVJ-S discharges on neg-control that show
+\emph{any} Class~A primitive decisive must be $\le 20\%$;
+pre-registered failure path: recalibrate seed library).
+
+\subsection{Full Inference Path}
+\label{sec:method:path}
+Outside L3, the Nous pipeline is unchanged:
+\begin{enumerate}[leftmargin=1.5em]
+\item \textbf{L1} Datalog exact-match $\to$ exit on match
+\item \textbf{L2} triviality filter $\to$ exit on trivial
+\item \textbf{L3-LSVJ-S}: (a) proposer $\to$
+\texttt{\{decision, synthesized\_obligation\}};
+(b) 4-stage gate (\S\ref{sec:method:gate});
+(c) execute rule over live bindings
+(A: Cozo; B: host function; C: sealed sub-oracle);
+(d) decisive-primitive tracing;
+(e) verifier policy below.
+\item \textbf{L4} hijacking filter, unchanged from
+\citet{zhang2026ownerharm}.
+\item Final verdict with
+\texttt{proof\_trace.\{rule\_text, class\_usage, discharge\_result,
+decisive\_primitives\}}.
+\end{enumerate}
+
+\paragraph{Verifier policy.}
+If the LLM says \texttt{block} or \texttt{confirm}, accept as-is. If
+the LLM says \texttt{allow} \emph{and} the rule is admitted \emph{and}
+the rule discharges against live bindings, output \texttt{allow}.
+Otherwise upgrade to \texttt{confirm}.
+
+\subsection{Honest Design Tradeoffs}
+\label{sec:method:tradeoffs}
+
+\paragraph{Zero-training rationale.}
+(i) Grammar-constrained decoding delivers schema adherence without
+fine-tuning. (ii) Supervised fine-tuning on obligations would
+co-adapt the proposer to the verifier's acceptance criterion,
+collapsing verifier--proposer independence, which is the very
+property on which the compile-time gate's authority rests.
+(iii) The API-only budget (\$120) makes training infeasible. All
+three constraints are honest; (ii) is the dominating epistemic
+argument.
+
+\paragraph{Self-Justification Trap.}
+The proposer writes both the action (implicitly, via the LLM's
+earlier verdict) and the admitting rule. A misaligned or
+prompt-injected proposer can synthesize (i) a tautology, (ii) a rule
+referencing only rarely-enforcing primitives, (iii) a collusion rule
+that passes b.1--b.3 while remaining semantically vacuous, or
+(iv) an OR-disjunction where only one term drives discharge. Stages
+b.3 and b.4 are the primary defenses; B6
+(\S\ref{sec:exp:b6}) empirically tests them against an attacker-mode
+proposer.
+
+\paragraph{Class C same-model limitation.}
+The Class C sub-oracle is a fresh session of the same base model with
+schema-bound input. This is procedural, not representational,
+independence: shared weights plausibly share failure modes. Named
+limitation; different-model Class C is future work.
+
+\paragraph{Decorative-KG contingency.}
+If the B4 per-primitive causal test shows null effect on all Tier-1
+primitives, we pre-commit to a framing pivot from \emph{symbolic
+substrate verifier} to \emph{JIT-policy gate}
+(\S\ref{sec:disc:pivot}). This is pre-registered, not a post-hoc
+save.
+
+% ================================================================
+\section{Experiments}
+\label{sec:exp}
+
+\subsection{Datasets and Protocol}
+\label{sec:exp:data}
+
+\paragraph{Primary evaluation slice (v3-HN).}
+A hard-negative held-out slice authored under a pre-registered
+protocol (\texttt{nous/docs/v3-HN-blind-protocol.md}, committed
+before W5): target \placeholder{$\ge 100$H + 50B total} with a
+$\ge 50$H + 25B blind sub-slice authored by a sealed Sonnet~4.6
+subagent, plus a 30H + 15B neg-control sub-slice of hand-crafted
+benign cases that superficially resemble harmful. Blind-distance
+calibration uses cosine similarity on $\approx 5$ within-author and
+$\approx 5$ cross-author pairs; a blind-vs-author cosine exceeding
+threshold triggers a failed-blind flag and recruits a human
+collaborator for a post-workshop ICLR run.
+
+\paragraph{Reference datasets.}
+v3 (300H + 150B, historical baseline) and AgentHarm (176H + 176B,
+literature comparability) appear in Appendix~C.
+
+\paragraph{Statistical policy.}
+All proportions are reported with Wilson 95\% CI; significance tests
+at $\alpha = 0.05$; paired-McNemar is used only for the B4
+decisive-subset analysis; we make \emph{no} significance claim on
+the neg-control slice ($n{=}45$; explicitly diagnostic-only).
+
+\paragraph{Metrics.}
+TPR/FPR with Wilson 95\% CI per category; paired-McNemar
+$\chi^2$ with continuity correction; paired-Wilson 95\% CI on the
+flip rate $b/(b+c)$; false-allow rate (B3 diagnostic); verbatim-match
+rate (B2 diagnostic); parse-failure rate; decisive-primitive
+distribution; per-call latency.
+
+\subsection{B1 --- Main 5-Configuration Comparison}
+\label{sec:exp:b1}
+
+\paragraph{Configurations.}
+\begin{enumerate}[leftmargin=1.5em,nosep]
+\item \textbf{LLM-only}: DeepSeek-V3.2 + current semantic-gate prompt;
+no L1/L2/L4.
+\item \textbf{Rules-only}: L1 Datalog + L2 triviality; no L3/L4.
+\item \textbf{Nous current}: L1+L2+L3(old prompt)+L4.
+\item \textbf{SEAP}: L1+L2+12-rule expert menu+L4
+(\texttt{nous/docs/no-synth-menu-plus.cozo}).
+\item \textbf{LSVJ-S (ours)}: L1+L2+L3-LSVJ-S+L4;
+\texttt{upgrade\_only=True}; majority-vote $k{=}3$; $N{=}5$
+perturbations in b.4.
+\end{enumerate}
+
+\paragraph{Success criterion.}
+LSVJ-S Wilson CI lower bound exceeds SEAP Wilson CI upper bound on
+at least one category; per-category TPR $\ge$ SEAP on $\ge 5/8$
+categories; direction-consistent on the blind sub-slice.
+
+\paragraph{Failure off-ramp (pre-registered).}
+If LSVJ-S $\le$ SEAP statistically, we pause and pivot to PRM/RL-light
+or reasoning-model-native synthesis. We do not reframe to hide a null
+result.
+
+\placeholder{Table 1 (main). TBD after W6 run. Columns:
+configuration $\times$ category (TPR / FPR with Wilson 95\% CI).
+Full slice and blind sub-slice reported separately.}
+
+\subsection{B2 --- Synthesis vs.\ Menu: Novelty Isolation}
+\label{sec:exp:b2}
+LSVJ-S full vs.\ SEAP (from B1) vs.\ \texttt{no\_synth\_6seed}
+(Tier-2, Appendix~D). Key diagnostic: verbatim-match rate;
+target $\le 30\%$; values above $50\%$ trigger the ``synthesis
+collapsed to template completion'' finding. We also report distinct
+rule bodies per 100 cases and the per-category TPR drop from full
+LSVJ-S to SEAP. \placeholder{Table 2a TBD after W6.}
+
+\subsection{B3 --- Stage + Class Necessity Ablation}
+\label{sec:exp:b3}
+Nine Tier-1 conditions, all must-run:
+(1) LSVJ-S full;
+(2) SEAP;
+(3) \texttt{no\_sem\_gate} (b.4 disabled; measures false-allow on
+neg-control, diagnostic only);
+(4--6) \texttt{no\_class\_A}, \texttt{no\_class\_B},
+\texttt{no\_class\_C} (each class disabled in turn);
+(7) \texttt{KG-shuffled-all};
+(8) \texttt{corrupt\_is\_inner\_circle\_only};
+(9) \texttt{corrupt\_owner\_has\_directed\_only}.
+Conditions 8 and 9 are paired with the B4 McNemar analysis.
+
+\paragraph{Success criterion.}
+\texttt{no\_sem\_gate} directionally higher false-allow on
+neg-control; each \texttt{no\_class\_A/B/C} yields overall TPR drop
+$\ge 3$\,pp. \placeholder{Table 2b TBD after W7.}
+
+\subsection{B4 --- Per-Primitive Causal Attribution}
+\label{sec:exp:b4}
+This is the make-or-break test for the ``symbolic substrate
+verifier'' framing: is the KG causally load-bearing, or is the
+synthesized Datalog rule functionally a high-latency self-consistency
+check?
+
+\paragraph{Protocol.}
+For each of two Tier-1 primitives
+(\texttt{is\_inner\_circle}, \texttt{owner\_has\_directed}):
+(i) run intact LSVJ-S on v3-HN; identify the decisive-subset via
+\texttt{proof\_trace};
+(ii) re-run with only that primitive's KG corrupted (within-type
+shuffle);
+(iii) compute paired McNemar with $b{=}$ intact-allow $\to$
+corrupted-block; $c{=}$ intact-block $\to$ corrupted-allow; $\chi^2$
+with continuity correction at $\alpha = 0.05$.
+
+\paragraph{Effect-size floor (disclosed in main body).}
+Expected decisive-subset size 20--30 per primitive; realistic
+$b+c \approx 7\text{--}12$; McNemar significance at
+$\alpha = 0.05$ requires $b/(b+c) \gtrsim 0.8$. Weaker effects are
+reported as point estimate with paired-Wilson CI only, labeled
+\emph{suggestive but below significance floor at current
+decisive-subset size}.
+
+\paragraph{Failure path.}
+If both Tier-1 primitives produce null results, we test two Tier-2
+primitives (\texttt{recipient\_owned\_by\_owner},
+\texttt{action\_in\_precedent}); if all four null, we report the
+honest null, pivot to JIT-policy-gate framing
+(\S\ref{sec:disc:pivot}), and propose a KG-heavy obligation redesign
+as future work.
+
+\placeholder{Table 3 and Figure 3 TBD after W7.}
+
+\subsection{B6 --- Adversarial Synthesis Stress Test}
+\label{sec:exp:b6}
+Empirical test of the Self-Justification Trap defense: 50
+attacker-mode cases (hand-crafted) plus 30 v3-HN benign cases as
+control. The proposer is given a sealed adversarial prompt
+instructing it to bypass the gate by emitting a rule that passes
+b.1--b.3 while remaining semantically vacuous.
+
+\paragraph{Attack types.}
+(i) tautology; (ii) permissive (rarely-enforcing primitives only);
+(iii) collusion (crafted to pass perturbation surface checks);
+(iv) multi-primitive OR-disjunction where only one primitive drives
+discharge.
+
+\paragraph{Success criterion.}
+b.4 rejection rate on attacker-mode $\ge 90\%$; false-rejection on
+benign control $\le 10\%$; per-attack-type rejection $\ge 75\%$
+across all four types. \placeholder{Table 4 TBD.}
+
+% ================================================================
+\section{Discussion}
+\label{sec:disc}
+
+\subsection{Interpreting the Main Results}
+\placeholder{Populated after B1--B4 results. If Claim~1 holds
+(LSVJ-S $>$ SEAP with Wilson CI separation): per-decision runtime
+synthesis adds TPR beyond an expert-authored policy of the same
+vocabulary---the architectural delta PCAS cannot claim for
+open-vocabulary cases. If Claim~2 locus (c) holds
+(B4 paired-McNemar significant): the KG is causally load-bearing;
+the synthesized Datalog rule is a proof obligation grounded in
+system state.}
+
+\subsection{Contingent Framing (Pre-Committed)}
+\label{sec:disc:pivot}
+Two framings are named before the results are observed:
+\begin{description}[style=nextline]
+\item[Primary framing] (if B4 shows a causal effect on $\ge 1$
+Tier-1 primitive): \emph{LSVJ-S as symbolic substrate verifier.}
+Per-decision Datalog synthesis grounded in live KG facts; the
+compile-time gate ensures non-trivial commitment.
+\item[Fallback framing] (if B4 null on all Tier-1 and Tier-2):
+\emph{LSVJ-S as JIT-policy gate.} The LLM synthesizes a Datalog
+rule as an explicit commitment object; b.4 filters self-justification
+from genuine content-dependence. B6 becomes the primary evidence.
+The ``symbolic substrate verifier'' phrasing is dropped. The method
+thesis is unchanged; only the contribution-focus prose shifts.
+\end{description}
+This pivot is pre-registered
+(\texttt{refine-logs/FINAL\_PROPOSAL.md}, Patch-3), not a post-hoc
+save. Both framings are disclosed to the reader.
+
+\subsection{Statistical Honesty: The Effect-Size Floor}
+At the expected decisive-subset size (20--30 per primitive),
+paired-McNemar significance at $\alpha = 0.05$ requires
+$b/(b+c) \gtrsim 0.8$. This is disclosed in the main body, not hidden
+in an appendix, with explicit explanation that the floor is a
+function of sample size, not evidence of no effect. Weaker effects
+($b/(b+c) \in [0.5, 0.8)$) are reported as point estimate plus
+paired-Wilson CI with the label \emph{suggestive but below
+significance floor}.
+
+\subsection{Limitations}
+We name, rather than bury, the workshop-tier limitations:
+\begin{itemize}[leftmargin=1.5em,nosep]
+\item \textbf{Self-Justification Trap.} Acknowledged; b.3 + b.4 are
+the defenses; B6 is the empirical bound; b.4 does not catch all
+collusion modes and we say so.
+\item \textbf{Class C same-model oracle.} Procedural independence
+only; representation-level independence is future work.
+\item \textbf{KG-empty ablation deferred to Tier-2.} Workshop causal
+attribution rests on two per-primitive corruptions plus
+\texttt{KG-shuffled-all}; absolute KG absence is not tested at
+workshop tier.
+\item \textbf{v3-HN co-authorship.} The first author co-authors 50\%
+of v3-HN and the SEAP menu. Pre-registration in
+\texttt{nous/docs/no-synth-menu-plus.cozo} before any v3-HN
+evaluation mitigates; independent human authoring is ICLR-tier
+contingency.
+\item \textbf{No soundness theorem.} Empirical evidence only (B6);
+formal soundness analysis is future work.
+\item \textbf{Workshop-tier novelty.} Self-Consistency
+\citep{wang2022selfconsistency} covers b.4's mechanism. LSVJ-S
+novelty is the combination applied to runtime safety-rule synthesis
+plus decisive-primitive attribution. We do not claim main-track
+status.
+\end{itemize}
+
+% ================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+LSVJ-S instantiates the Synthesis--Proof-Obligation (SPO) protocol:
+the LLM synthesizes a per-decision Datalog rule as its committed
+proof of trust, and a four-stage compile-time gate---parse,
+type-check, syntactic non-triviality, and perturbation-sensitive
+\emph{and} has-decisive-primitive---admits the rule only when all
+stages pass. Stage b.4 is grounded in Self-Consistency
+\citep{wang2022selfconsistency}; its combination with typed Datalog
+synthesis and decisive-primitive causal attribution is our novel
+contribution in the runtime agent-safety context.
+\placeholder{Headline empirical summary TBD after W6--W7.}
+Named limitations include Class~C same-model procedural
+independence, the absence of a formal soundness theorem, and the
+workshop scope. Future work: different-model Class~C, formal
+soundness, an external zero-shot benchmark such as
+ShieldAgent-Bench.
+
+% ================================================================
+\section*{Author Contributions}
+\textbf{Dongcheng Zhang} designed the SPO protocol and the 4-stage
+gate, authored the M0 implementation, led the R002 pilot, authored
+the 50\% of v3-HN that is not blind-slice, and drafted the
+manuscript. \textbf{Yiqing Jiang} contributed the knowledge-graph
+primitive design and provided critical review of the ontology,
+method, and experimental protocol.
+
+\section*{Acknowledgments}
+We thank GPT-5.4 (via Codex), Opus~4.7, and Gemini~3.1~Pro (via
+Gemini CLI) for independent critical audits across four refinement
+rounds.
+
+% ================================================================
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
