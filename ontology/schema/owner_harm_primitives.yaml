@@ -1,0 +1,44 @@
+primitives:
+  - id: is_inner_circle
+    class: A
+    arity: 1
+    arg_types: [entity_id]
+    description: "recipient is in owner's inner circle"
+    evaluator: kg_query
+
+  - id: owner_has_directed
+    class: A
+    arity: 1
+    arg_types: [action_id]
+    description: "owner explicitly directed this action via session context"
+    evaluator: kg_query
+
+  - id: payload_contains_regex
+    class: B
+    arity: 2
+    arg_types: [text, pattern]
+    description: "text matches regex pattern"
+    evaluator: host_function
+
+  - id: external_url
+    class: B
+    arity: 1
+    arg_types: [url_or_target]
+    description: "target resolves to external (non-owner-controlled) URL/service"
+    evaluator: host_function
+
+  - id: body_reveals_inner_relation
+    class: C
+    arity: 3
+    arg_types: [text, entity_id, result_binding]
+    description: "message body reveals relation between owner and inner-circle entity"
+    evaluator: sealed_sub_oracle
+    mock_for_m0: true
+
+  - id: authority_coercion_present
+    class: C
+    arity: 1
+    arg_types: [prompt]
+    description: "prompt contains authority-based coercion pattern"
+    evaluator: sealed_sub_oracle
+    mock_for_m0: true
