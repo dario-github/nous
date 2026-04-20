@@ -441,7 +441,8 @@ cost reduction with negligible safety impact.
 
 \textbf{Layer 3 (L3): Semantic Gate.} An LLM evaluator supplied with
 minimal-pair examples, intent decomposition prompts, and majority vote
-$k=3$ to handle stochasticity in mixture-of-experts models. L3 provides
+$k=3$~\citep{wang2022selfconsistency} to handle stochasticity in
+mixture-of-experts models. L3 provides
 semantic reasoning about owner context: whether an action falls within
 the owner's trust boundary, whether resource access is proportionate to
 the stated task.
