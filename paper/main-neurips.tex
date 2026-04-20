@@ -1,10 +1,10 @@
 % =============================================================
 % Owner-Harm: A Missing Threat Model for AI Agent Safety
-% IEEE Conference Format (IEEEtran)
+% NeurIPS 2024 style, [preprint] option for arXiv
 % =============================================================
-\documentclass[conference]{IEEEtran}
+\documentclass{article}
+\usepackage[preprint]{neurips_2024}
 
-\usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{amsthm}
 \usepackage{algorithmic}
@@ -15,7 +15,6 @@
 \usepackage{multirow}
 \usepackage{hyperref}
 \usepackage{listings}
-\usepackage{balance}
 \usepackage{mathtools}   % provides \coloneqq
 
 \theoremstyle{definition}
@@ -54,15 +53,17 @@
 
 \title{Owner-Harm: A Missing Threat Model for AI Agent Safety}
 
-\author{
-  \IEEEauthorblockN{Dongcheng Zhang\IEEEauthorrefmark{1}\thanks{Work performed while at BlueFocus Communication Group. Correspondence: zdclink@gmail.com.},
-                    Yiqing Jiang\IEEEauthorrefmark{2}}
-  \IEEEauthorblockA{\IEEEauthorrefmark{1}%
-    BlueFocus Communication Group, Beijing, China\\
-    zdclink@gmail.com}
-  \IEEEauthorblockA{\IEEEauthorrefmark{2}%
-    Tongji University, Shanghai, China\\
-    jyq.russel@gmail.com}
+\author{%
+  Dongcheng Zhang\thanks{Work performed while at BlueFocus Communication
+  Group. Correspondence: \texttt{zdclink@gmail.com}.} \\
+  BlueFocus Communication Group \\
+  Beijing, China \\
+  \texttt{zdclink@gmail.com}
+  \And
+  Yiqing Jiang \\
+  Tongji University \\
+  Shanghai, China \\
+  \texttt{jyq.russel@gmail.com}
 }
 
 \maketitle
@@ -104,11 +105,6 @@ while context injection reveals that goal-context awareness is necessary
 but not sufficient---structured goal-action alignment, not simple text
 concatenation, is required for effective owner-harm detection.
 \end{abstract}
-
-\begin{IEEEkeywords}
-AI agent safety, owner-harm, prompt injection, runtime safety gate,
-threat model, compositional defense
-\end{IEEEkeywords}
 
 % ================================================================
 \section{Introduction}
@@ -1164,10 +1160,8 @@ symbolic--semantic architecture and the owner-harm category taxonomy,
 and reviewed final manuscript revisions. Both authors approved the
 final version and are accountable for the integrity of the work.
 
-\balance
-
 % ================================================================
-\bibliographystyle{IEEEtran}
+\bibliographystyle{plainnat}
 \bibliography{references}
 
 \end{document}
