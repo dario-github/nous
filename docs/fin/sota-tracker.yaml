@@ -6,10 +6,9 @@
 # 巡检脚本（未写）：计划用 gh api /repos/{owner}/{name} 拉 stargazers_count + 最新 release tag
 # 对比本文件里的 last_snapshot 字段，diff 出来写 docs/fin/monthly-*.md
 
-version: 2
+version: 1
 last_review: 2026-04-21
 next_review: 2026-05-21
-route_decision: A  # Qlib + RD-Agent + ARIS + nous；B/C 已拒（见 product-context.md §7）
 
 tier_1:
   # 必须持续关注；其 release 可能触发我们 POC 的复盘
@@ -18,11 +17,11 @@ tier_1:
     license: Apache-2.0
     stars_snapshot: 52100
     latest_release_seen: v0.2.3
-    our_integration_status: watching  # Route B 已拒；persona 路线与红线"不改变 PM 研究风格"冲突
-    our_hook: null
+    our_integration_status: poc_planned
+    our_hook: pre-Portfolio-Manager gate() inject
     watch_for:
-      - native risk-constraint DSL (若出现，重评)
-      - 解耦 persona prompt 的 "thin risk-only" 模式
+      - new orchestration layer (post-LangGraph)
+      - native risk-constraint DSL (would replace our YAML value-add)
     last_checked: 2026-04-21
 
   - name: ai-hedge-fund
@@ -42,8 +41,8 @@ tier_1:
     license: MIT
     stars_snapshot: 41100
     latest_release_seen: unknown
-    our_integration_status: in_use  # Route A 骨架之一；invest/backtest/ 已落地
-    our_hook: upstream data / backtest engine for invest/ + POC-β
+    our_integration_status: infrastructure_only
+    our_hook: upstream data / backtest engine for POC-2
     watch_for:
       - RD-Agent tighter integration
       - native constraint/validation hook for generated factors
@@ -54,21 +53,10 @@ tier_1:
     license: MIT
     stars_snapshot: 12600
     latest_release_seen: unknown
-    our_integration_status: poc_planned  # POC-β，对接产品能力 4（因子流水线）
-    our_hook: factor-proposal gate (accept/reject before persisting) — Hook-2
+    our_integration_status: poc_planned
+    our_hook: factor-proposal gate (accept/reject before persisting)
     watch_for:
       - any "validator" or "critic" module they add (would obsolete our hook)
-    last_checked: 2026-04-21
-
-  - name: ARIS
-    url: https://aclanthology.org/2024.emnlp-main.ARIS
-    license: unknown
-    stars_snapshot: null
-    latest_release_seen: unknown
-    our_integration_status: in_use  # Route A 骨架之三；魔鬼代言人推理骨架
-    our_hook: devil's-advocate agent backbone — Hook-6
-    watch_for:
-      - 反思推理骨架的新 SOTA（如 Reflection-Tuning / ReAct-Reflect 变体）
     last_checked: 2026-04-21
 
   - name: FinRL
@@ -134,25 +122,13 @@ time_series_foundation_models:
   - {name: TimeGPT, url: https://github.com/Nixtla/nixtla, last_checked: 2026-04-21}
 
 benchmarks_we_want_to_beat_or_match:
-  # Revision 2026-04-21：基准不是我们的主战场
-  # 产品成功 = "孙总 + 4 PM 觉得有用"，基准只是内部健康检查
-  - name: internal_poc_alpha  # POC-α 决策卡字段完整性
-    our_position: not_yet_run
-    target: "4 PM × 5 卡 = 20 样本；block/warn 人审一致率 >= 80%；孙总定性反馈有用"
-    priority: P0
-  - name: internal_poc_beta  # POC-β RD-Agent 因子准入
-    our_position: not_yet_run
-    target: "holdout IR(gate-approved) >= IR(raw)；拒绝率 <= 50%"
-    priority: P0
-  - name: internal_poc_gamma  # POC-γ 魔鬼代言人
-    our_position: not_yet_run
-    target: "1 个月内 5 卡跑反驳；PM 自发回看 >=1 次；至少 1 次命中真实风险"
-    priority: P1
   - name: AgenticAI-Finance (aimultiple 2025)
     leaders: {FinGPT: 0.79, FinRobot: 0.74, FinRL: 0.53}
-    our_position: not_applicable  # 他们测的是 LLM 金融理解，我们不做这个
+    our_position: not_yet_evaluated
+    target: "TradingAgents + nous 守门 >= TradingAgents raw, same spending"
   - name: FinAI Contest 2025 Task 3 (Single Stock Trading)
-    our_position: not_applicable  # 违反红线 6（LLM 不做价格预测）
+    our_position: not_yet_evaluated
+    target: participate_only_if_poc_1_works
 
 avoid_list:
   # 显式不做，避免 scope creep
@@ -161,7 +137,3 @@ avoid_list:
   - fork any tier-1 project and diverge
   - build our own data pipeline from exchanges
   - write reasoning prompts for investor personas
-  - score or rank PMs (违反红线 2/7)
-  - LLM price prediction (违反红线 6)
-  - push invest/ data or positions to origin (违反红线 5)
-  - call it an "AI system" anywhere customer-facing (违反红线 8)
