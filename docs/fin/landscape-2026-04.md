@@ -2,6 +2,22 @@
 
 > 快照日期：2026-04-21 · 下次复盘：2026-07（季度）
 > 目的：识别上游 SOTA 组件，决定集成/观望/忽略；**不是要全部集成**。
+>
+> ## 📌 Revision 2026-04-21（下午，东丞补上下文后）
+>
+> 本文件**初版**写在不知道以下事实的前提下：
+> 1. 已有 9 人 A 股私募团队的真实需求（见 `product-context.md`）
+> 2. Route A（Qlib + RD-Agent + ARIS）已选定
+> 3. `invest/` 125 files / 449MB 已在东丞本地 fin 分支就位
+> 4. 四大产品能力已定义（决策卡/魔鬼代言人/陪审团/因子流水线）
+>
+> 受影响的结论：
+> - **POC-1（TradingAgents × nous 守门员）降级为 watching** — 与 Route A 冲突
+> - **POC-2（RD-Agent × nous propose-confirm）保留并升级为 P0** — 对应能力 4
+> - **新增 POC-3/4/5**：对接能力 1/2/3（见 `integration-hooks.md` Hook-5/6/7）
+> - ai-hedge-fund persona prompt 路线与红线"不改变 PM 研究风格"冲突 → 保持 watching
+>
+> 下面矩阵内容仍然有效，解读时须套 Route A + 四能力 + 红线这三层滤镜。
 
 ---
 
@@ -95,17 +111,36 @@ nous 已有（见 `src/nous/gate.py:253` 的 `gate()` 接口）：
 
 ### T1（本季度做，高 ROI）
 
-**T1-A：TradingAgents × nous 守门员（主观赛道）**
-- 理由：LangGraph orchestration 最清晰，Apache-2.0 友好，Portfolio Manager 节点是天然 hook
-- 做法：把 PM 的 approve/reject 前置一次 `gate(trade_proposal)` 调用
-- 证据：`tradingagents/graph/trading_graph.py` 的 propagate 链末端注入
-- 成本：一个 YAML rules 文件 + 一个 adapter 函数，<1 天
+> Revision 2026-04-21：T1-A 已降级至观望（与 Route A + 红线冲突）。
+> 原 T1-B 升级为 P0，**并新增三个与四大产品能力对齐的 POC**。
 
-**T1-B：RD-Agent × nous propose-confirm（CTA 赛道）**
+**T1-A：TradingAgents × nous 守门员** — ~~原计划~~ **→ 降级 watching**
+- 冲突点：1) Route B 已被拒；2) persona 驱动的多 agent 模式，会"改变 PM 的研究风格"（违反红线 3）
+- 还在 `sota-tracker.yaml` 里盯着，等他们出声明式 DSL 就重评
+
+**T1-B → P0：RD-Agent × nous review-gate**（= 产品能力 4 · AI4Science 因子流水线）
 - 理由：RD-Agent 自迭代产生因子 + 模型；当前无准入 gate
 - 做法：rdagent 的 factor proposal → 拦截 → `gate(factor_accept_action, context={factor_formula, backtest_stats})` → 通过才入库
 - 成本：YAML（过拟合阈值、IR 下限、换手率上限）+ adapter，<2 天
-- 关键收益：**把 propose-confirm 从 prompt-level 提升到规则+KG level**，GPT-5.4 批评"KG 是舞台布景"在这里直接反驳——因为因子之间的相关性、和已持仓因子的冲突，KG 是最自然的存储
+- 关键收益：**把 propose-confirm 从 prompt-level 提升到规则+KG level**；因子间相关性、与已持仓因子冲突，KG 是最自然存储
+- Hook：见 `integration-hooks.md` Hook-2
+
+**T1-C → P0：结构化决策卡 gate**（= 产品能力 1）
+- 对接 `invest/` 的 reports/ + features/ 输出，把 12 维度 checklist 用 YAML 表达
+- gate 校验字段完整性（客观数据已填 / 主观判断已填），阻止"空壳卡片"提交
+- KG 把历史相似 case 作为上下文喂给 PM（不是 LLM，是检索）
+- Hook：见 `integration-hooks.md` Hook-5
+
+**T1-D → P1：魔鬼代言人**（= 产品能力 2）
+- PM 提交决策卡后 spawn 一个反驳 agent；反驳意见**记录不弹窗**
+- 技术骨架：ARIS 风格的反思推理 + nous semantic_gate 作为执行器 + proof_trace 留痕
+- **可选工具**：PM 不理会也能通过，但痕迹永久入库
+- Hook：见 `integration-hooks.md` Hook-6
+
+**T1-E → P1：多视角陪审团**（= 产品能力 3）
+- 价值 / 动量 / 事件催化 三个独立 agent 打分投票
+- gate 做 multi-verdict 融合；分歧 > 阈值触发 warn（而不是隐藏加权）
+- Hook：见 `integration-hooks.md` Hook-7
 
 ### T2（下季度再评）
 
@@ -115,38 +150,51 @@ nous 已有（见 `src/nous/gate.py:253` 的 `gate()` 接口）：
 
 ### 观望（暂不动）
 
-- `virattt/ai-hedge-fund`：star 最多但 19 个投资家 prompt 过强人设，要么全 fork 要么整块包住；先看 TradingAgents POC 结果
+- `virattt/ai-hedge-fund`：star 最多但 19 个投资家 prompt 会**改变 PM 研究风格**（违反红线 3）
+- `TauricResearch/TradingAgents`：Route B 已拒；persona debate 同样违反红线 3
 - 时序基础模型 Chronos / TimesFM / TimeGPT：上游已成熟，纳入仅在需要 ensemble 分歧检测时
-- FinRobot：AutoGen 路线与我们 LangGraph 偏好略冲突，功能与 TradingAgents 重合
+- FinRobot：AutoGen 路线与 Route A 的 ARIS 骨架重合但更重；暂不引入
 
 ---
 
-## 6. "at least useful" 两个最小 POC
+## 6. "at least useful" 最小 POC（Revision 2026-04-21）
 
-### POC-1：TradingAgents 前置 nous 守门员
-- **输入**：TradingAgents 对 NVDA 2026-01-15 的 propagate 结果（含 PM 输出）
-- **nous 守门**：一条 YAML 规则——"如果 sentiment_score < -0.3 且 news_analyst 最近 7 天出现'regulatory' keyword，downgrade approve → confirm"
-- **成功判据**：10 个 ticker × 30 天窗口回测，看 downgrade 触发次数是否命中真实负面事件（人工 sanity check 5 个样本即可）
-- **不做的事**：不追求超额收益，只看"把关有没有意义"
+按深度智耀教训"**先单点验证价值 → 再扩展 → 人类始终审阅签字**"，第一批只做一个：
 
-### POC-2：RD-Agent 因子准入 gate
+### POC-α（第一战）：结构化决策卡 + 字段完整性 gate
+- **为什么先做这个**：它是 PM 每天都接触的产品面，而不是后台组件；孙总能直接看到价值
+- **输入**：PM 填写的 12 维度决策卡（对接 invest/reports/ 已有的字段）
+- **nous 守门**：`ontology/constraints/fin/T-CARD-001.yaml` —
+  - `block if objective_fields.filled_ratio < 1.0`（客观数据必须全填，系统自动）
+  - `block if subjective.thesis.length < 100`（论点少于 100 字直接拒）
+  - `warn if subjective.exit_condition is empty`（退出条件空就警告）
+- **KG**：检索过去 6 个月相似 ticker / 相似行业的决策卡（**只检索、不推荐**）
+- **成功判据**：
+  1. 4 个 PM 各提交 5 张卡，gate 的 block/warn 人审一致率 ≥ 80%
+  2. 孙总看到"完整证据链"后评价"有用"（定性，不数字化）
+- **不做的事**：不评分卡片质量、不比较 PM 之间、不推价格预测
+
+### POC-β（第二战，POC-α 过了再做）：RD-Agent 因子准入 gate
 - **输入**：rdagent fin_quant 跑 1 轮产出的 10 个新因子
-- **nous 守门**：YAML——
-  - IR < 0.3 → block
-  - 与已有因子相关性 > 0.85 → block（KG 查）
-  - 换手率 > 200% → warn
-- **成功判据**：在一个 holdout 期，gate 通过的因子组合 IR ≥ gate 拒绝的因子组合 IR（排除过拟合因子）
-- **不做的事**：不训练模型，不做 alpha mining 本身，只做"准入"
+- **nous 守门**：YAML —
+  - `block if IR < 0.3`
+  - `block if max_correlation_with_pool > 0.85`（KG 查 invest/ 已有因子池）
+  - `warn if turnover > 2.0`
+  - `warn if formula_depth > 8`
+- **成功判据**：holdout 期 IR(gate-approved pool) ≥ IR(raw pool)，拒绝率 ≤ 50%
+- **不做的事**：不训练模型、不做 alpha mining 本身、只做"准入"
+
+### POC-γ（后置，依赖 α + β 都过了）：魔鬼代言人
+- 详见 `integration-hooks.md` Hook-6
 
 ---
 
 ## 7. 差距与风险（诚实）
 
-- **LLM 成本**：qwen-turbo 已在 nous 主线用于 semantic gate；金融 POC 建议复用
-- **数据**：AGPLv3 的 OpenBB 若集成需明确许可边界；Tier 1 POC 可先用 yfinance / Alpha Vantage 免费层
-- **评测**：AgenticAI-Finance benchmark 需要 reproduction；暂以"TradingAgents baseline + nous 守门"vs"TradingAgents 原版"做 A/B
-- **人设塞进 system prompt vs. 声明式规则**：ai-hedge-fund 的 19 个投资家 prompt 注入 LLM 的知识太"软"；
-  我们不赢这个，我们只赢"最终这笔能不能下"的**硬审计**
+- **LLM 成本**：qwen-turbo 已在 nous 主线用于 semantic gate；金融 POC 复用
+- **数据**：按红线 5 **本地处理**，tushare + Wind（采购中）覆盖 A 股；OpenBB AGPL 暂不直接集成
+- **评测**：不做 benchmark 竞赛，基准是孙总 + 4 PM 的**定性反馈** + `internal_poc_*` 硬指标
+- **孙总信任曲线**：按深度智耀路径，**先单点 POC-α 价值验证 → 再扩展 → 始终人审签字**
 
 ---
 
@@ -156,7 +204,9 @@ nous 已有（见 `src/nous/gate.py:253` 的 `gate()` 接口）：
 - [ ] 有没有新项目 >5k★ 且与我们方向重叠但我们没列入？
 - [ ] 上一轮 POC 结论是不是还成立，还是新版本已经覆盖？
 - [ ] 我们是不是开始**自研**了？如果是，停下来找上游
-- [ ] AgenticAI-Finance 榜单有没有更新，我们的相对位置？
+- [ ] 红线有没有被悄悄越过？（特别是"AI 系统"措辞、PM 排名、LLM 预测价格）
+- [ ] `invest/` 数据有没有被意外推到 origin？（红线 5）
+- [ ] 孙总最近一次反馈是什么，跟我们 roadmap 对得上吗？
 
 ---
 

@@ -1,48 +1,68 @@
-# nous × 上游：具体 hook 点
+# nous × 上游 / invest：具体 hook 点
 
 > 目的：把"nous 做守门员"落到 file:line 级别，避免写抽象设计文档。
-> 不写代码，只写**在哪里接**、**塞什么 context**、**期望 gate 判什么**。
+> 本文件不写代码，只写**在哪里接**、**塞什么 context**、**期望 gate 判什么**。
+>
+> Revision 2026-04-21：按 `product-context.md` 的 Route A + 四大产品能力重排。
+> Hook-1（TradingAgents）降级观望；Hook-5/6/7 新增，对齐产品能力 1/2/3。
 
 ---
 
-## Hook 1 — TradingAgents Portfolio Manager 前置 gate
+## 优先级总表
+
+| Hook | 对接产品能力 | 优先级 | 状态 |
+|------|------------|-------|------|
+| Hook-5 · 决策卡字段完整性 gate | 能力 1（结构化决策卡） | **P0** | 准备中 |
+| Hook-2 · RD-Agent 因子准入 gate | 能力 4（AI4Science 流水线） | **P0** | 准备中 |
+| Hook-6 · 魔鬼代言人 | 能力 2 | **P1** | 设计中 |
+| Hook-7 · 多视角陪审团融合 | 能力 3 | **P1** | 设计中 |
+| Hook-3 · FinRL env gate | — | P2 | 观望 |
+| Hook-4 · FinGPT 作为 fact 源 | — | P2 | 观望 |
+| Hook-1 · TradingAgents PM 前置 gate | —（Route B 已拒） | ❌ | watching only |
+
+---
+
+## Hook-5 · 决策卡字段完整性 gate（P0 · 能力 1）
 
 ### 位置
-- 上游：`tradingagents/graph/trading_graph.py` → `TradingAgentsGraph.propagate(ticker, date)`
-- PM 节点是 LangGraph 最后一个 decision node；按官方描述 "approves/rejects the transaction proposal"
+- 上游 / invest：`invest/reports/` 输出 12 维度 checklist JSON
+- 对接点：PM 在前端（微信/简易表单）提交 checklist 前
 
-### 拦截方式（不 fork）
-在调用 `propagate` 的外层 wrapper 里：
-```text
-decision = ta.propagate(ticker, date)    # 现有上游调用
-verdict  = nous.gate(                    # 新增：守门
-    tool_call={"tool_name": "execute_trade", **decision.to_dict()},
-    kg_context=build_finance_kg_context(ticker),  # 调 nous KG 查 ticker Markov blanket
-)
-final = apply_verdict(decision, verdict)  # 映射 allow→原样 / warn→标注 / block→否决
-```
-`build_finance_kg_context` 是 nous 侧小函数（<30 行），不碰上游源代码。
+### nous 侧
+- 规则文件：`ontology/constraints/fin/T-CARD-001.yaml`
+  ```text
+  id: T-CARD-001
+  trigger:
+    action_type: {in: [submit_decision_card]}
+  checks:
+    - block_if: objective.filled_ratio < 1.0
+    - block_if: subjective.thesis.len < 100
+    - warn_if:  subjective.exit_condition == ""
+    - warn_if:  subjective.risks.count < 2
+  ```
+- KG 上下文（检索型，非推荐型）：
+  - 过去 6 个月**本团队** submit 过的相似 ticker / 行业的决策卡
+  - 展示"去年 X PM 在类似情境下写了什么"（让 PM 自己看，**不总结、不打分**）
 
-### nous 侧需准备
-- `ontology/constraints/fin/T-PM-001.yaml` — Portfolio Manager 审计规则
-  - e.g. `if facts.sentiment_score < -0.3 and facts.news_has_regulatory_keyword: verdict = warn`
-- `memory/entities/fin/<ticker>.md` — ticker 作为 resource 实体，持仓/行业/关联
-- 无需改 `gate.py`；接口现成（见 `src/nous/gate.py:253`）
+### 不做
+- ❌ 不对决策卡质量打分
+- ❌ 不跨 PM 比较
+- ❌ 不自动填写 subjective 字段
 
 ### 成功判据
-10 ticker × 30 天样本，**gate warn/block 命中率**（人工判定）≥ 60%，
-且 **原 PM 的合理 approve 被误杀率** ≤ 10%。
+- 4 PM × 5 卡 = 20 样本，block/warn 人审一致率 ≥ 80%
+- 孙总定性反馈"有用"
 
 ---
 
-## Hook 2 — RD-Agent 因子接受前 gate
+## Hook-2 · RD-Agent 因子准入 gate（P0 · 能力 4）
 
 ### 位置
-- 上游：`rdagent fin_quant` self-loop 在 propose 新因子后入库；入库动作是拦截点
-- RD-Agent 有 execution trace，可作为 gate 的 proof_trace 输入
+- 上游：`rdagent fin_quant` self-loop 产出因子 → 入 invest/ 因子池前
+- RD-Agent 暴露 execution trace，作为 proof_trace 输入
 
 ### 拦截方式
-RD-Agent 作为 PyPI 库使用；在它的 factor commit callback 位置（如果没暴露就包 subprocess + 读 trace）前塞：
+RD-Agent 作为 PyPI 库使用；在 factor commit callback 前塞 wrapper：
 ```text
 for factor in rdagent_round_output.factors:
     verdict = nous.gate(
@@ -51,77 +71,120 @@ for factor in rdagent_round_output.factors:
         kg_context=build_factor_kg_context(factor, existing_factor_pool),
     )
     if verdict.action == "allow":
-        persist(factor)
+        persist_to_invest_factor_pool(factor)
     else:
         log_rejection(factor, verdict.reason)
 ```
 
-### nous 侧需准备
-- `ontology/constraints/fin/T-FACTOR-001.yaml`
-  - block: `ir < 0.3`
-  - block: `max_correlation_with_pool > 0.85` （KG 查）
-  - warn: `turnover > 2.0`（双边 200%）
-  - warn: `formula depth > 8`（过拟合嫌疑）
+### nous 侧
+- `ontology/constraints/fin/T-FACTOR-001.yaml` —
+  - `block: ir < 0.3`
+  - `block: max_correlation_with_pool > 0.85`（KG 查 invest/features/ 现有因子）
+  - `warn:  turnover > 2.0`（双边 200%）
+  - `warn:  formula_depth > 8`（过拟合嫌疑）
 - KG 种子：把 existing factor pool 作为 concept 实体，带 formula 向量 + 历史 IR 属性
 
 ### 成功判据
-holdout 期 IR(gate-approved pool) ≥ IR(raw pool)，拒绝率不超过 50%（不能太苛刻）。
+holdout 期 IR(gate-approved pool) ≥ IR(raw pool)，拒绝率 ≤ 50%。
 
 ---
 
-## Hook 3（T2，暂不做）— FinRL env.step() action gate
+## Hook-6 · 魔鬼代言人（P1 · 能力 2）
 
 ### 位置
-- 上游：`finrl.meta.env_stock_trading.env_stocktrading.StockTradingEnv.step(action)`
-- RL 的 action 是连续仓位向量；传统做法是 reward penalty，我们改 hard block
+- 对接点：PM 提交决策卡后的异步 spawn
+- 骨架：**ARIS**（对抗/反思推理）做 skeleton + nous `semantic_gate` 做 executor + `proof_trace` 做留痕
 
-### 思路
+### 流程
 ```text
-def step(self, action):
-    proposal = action_to_trades(action, self.state)
-    verdict = nous.gate({"tool_name": "portfolio_rebalance", "trades": proposal}, ...)
-    if verdict.action == "block":
-        action = self.last_safe_action   # 或全 0
-    return super().step(action)
+1. PM 提交 decision_card
+2. 系统 enqueue "devil's-advocate job"（异步，不阻塞 PM）
+3. ARIS 骨架产生 N 条反驳候选（参考 invest/docs/ 的模板）
+4. nous.semantic_gate 对每条反驳做 filter：
+   - drop: 与 card 事实不符 / 重复
+   - keep: 点出 card 中没覆盖的风险维度
+5. 留存结果到 decision_log + KG（不弹窗，不打扰 PM）
+6. 当 PM 下次看同一 ticker 时，反驳可见（拉力 > 推力）
 ```
 
-### 风险
-- 训练期 block 过频会让 RL 学不到东西 → 需要 curriculum：前 20% 只 warn，后面才 block
-- 需要 FinRL-X 发稳定 release；当前还在迁移中 → **等**
+### 不做
+- ❌ 不弹窗打断 PM 工作流（违反红线 3）
+- ❌ 不做"反驳评分"或"反驳命中率"（会变成排名 PM）
+- ❌ 不让反驳 agent 做价格预测
+
+### 成功判据
+- 一个月内 5 个决策卡跑了反驳；PM 自发回看反驳记录 ≥ 1 次（定性）
+- 至少 1 次反驳命中后来真实发生的风险（人工复盘）
 
 ---
 
-## Hook 4（T2，暂不做）— FinGPT-Forecaster 作为 fact 源
+## Hook-7 · 多视角陪审团融合（P1 · 能力 3）
 
-### 思路
-把 FinGPT 的 HF 推理结果写到 gate 的 `context.facts`：
-```text
-facts["sentiment_finbert"] = fingpt_sentiment(news_snippet)
-facts["forecaster_direction"] = fingpt_forecaster(ticker)
-```
-然后让 YAML 规则引用这些 fact，而不是每次实时调 LLM（贵）。
+### 位置
+- 三个独立 agent（价值 / 动量 / 事件催化）**各自**跑在 invest/skills/ 的信号之上
+- nous 做 verdict 融合，不做加权黑箱
 
-### 前置条件
-先跑一次 FinGPT-Forecaster HF Space，看 latency & 成本；如果 > 5s/call，上 batch + 离线缓存。
+### nous 侧
+- 规则：`ontology/constraints/fin/T-JURY-001.yaml` —
+  ```text
+  - warn_if: disagreement_entropy > 0.8
+  - block_if: all_three_agents_disagree AND position_delta > risk_budget
+  - allow_otherwise: True
+  ```
+- 前端展示：**显式**列三个 agent 各自打分 + 分歧指标，**不**合成一个"综合分"
+- PM 自己决策；系统只呈现分歧
+
+### 不做
+- ❌ 不隐藏加权系数
+- ❌ 不"替 PM 投票"
+- ❌ 不在 3 个 agent 之外再加"超级 agent"
+
+### 成功判据
+- 分歧 > 阈值的案例，人审 ≥ 70% 认为"确实值得再看一眼"
 
 ---
 
-## 不做的 hook（明确拒绝 scope creep）
+## Hook-2（重列细节见上）· Hook-3 / Hook-4（P2 观望）
 
-- ❌ fork ai-hedge-fund 重写 19 个 persona prompt — 其价值在 persona 本身，守门员角色用 TradingAgents 足够
-- ❌ 在 OpenBB Platform 内部改代码 — 作为数据源接入即可，AGPL 边界清晰
-- ❌ 自己训练 finetune 的金融 LLM — 任何时候都优先 off-the-shelf
-- ❌ 重新实现回测引擎 — qlib / pybroker 任一足矣
+### Hook-3 · FinRL env.step() action gate
+- **不在本季度做**。Route A 不直接用 FinRL；若未来 ARIS 引入 RL，再评估
+- 若做：在 `StockTradingEnv.step(action)` 里把 "action_size > risk_budget" 从 reward penalty 改成 hard block
+- 风险：训练期 block 过频会让 RL 学不到东西 → 需 curriculum：前 20% 只 warn
+
+### Hook-4 · FinGPT-Forecaster 作为 fact 源
+- **不在本季度做**。Wind 采购可能覆盖 sentiment feed，先看 Wind 结果
+- 若做：把 FinGPT sentiment 输出作为 `facts["sentiment_finbert"]` 喂给 gate，避免每次实时调 LLM
 
 ---
 
-## 集成完成的 DoD（Definition of Done）
+## Hook-1 · TradingAgents PM 前置 gate（❌ 降级 watching）
 
-对每个 hook：
-1. nous 侧 YAML 规则 + KG 实体 schema 已 commit
-2. wrapper adapter（<100 行 Python）能跑通一次 end-to-end demo
-3. `logs/gate_events.jsonl` 里出现金融 domain 的 event 条目
-4. dashboard（已有 `dashboard/api.py`）能看到这些 event 的统计
+- **原计划**：在 `TradingAgentsGraph.propagate` 外层 wrapper 注入 `nous.gate()`
+- **为什么降级**：
+  1. Route B 已被辩论拒绝（见 `product-context.md §7`）
+  2. TradingAgents 的 multi-persona debate 会"改变 PM 的研究风格"（违反红线 3）
+  3. 投入 2 天做一个**不会上线**的 POC = 浪费
+- **仍保留**在 sota-tracker.yaml 里：等他们出声明式 risk DSL 就重评
+
+---
+
+## 明确不做的 hook（反 scope creep）
+
+- ❌ fork ai-hedge-fund / TradingAgents 任一仓库
+- ❌ 在 OpenBB Platform 内部改代码（AGPL 风险）
+- ❌ 自己训 finetune 金融 LLM
+- ❌ 重新实现回测引擎（Qlib / invest/backtest 已够）
+- ❌ 给 PM 打分 / 排名（红线 2/7）
+
+---
+
+## 每个 hook 的 DoD（Definition of Done）
+
+1. nous 侧 YAML 规则 + KG 实体 schema 已 commit 到 `ontology/constraints/fin/`
+2. wrapper adapter（< 100 行 Python）能跑通一次 end-to-end demo
+3. `logs/gate_events.jsonl` 出现 fin domain event
+4. dashboard（`dashboard/api.py`）能看到这些 event 的统计
 5. 本文件更新 "status=done"，关联 PR/commit hash
+6. **孙总或至少 2 个 PM 用过一次并反馈"有用 / 无用 / 碍事"**（定性，不数字化）
 
-> 没做到 DoD 的 hook 就是 **未完成**，不要并入主线。
+> 没走到 6 的 hook 不是 done，是"工程 done / 产品未验证"——不能并入主线叙事。
