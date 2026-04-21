@@ -44,7 +44,13 @@ _INNER_CIRCLE_HINTS = ["@company.com", "boss", "ceo", "manager", "team lead"]
 
 
 def _is_external_url(value: Any) -> bool:
-    s = str(value).lower()
+    s = str(value).lower().strip()
+    # Strip known URI schemes so domain extraction isn't fooled
+    # (reviewer IMPORTANT #3: mailto: previously slipped through).
+    for scheme in ("mailto:", "sms:", "tel:"):
+        if s.startswith(scheme):
+            s = s[len(scheme):]
+            break
     if "@" in s:
         domain = s.rsplit("@", 1)[-1].split()[0].rstrip(">,;.")
         return domain not in _KNOWN_INTERNAL_DOMAINS

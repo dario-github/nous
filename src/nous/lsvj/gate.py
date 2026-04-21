@@ -72,11 +72,24 @@ def _execute_rule(
     bindings: dict,
     evaluator: Evaluator,
 ) -> bool:
-    """对 parsed_rule 中所有原语调用求值，返回 discharged。
+    """对 parsed_rule 求值，返回 discharged。
 
-    M0 语义：discharged = AND(evaluate(prim) for prim in calls)
-    更复杂的析取/否定表达式在 M1+ 通过 Cozo 执行。
+    M1 semantics: 调用 head_evaluator 解析并求值
+        discharged = <bool_expr>
+    M0 fallback: Lark 不可用 / 规则文本无法 Lark-parse 时，退化为
+        AND(evaluate(prim) for prim in calls)
     """
+    try:
+        from nous.lsvj.head_evaluator import evaluate_head_expr
+        m1 = evaluate_head_expr(parsed_rule.raw, evaluator)
+        if m1 is not None:
+            return m1
+    except Exception as exc:
+        # Log so M1 silent degradation is visible (reviewer IMPORTANT #1).
+        import logging as _logging
+        _logging.getLogger(__name__).debug(
+            "M1 head_evaluator failed, falling back to M0: %s", exc,
+        )
     for call in parsed_rule.calls:
         if not evaluator.evaluate(call.prim_id, call.args, bindings):
             return False
