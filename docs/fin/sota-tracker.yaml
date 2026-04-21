@@ -1,0 +1,139 @@
+# SOTA 持续跟进清单
+#
+# 用途：每月至少刷一次，发现 major version / 大幅 star 变化就补一行 "note"
+# 结构：snake_case；日期一律 ISO；stars 写快照值，不求精确
+#
+# 巡检脚本（未写）：计划用 gh api /repos/{owner}/{name} 拉 stargazers_count + 最新 release tag
+# 对比本文件里的 last_snapshot 字段，diff 出来写 docs/fin/monthly-*.md
+
+version: 1
+last_review: 2026-04-21
+next_review: 2026-05-21
+
+tier_1:
+  # 必须持续关注；其 release 可能触发我们 POC 的复盘
+  - name: TradingAgents
+    url: https://github.com/TauricResearch/TradingAgents
+    license: Apache-2.0
+    stars_snapshot: 52100
+    latest_release_seen: v0.2.3
+    our_integration_status: poc_planned
+    our_hook: pre-Portfolio-Manager gate() inject
+    watch_for:
+      - new orchestration layer (post-LangGraph)
+      - native risk-constraint DSL (would replace our YAML value-add)
+    last_checked: 2026-04-21
+
+  - name: ai-hedge-fund
+    url: https://github.com/virattt/ai-hedge-fund
+    license: MIT
+    stars_snapshot: 56700
+    latest_release_seen: unknown
+    our_integration_status: watching
+    our_hook: null  # 人设 prompt 太重，暂不作为集成骨架
+    watch_for:
+      - modular extraction of Risk Manager into standalone
+      - Python API (non-CLI) maturation
+    last_checked: 2026-04-21
+
+  - name: qlib
+    url: https://github.com/microsoft/qlib
+    license: MIT
+    stars_snapshot: 41100
+    latest_release_seen: unknown
+    our_integration_status: infrastructure_only
+    our_hook: upstream data / backtest engine for POC-2
+    watch_for:
+      - RD-Agent tighter integration
+      - native constraint/validation hook for generated factors
+    last_checked: 2026-04-21
+
+  - name: RD-Agent
+    url: https://github.com/microsoft/RD-Agent
+    license: MIT
+    stars_snapshot: 12600
+    latest_release_seen: unknown
+    our_integration_status: poc_planned
+    our_hook: factor-proposal gate (accept/reject before persisting)
+    watch_for:
+      - any "validator" or "critic" module they add (would obsolete our hook)
+    last_checked: 2026-04-21
+
+  - name: FinRL
+    url: https://github.com/AI4Finance-Foundation/FinRL
+    license: MIT
+    stars_snapshot: 14800
+    latest_release_seen: FinRL-X (arXiv:2603.21330)
+    our_integration_status: watching
+    our_hook: env.step() action-level gate (tier-2)
+    watch_for:
+      - FinRL-X GA release + modular control layer
+    last_checked: 2026-04-21
+
+  - name: OpenBB
+    url: https://github.com/OpenBB-finance/OpenBB
+    license: AGPLv3
+    stars_snapshot: 66200
+    latest_release_seen: unknown
+    our_integration_status: watching
+    our_hook: data feed + MCP for KG seeding
+    watch_for:
+      - license change (AGPL is a blocker for some deployments)
+      - agents-for-openbb maturity
+    last_checked: 2026-04-21
+
+  - name: FinGPT
+    url: https://github.com/AI4Finance-Foundation/FinGPT
+    license: MIT
+    stars_snapshot: 19700
+    latest_release_seen: FinGPT v3
+    our_integration_status: signal_source
+    our_hook: sentiment LoRA output as gate fact
+    watch_for:
+      - base model upgrade to Llama-3 / Qwen-3
+      - multi-task unified release
+    last_checked: 2026-04-21
+
+  - name: FinRobot
+    url: https://github.com/AI4Finance-Foundation/FinRobot
+    license: Apache-2.0
+    stars_snapshot: 6700
+    latest_release_seen: unknown
+    our_integration_status: watching
+    our_hook: null  # AutoGen 路线冲突
+    watch_for:
+      - LangGraph or neutral-orchestration migration
+    last_checked: 2026-04-21
+
+tier_2:
+  # 观望；未触发明确 hook
+  - {name: FinMem, url: https://github.com/pipiku915/FinMem-LLM-StockTrading, last_checked: 2026-04-21, reason: layered memory idea; borrow, do not depend}
+  - {name: AgenticTrading, url: https://github.com/Open-Finance-Lab/AgenticTrading, last_checked: 2026-04-21, reason: FinAI Contest 2025 baseline; reference stack}
+  - {name: NoFx, url: https://github.com/NoFxAiOS/nofx, last_checked: 2026-04-21, reason: 3-strikes-stop heuristic; borrow into YAML rules}
+  - {name: pybroker, url: https://github.com/edtechre/pybroker, last_checked: 2026-04-21, reason: pure-python ML backtest; alt to qlib if qlib too heavy}
+  - {name: DeepMarket, url: https://github.com/LeonardoBerti00/DeepMarket, last_checked: 2026-04-21, reason: LOB diffusion; adversarial stress test source}
+
+time_series_foundation_models:
+  # 零样本预测；仅在需要 ensemble 分歧检测时纳入
+  - {name: Chronos-2, url: https://github.com/amazon-science/chronos-forecasting, last_checked: 2026-04-21}
+  - {name: TimesFM, url: https://github.com/google-research/timesfm, last_checked: 2026-04-21}
+  - {name: Moirai, url: https://github.com/SalesforceAIResearch/uni2ts, last_checked: 2026-04-21}
+  - {name: Lag-Llama, url: https://github.com/time-series-foundation-models/lag-llama, last_checked: 2026-04-21}
+  - {name: TimeGPT, url: https://github.com/Nixtla/nixtla, last_checked: 2026-04-21}
+
+benchmarks_we_want_to_beat_or_match:
+  - name: AgenticAI-Finance (aimultiple 2025)
+    leaders: {FinGPT: 0.79, FinRobot: 0.74, FinRL: 0.53}
+    our_position: not_yet_evaluated
+    target: "TradingAgents + nous 守门 >= TradingAgents raw, same spending"
+  - name: FinAI Contest 2025 Task 3 (Single Stock Trading)
+    our_position: not_yet_evaluated
+    target: participate_only_if_poc_1_works
+
+avoid_list:
+  # 显式不做，避免 scope creep
+  - train financial foundation models
+  - write a new backtesting engine
+  - fork any tier-1 project and diverge
+  - build our own data pipeline from exchanges
+  - write reasoning prompts for investor personas
