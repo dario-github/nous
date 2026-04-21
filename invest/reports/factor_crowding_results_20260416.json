@@ -1,0 +1,326 @@
+{
+  "module1_factor_ic": {
+    "EP_IC": {
+      "mean": 0.0189,
+      "std": 0.2267,
+      "icir": 0.0834,
+      "positive_ratio": 0.56,
+      "sample_days": 25
+    },
+    "BP_IC": {
+      "mean": 0.022,
+      "std": 0.25,
+      "icir": 0.0881,
+      "positive_ratio": 0.56,
+      "sample_days": 25
+    },
+    "MOM_6M_IC": {
+      "mean": 0.048,
+      "std": NaN,
+      "icir": 0,
+      "positive_ratio": 1.0,
+      "sample_days": 1
+    },
+    "Quality_IC": {
+      "mean": 0.0353,
+      "std": 0.2223,
+      "icir": 0.1586,
+      "positive_ratio": 0.56,
+      "sample_days": 25
+    },
+    "REV_5D_IC": {
+      "mean": -0.0439,
+      "std": 0.1415,
+      "icir": -0.31,
+      "positive_ratio": 0.3043,
+      "sample_days": 23
+    },
+    "REV_20D_IC": {
+      "mean": -0.0538,
+      "std": 0.1446,
+      "icir": -0.3723,
+      "positive_ratio": 0.3,
+      "sample_days": 20
+    },
+    "VOL_20D_IC": {
+      "mean": -0.0263,
+      "std": 0.2195,
+      "icir": -0.1198,
+      "positive_ratio": 0.5238,
+      "sample_days": 21
+    }
+  },
+  "module2_crowding": {
+    "signal_distribution": {
+      "mean": -0.0026,
+      "std": 0.0099,
+      "skew": 1.2388,
+      "kurtosis": 7.2957,
+      "top10pct_threshold": 0.0083,
+      "bottom10pct_threshold": -0.0139,
+      "concentration_top20": 0.0587
+    },
+    "factor_correlation": {
+      "avg_abs_correlation": 0.3504,
+      "max_abs_correlation": 0.9238,
+      "high_corr_pairs_count": 16,
+      "high_corr_pairs": [
+        {
+          "factor_1": "close_open_ratio",
+          "factor_2": "ma5_bias",
+          "correlation": 0.673
+        },
+        {
+          "factor_1": "high_low_ratio",
+          "factor_2": "volatility_5d",
+          "correlation": 0.601
+        },
+        {
+          "factor_1": "mom_5d",
+          "factor_2": "mom_10d",
+          "correlation": 0.68
+        },
+        {
+          "factor_1": "mom_5d",
+          "factor_2": "ma5_bias",
+          "correlation": 0.807
+        },
+        {
+          "factor_1": "mom_5d",
+          "factor_2": "ma10_bias",
+          "correlation": 0.924
+        },
+        {
+          "factor_1": "mom_5d",
+          "factor_2": "ma20_bias",
+          "correlation": 0.759
+        },
+        {
+          "factor_1": "mom_10d",
+          "factor_2": "mom_20d",
+          "correlation": 0.666
+        },
+        {
+          "factor_1": "mom_10d",
+          "factor_2": "ma10_bias",
+          "correlation": 0.821
+        },
+        {
+          "factor_1": "mom_10d",
+          "factor_2": "ma20_bias",
+          "correlation": 0.915
+        },
+        {
+          "factor_1": "mom_20d",
+          "factor_2": "ma20_bias",
+          "correlation": 0.811
+        }
+      ],
+      "total_factors": 14
+    },
+    "factor_turnover": {
+      "avg_rank_autocorrelation": {
+        "close_open_ratio": 0.0364,
+        "high_low_ratio": 0.5609,
+        "mom_10d": 0.886,
+        "mom_20d": 0.939,
+        "mom_5d": 0.7614
+      },
+      "interpretation": "高自相关(>0.8) = 低换手 = 低拥挤; 低自相关(<0.5) = 高换手 = 可能拥挤"
+    }
+  },
+  "module3_homogeneity": {
+    "moneyflow": {
+      "sample_stocks": 50,
+      "avg_daily_inst_net": -369598.78,
+      "inst_direction_consistency": 0.6303,
+      "top_inst_inflow_date": "20260408",
+      "top_inst_outflow_date": "20260113"
+    },
+    "index_concentration": {
+      "csi500_top10_weight": 6.9,
+      "csi500_top20_weight": 12.25,
+      "csi500_hhi": 0.002842,
+      "interpretation": "HHI < 0.01 = 高度分散; 0.01-0.15 = 中度集中; >0.15 = 高度集中"
+    },
+    "industry_distribution": {
+      "top5_industries": {
+        "半导体": 14,
+        "电气设备": 11,
+        "元器件": 9,
+        "小金属": 9,
+        "专用机械": 8
+      },
+      "total_industries": 32,
+      "concentration_top5": 0.51
+    }
+  },
+  "module4_failures": {
+    "CSI300": {
+      "ret_1M": 0.29,
+      "ret_3M": -0.69,
+      "ret_6M": 3.66,
+      "max_drawdown": -10.49
+    },
+    "CSI500": {
+      "ret_1M": -1.72,
+      "ret_3M": 5.13,
+      "ret_6M": 12.02,
+      "max_drawdown": -14.06
+    },
+    "CSI1000": {
+      "ret_1M": -1.28,
+      "ret_3M": 4.54,
+      "ret_6M": 9.42,
+      "max_drawdown": -16.87
+    },
+    "factor_decay": {
+      "reversal_5d_monthly_ic": {
+        "202310": -0.332,
+        "202311": -0.0665,
+        "202312": 0.0499,
+        "202401": -0.0372,
+        "202402": 0.3501,
+        "202403": -0.1889,
+        "202404": -0.0391,
+        "202405": -0.1167,
+        "202406": 0.0392,
+        "202407": -0.0427,
+        "202408": 0.0521,
+        "202409": -0.0755,
+        "202410": -0.2788,
+        "202411": -0.1451,
+        "202412": 0.0143,
+        "202501": 0.1019,
+        "202502": -0.1302,
+        "202503": 0.0077,
+        "202504": 0.1471,
+        "202505": 0.0848,
+        "202506": -0.0826,
+        "202507": -0.0292,
+        "202508": 0.0225,
+        "202509": -0.1475,
+        "202510": -0.067,
+        "202511": -0.0349,
+        "202512": -0.0324,
+        "202601": -0.1236,
+        "202602": -0.2502,
+        "202603": 0.043
+      },
+      "trend": "stable/improving",
+      "latest_month_ic": 0.043,
+      "first_month_ic": -0.332
+    },
+    "strategy_failure_cases": {
+      "case_1_small_cap": {
+        "strategy": "微盘股/小盘股量化策略",
+        "evidence": "CSI2000 vs CSI300 的收益分化，小盘策略在特定时段大幅回撤",
+        "typical_triggers": [
+          "流动性收紧",
+          "监管政策变化",
+          "量价因子拥挤"
+        ],
+        "status": "需根据指数价差数据确认"
+      },
+      "case_2_momentum": {
+        "strategy": "动量/趋势跟踪策略",
+        "evidence": "市场风格频繁切换导致动量因子IC不稳定",
+        "typical_triggers": [
+          "板块快速轮动",
+          "政策驱动行情",
+          "北向资金突然转向"
+        ],
+        "status": "反转因子IC下降为直接证据"
+      },
+      "case_3_high_freq": {
+        "strategy": "高频量价/日间反转策略",
+        "evidence": "竞争加剧导致信号衰减，换手成本侵蚀收益",
+        "typical_triggers": [
+          "策略同质化",
+          "交易成本上升",
+          "对手方进化"
+        ],
+        "status": "Alpha158 IC=0.015 已处于低效区间"
+      }
+    }
+  },
+  "module5_survivor_bias": {
+    "stock_universe": {
+      "current_listed": 5505,
+      "delisted": 323,
+      "paused": 0,
+      "yearly_delist": {
+        "2022": 46,
+        "2023": 45,
+        "2024": 52,
+        "2025": 29,
+        "2026": 5
+      },
+      "st_stocks": 179,
+      "yearly_new_listings": {
+        "2022": 428,
+        "2023": 313,
+        "2024": 100,
+        "2025": 116,
+        "2026": 40
+      }
+    },
+    "data_coverage": {
+      "first_month_stocks": 1754,
+      "last_month_stocks": 1800,
+      "stock_count_trend": "increasing",
+      "monthly_stock_counts": {
+        "202310": 1754,
+        "202311": 1755,
+        "202312": 1759,
+        "202401": 1761,
+        "202402": 1764,
+        "202403": 1766,
+        "202404": 1767,
+        "202405": 1767,
+        "202406": 1770,
+        "202407": 1771,
+        "202408": 1773,
+        "202409": 1776,
+        "202410": 1781,
+        "202411": 1783,
+        "202412": 1786,
+        "202501": 1790,
+        "202502": 1790,
+        "202503": 1791,
+        "202504": 1794,
+        "202505": 1795,
+        "202506": 1797,
+        "202507": 1800,
+        "202508": 1800,
+        "202509": 1800,
+        "202510": 1800,
+        "202511": 1800,
+        "202512": 1800,
+        "202601": 1800,
+        "202602": 1800,
+        "202603": 1800,
+        "202604": 1800
+      },
+      "disappeared_stocks": 0,
+      "new_stocks": 46,
+      "survivor_bias_note": "数据期间有0只股票消失(退市/剔除), 46只新股加入。如回测仅用当前存续股票，将高估策略收益。"
+    },
+    "fund_survivor_bias": {
+      "note": "国内量化私募基金业绩数据不公开，以下为结构性分析",
+      "estimated_benefit": "学术研究显示，基金业业绩存在约2-4%的幸存者偏差",
+      "backtest_implications": [
+        "回测应包含退市股票(使用point-in-time数据)",
+        "指数成分调整时同步调整股票池",
+        "ST股票应纳入回测而非事后剔除",
+        "新股上市初期数据应谨慎处理(前20个交易日)"
+      ],
+      "mitigation_strategies": [
+        "使用Point-in-Time (PIT) 数据",
+        "包含退市股票的全量回测",
+        "ST标记使用历史时点数据而非当前数据",
+        "新股纳入设冷却期"
+      ]
+    }
+  }
+}

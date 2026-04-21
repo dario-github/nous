@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/yan/clawd-agents/research/nous-invest/mlruns/346984349361277885/5f114ea2ffc744569a02688330a0a7cf/artifacts
+end_time: 1776274814113
+entry_point_name: ''
+experiment_id: '346984349361277885'
+lifecycle_stage: active
+run_id: 5f114ea2ffc744569a02688330a0a7cf
+run_name: mlflow_recorder
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1776274814053
+status: 4
+tags: []
+user_id: yan

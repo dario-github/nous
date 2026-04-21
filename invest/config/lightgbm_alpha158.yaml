@@ -1,0 +1,44 @@
+# Qlib配置 — LightGBM + Alpha158 基线
+# Nous A股选股 Phase 0
+
+provider_uri: "~/.qlib/qlib_data/cn_data"
+expression_cache: null
+
+task:
+  model:
+    class: LGBModel
+    module_path: qlib.contrib.model.gbdt
+    kwargs:
+      loss: mse
+      colsample_bytree: 0.8879
+      learning_rate: 0.0421
+      subsample: 0.8789
+      lambda_l1: 205.699
+      lambda_l2: 580.976
+      max_depth: 8
+      num_leaves: 210
+      num_threads: 4
+
+  dataset:
+    class: DatasetH
+    module_path: qlib.data.dataset
+    kwargs:
+      handler:
+        class: Alpha158
+        module_path: qlib.contrib.data.handler
+        kwargs:
+          start_time: 2015-01-01
+          end_time: 2024-12-31
+          fit_start_time: 2015-01-01
+          fit_end_time: 2018-12-31
+          instruments: csi300
+      segments:
+        train: [2015-01-01, 2018-12-31]
+        valid: [2019-01-01, 2020-12-31]
+        test:  [2021-01-01, 2024-12-31]
+
+  record:
+    - class: SignalRecord
+      module_path: qlib.workflow.record_temp
+    - class: SigAnaRecord
+      module_path: qlib.workflow.record_temp
