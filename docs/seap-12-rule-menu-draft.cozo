@@ -1,6 +1,17 @@
 % =============================================================
 % SEAP (Static Expert-Authored Policy) — 12-rule Datalog menu
-% LSVJ-S paper B1 baseline (paper/main-lsvj.tex §4.2)
+%
+% SUPERSEDED 2026-04-21 (paper repivot to public benchmarks).
+% Originally designed as the apples-to-apples PCAS analog baseline
+% on the in-house v3-HN slice. Since the paper now compares LSVJ-S
+% against AgentDojo / ShieldAgent-Bench published baselines (not an
+% in-house menu), SEAP is no longer the primary B1 control.
+% Retained as design documentation; may resurface as an appendix
+% ablation (in-vocabulary deterministic policy) if a reviewer asks
+% for it.
+%
+% Original purpose (now historical):
+%   LSVJ-S paper B1 baseline (paper/main-lsvj.tex §4.2 -- pre-pivot)
 %
 % Structurally isomorphic to PCAS (Palumbo et al., 2026) offline
 % compilation: rules authored before the interaction, no per-decision

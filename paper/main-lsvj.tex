@@ -476,27 +476,51 @@ save.
 \subsection{Datasets and Protocol}
 \label{sec:exp:data}
 
-\paragraph{Primary evaluation slice (v3-HN).}
-A hard-negative held-out slice authored under a pre-registered
-protocol (\texttt{nous/docs/v3-HN-blind-protocol.md}, committed
-before W5): target \placeholder{$\ge 100$H + 50B total} with a
-$\ge 50$H + 25B blind sub-slice authored by a sealed Sonnet~4.6
-subagent, plus a 30H + 15B neg-control sub-slice of hand-crafted
-benign cases that superficially resemble harmful. Blind-distance
-calibration uses cosine similarity on $\approx 5$ within-author and
-$\approx 5$ cross-author pairs; a blind-vs-author cosine exceeding
-threshold triggers a failed-blind flag and recruits a human
-collaborator for a post-workshop ICLR run.
+We deliberately avoid in-house authored evaluation slices for the
+primary results: a method that beats a self-authored hard-negative
+set has no reviewer-credible authority. All headline experiments
+use established public benchmarks with externally published
+baselines.
 
-\paragraph{Reference datasets.}
-v3 (300H + 150B, historical baseline) and AgentHarm (176H + 176B,
-literature comparability) appear in Appendix~C.
+\paragraph{Primary benchmark: AgentDojo}~\citep{debenedetti2024agentdojo}.
+The AgentDojo injection-task suite (97 user tasks $\times$ 27
+injection tasks across four domains---banking, slack, travel,
+workspace) is the closest public match to LSVJ-S's threat surface:
+prompt-injection-mediated harm through legitimate tool calls.
+Owner-Harm companion work~\citep{zhang2026ownerharm} reports the
+current Nous gate at \textbf{14.8\%} TPR (4/27, 95\% CI:
+5.9--32.5\%) on this slice under ground-truth deterministic
+evaluation. This is the headline baseline LSVJ-S must beat.
+
+\paragraph{Secondary benchmark: ShieldAgent-Bench}~\citep{chen2025shieldagent}.
+The ICML 2025 ShieldAgent paper releases a multi-domain
+rule-violation benchmark with $\approx 3$k traces. We adopt the
+official splits and the published ShieldAgent baseline numbers as a
+second comparison point; this is structurally important because
+ShieldAgent itself is one of the closest related-work methods we
+differentiate against in Section~\ref{sec:related}.
+
+\paragraph{Reference / saturation slice: AgentHarm}~\citep{andriushchenko2025agentharm}.
+The 176H + 176B AgentHarm slice is included in Appendix~C purely
+as a no-regression check: the Owner-Harm companion gate already
+saturates this slice at 100\% TPR / 0\% FPR; LSVJ-S simply needs
+to maintain that.
+
+\paragraph{Author-internal artifacts (NOT primary evidence).}
+The repository also contains
+\texttt{nous/data/owner\_harm\_heldout\_v3.json} (450 in-house
+cases) and an early protocol sketch
+\texttt{nous/docs/v3-HN-blind-protocol.md} for an in-house
+blind-authored hard-negative slice. These are retained as design
+and engineering artifacts only. \emph{No experimental claim in
+this paper rests on them.} A pre-pivot version of the experiment
+plan exists in repo history (commits up to \texttt{9f8c7b1}) and
+is preserved for transparency, not used as evidence.
 
 \paragraph{Statistical policy.}
-All proportions are reported with Wilson 95\% CI; significance tests
-at $\alpha = 0.05$; paired-McNemar is used only for the B4
-decisive-subset analysis; we make \emph{no} significance claim on
-the neg-control slice ($n{=}45$; explicitly diagnostic-only).
+All proportions are reported with Wilson 95\% CI; significance
+tests at $\alpha = 0.05$; paired-McNemar is used only for the B4
+decisive-subset analysis on AgentDojo's per-task per-injection grid.
 
 \paragraph{Metrics.}
 TPR/FPR with Wilson 95\% CI per category; paired-McNemar
@@ -505,35 +529,45 @@ flip rate $b/(b+c)$; false-allow rate (B3 diagnostic); verbatim-match
 rate (B2 diagnostic); parse-failure rate; decisive-primitive
 distribution; per-call latency.
 
-\subsection{B1 --- Main 5-Configuration Comparison}
+\subsection{B1 --- Main Comparison on Public Benchmarks}
 \label{sec:exp:b1}
 
-\paragraph{Configurations.}
+\paragraph{Configurations on AgentDojo.}
 \begin{enumerate}[leftmargin=1.5em,nosep]
-\item \textbf{LLM-only}: DeepSeek-V3.2 + current semantic-gate prompt;
-no L1/L2/L4.
-\item \textbf{Rules-only}: L1 Datalog + L2 triviality; no L3/L4.
-\item \textbf{Nous current}: L1+L2+L3(old prompt)+L4.
-\item \textbf{SEAP}: L1+L2+12-rule expert menu+L4
-(\texttt{nous/docs/no-synth-menu-plus.cozo}).
+\item \textbf{No defense}: agent-pipeline only, no gate
+(AgentDojo published baseline).
+\item \textbf{Llama-Guard~3}~\citep{inan2023llamaguard}:
+representative LLM-only safety classifier.
+\item \textbf{Nous current}~\citep{zhang2026ownerharm}: L1+L2+L3(old
+prompt)+L4 --- the 14.8\% baseline from the companion paper.
 \item \textbf{LSVJ-S (ours)}: L1+L2+L3-LSVJ-S+L4;
 \texttt{upgrade\_only=True}; majority-vote $k{=}3$; $N{=}5$
 perturbations in b.4.
 \end{enumerate}
 
-\paragraph{Success criterion.}
-LSVJ-S Wilson CI lower bound exceeds SEAP Wilson CI upper bound on
-at least one category; per-category TPR $\ge$ SEAP on $\ge 5/8$
-categories; direction-consistent on the blind sub-slice.
+\paragraph{Configurations on ShieldAgent-Bench.}
+ShieldAgent-Bench~\citep{chen2025shieldagent} ships with its own
+official baselines. We add LSVJ-S as a single new row and report
+the same metrics defined by the original benchmark
+(rule-compliance accuracy + utility preservation).
+
+\paragraph{Success criterion (pre-registered).}
+On AgentDojo: LSVJ-S TPR Wilson 95\% CI lower bound $>$ Nous-current
+upper bound (i.e.\ statistically distinct improvement over the
+14.8\% baseline). On ShieldAgent-Bench: LSVJ-S rule-compliance
+$\ge$ ShieldAgent published number on at least one domain split.
 
 \paragraph{Failure off-ramp (pre-registered).}
-If LSVJ-S $\le$ SEAP statistically, we pause and pivot to PRM/RL-light
-or reasoning-model-native synthesis. We do not reframe to hide a null
-result.
+If LSVJ-S $\le$ Nous-current on AgentDojo statistically: pause and
+pivot to PRM/RL-light or reasoning-model-native synthesis. We do
+not reframe to hide a null result.
 
-\placeholder{Table 1 (main). TBD after W6 run. Columns:
-configuration $\times$ category (TPR / FPR with Wilson 95\% CI).
-Full slice and blind sub-slice reported separately.}
+\placeholder{Table 1 (AgentDojo). TBD after eval. Columns:
+configuration $\times$ injection-task category (TPR / FPR with
+Wilson 95\% CI). Banking / slack / travel / workspace separately.}
+
+\placeholder{Table 1b (ShieldAgent-Bench). TBD after eval.
+ShieldAgent vs LSVJ-S on the official splits.}
 
 \subsection{B2 --- Synthesis vs.\ Menu: Novelty Isolation}
 \label{sec:exp:b2}

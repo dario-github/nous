@@ -1,8 +1,16 @@
 # v3-HN Hard-Negative Slice — Blind Authoring Protocol
 
-**Status**: DRAFT 2026-04-21. Needs Dongcheng sign-off before any blind
-authoring run, then this file is frozen (sha256 + commit hash recorded
-in `paper/main-lsvj.tex` §4.1 as pre-registration evidence).
+> **SUPERSEDED 2026-04-21** by Dongcheng directive: experiments must
+> use public trusted datasets, not in-house authored slices. Blind
+> Sonnet authoring does NOT solve the integrity problem — both hands
+> are still under the same authorship roof. The LSVJ-S paper now uses
+> AgentDojo + ShieldAgent-Bench + AgentHarm. This file is retained as
+> design history, not as a live experimental protocol.
+>
+> See `paper/main-lsvj.tex` §4.1 (post-pivot) and the auto-memory
+> `feedback_public_benchmarks_only.md` for the rule.
+
+**Status**: SUPERSEDED. Originally drafted 2026-04-21; pivoted same day.
 
 **Purpose**: specify how to construct the v3-HN evaluation slice used
 by the LSVJ-S paper's B1 comparison (paper §4.2), with integrity
