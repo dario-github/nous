@@ -1,0 +1,73 @@
+{
+  "meta": {
+    "timestamp": "2026-04-21T18:58:37.814347",
+    "hint": "synthetic data \u2014 numbers are structural, not production alpha"
+  },
+  "round2_simple": {
+    "ic_mean": 0.020149460493419806,
+    "ic_std": 0.06632923772721475,
+    "icir": 0.3037794671527263,
+    "annual_ir": 4.82234954096297,
+    "ic_positive_ratio": 0.635593220338983,
+    "runtime_sec": 0.32462048530578613,
+    "best_iteration": 15
+  },
+  "ensemble_default_params": {
+    "fit_result": {
+      "lgb_iteration": 1,
+      "xgb_iteration": 0,
+      "weights": {
+        "lgb": 0.5,
+        "xgb": 0.5
+      }
+    },
+    "weighted": {
+      "ic_mean": NaN,
+      "ic_std": NaN,
+      "icir": 0.0,
+      "annual_ir": 0.0,
+      "ic_positive_ratio": NaN
+    },
+    "stacking": {
+      "ic_mean": NaN,
+      "ic_std": NaN,
+      "icir": 0.0,
+      "annual_ir": 0.0,
+      "ic_positive_ratio": NaN
+    },
+    "runtime_sec": 0.3789103031158447,
+    "status": "ok"
+  },
+  "ensemble_sane_params": {
+    "fit_result": {
+      "lgb_iteration": 25,
+      "xgb_iteration": 19,
+      "weights": {
+        "lgb": 0.49987307813370124,
+        "xgb": 0.5001269218662987
+      }
+    },
+    "weighted": {
+      "ic_mean": 0.02239546100988133,
+      "ic_std": 0.06571329592680238,
+      "icir": 0.34080562683733734,
+      "annual_ir": 5.41012160413845,
+      "ic_positive_ratio": 0.6440677966101694
+    },
+    "stacking": {
+      "ic_mean": 0.023054965513936394,
+      "ic_std": 0.06382133417547915,
+      "icir": 0.3612422994879095,
+      "annual_ir": 5.734543724892744,
+      "ic_positive_ratio": 0.6610169491525424
+    },
+    "runtime_sec": 0.8483219146728516,
+    "status": "ok"
+  },
+  "institutional": {
+    "status": "crashed",
+    "error": "StockUniverse._screen_single() takes 2 positional arguments but 3 were given",
+    "trace": "Traceback (most recent call last):\n  File \"/home/user/nous/invest/experiments/2026-04-21-ensemble-vs-simple/run.py\", line 290, in run_institutional_smoke\n    out = pipe.daily_run(\n          ^^^^^^^^^^^^^^^\n  File \"/home/user/nous/invest/institutional/pipeline.py\", line 99, in daily_run\n    universe_results = self.universe.screen(stock_data, date)\n                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/user/nous/invest/institutional/market_neutral/__init__.py\", line 147, in screen\n    sl = self._screen_single(code, grp.tail(lookback))\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: StockUniverse._screen_single() takes 2 positional arguments but 3 were given\n",
+    "runtime_sec": 0.06718707084655762
+  }
+}
