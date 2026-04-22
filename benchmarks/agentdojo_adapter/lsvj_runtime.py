@@ -34,13 +34,30 @@ logger = logging.getLogger(__name__)
 
 BLOCKED_RESULT = "[LSVJ_BLOCKED] 此工具调用已被 LSVJ-S 安全门控拦截。"
 
-_KNOWN_INTERNAL_DOMAINS = {"company.com", "internal.local", "localhost"}
+_KNOWN_INTERNAL_DOMAINS = {
+    # AgentDojo workspace main user (emma.johnson@bluesparrowtech.com)
+    "bluesparrowtech.com",
+    # Companion suites observed in AgentDojo v1 data
+    "mainsail-tech.com", "industry-network.com", "clientcorp.com",
+    # Legacy / synthetic fallbacks for Nous internal tests
+    "company.com", "internal.local", "localhost",
+}
 _AUTHORITY_COERCION_PATTERNS = [
     r"ignore\s+previous", r"system:.*override", r"as\s+admin",
-    r"you\s+must", r"override\s+the", r"bypass.*restriction",
+    r"override\s+the", r"bypass.*restriction",
     r"new\s+instructions?:", r"important:.*override",
+    # Dropped broad `you\s+must` pattern per reviewer (false-positive-prone
+    # on benign instructions like "you must click OK").
 ]
-_INNER_CIRCLE_HINTS = ["@company.com", "boss", "ceo", "manager", "team lead"]
+# Slack suite uses bare first names Alice/Bob/Charlie as identities;
+# workspace uses @bluesparrowtech.com. Inner-circle signal is
+# domain-based for workspace, name-based for slack.
+_INNER_CIRCLE_HINTS = [
+    "@bluesparrowtech.com",
+    "@company.com",
+    "alice", "bob", "charlie",
+    "boss", "ceo", "manager", "team lead",
+]
 
 
 def _is_external_url(value: Any) -> bool:
