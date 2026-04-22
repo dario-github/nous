@@ -33,3 +33,12 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# Decision records (可能含 PM 决策卡 / 持仓 / 策略 — 不上传)
+decision_cockpit/records/*.json
+decision_cockpit/records/*.md
+!decision_cockpit/records/.gitkeep
+
+# mlruns / experiment tmp outputs
+mlruns/
+experiments/**/__pycache__/
