@@ -144,7 +144,7 @@ class StockUniverse:
 
         results = []
         for code, grp in recent.groupby('ts_code'):
-            sl = self._screen_single(code, grp.tail(lookback))
+            sl = self._screen_single(grp.tail(lookback))
             results.append(sl)
 
         eligible = [s for s in results if s.eligible]

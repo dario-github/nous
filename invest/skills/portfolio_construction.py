@@ -41,30 +41,31 @@ class MultiModelEnsemble:
         self.weights = {'lgb': 0.5, 'xgb': 0.5}
         
     def _default_lgb_params(self) -> Dict:
-        """默认LightGBM参数"""
+        """默认LightGBM参数。L1/L2 历史上被设成 205/580（几乎把信号压平），
+        改为业界常见量级；有需求的调用方请显式传 lgb_params 覆盖。"""
         return {
             "objective": "mse",
             "colsample_bytree": 0.8879,
             "learning_rate": 0.0421,
             "subsample": 0.8789,
-            "lambda_l1": 205.699,
-            "lambda_l2": 580.976,
+            "lambda_l1": 0.1,
+            "lambda_l2": 0.1,
             "max_depth": 8,
             "num_leaves": 210,
             "num_threads": 4,
             "verbose": -1,
             "metric": "mse",
         }
-    
+
     def _default_xgb_params(self) -> Dict:
-        """默认XGBoost参数"""
+        """默认XGBoost参数。同 LGB，reg_alpha/reg_lambda 从 205/580 调到 0.1。"""
         return {
             "objective": "reg:squarederror",
             "colsample_bytree": 0.8879,
             "learning_rate": 0.0421,
             "subsample": 0.8789,
-            "reg_alpha": 205.699,
-            "reg_lambda": 580.976,
+            "reg_alpha": 0.1,
+            "reg_lambda": 0.1,
             "max_depth": 8,
             "n_estimators": 500,
             "early_stopping_rounds": 50,
