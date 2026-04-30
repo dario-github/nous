@@ -11,7 +11,7 @@ src/data/
 benchmarks/data/longmemeval_s_cleaned.json
 benchmarks/data/longmemeval_s_cleaned.json.gz
 
-# Runtime gate decision logs (38MB+ JSONL, regenerable)
+# Runtime gate decision logs (regenerable; large JSONL)
 logs/
 
 # AgentDojo adapter experiment artifacts (per-task JSON traces, per-run results)
@@ -29,6 +29,62 @@ paper/*.out
 paper/*.toc
 paper/*.synctex.gz
 
+# Author-private agent runtime / Claude Code workspace control files
+CLAUDE.md
+LOOP.md
+SHARED-CONTEXT.md
+
+# Internal session diaries / dev logs
+docs/loop-log-*.md
+docs/loop-state.json
+docs/loop-state.json.note
+
+# Internal audits / time-stamped intermediate analyses
+docs/audit-*.md
+docs/m12.5-analysis.md
+docs/harmful-definition.md
+docs/crai-citation-audit.md
+docs/m1-acceptance-report.md
+docs/v3-HN-blind-protocol.md
+docs/v3-l1l2-baseline.json
+docs/NOUS_LAB_V1.md
+docs/agentharm-baseline-2026-03-13.md
+docs/agentharm-corrected.json
+docs/agentharm-threelayer-2026-03-13.json
+docs/ccbos-model-comparison.json
+docs/extraction-ab-test.json
+docs/cozo-lark-fork-decision.md
+docs/lab/
+
+# Closed research pivots not part of the owner-harm release
+cases/cccm/
+cases/code-sec/
+cases/privacy/
+
+# Author-internal paper coordination notes
+paper/READ-ME-Yiqing-2026-04-27.md
+paper/MASTER-INDEX.md
+paper/SUBMIT-NeurIPS2026-EvalDatasets.md
+paper/SUBMIT-TMLR.md
+paper/TMLR-cover-letter-zh.md
+paper/d4-results-templates.md
+paper/d5-arxiv-replacement-plan.md
+paper/OPENSOURCE-READINESS-2026-04-28.md
+paper/lsvj-s-outline.md
+paper/rsac-week-additions-draft.md
+
+# Refine-logs: keep only paper-supplementary docs, ignore the rest
+refine-logs/*
+!refine-logs/FINAL_PROPOSAL.md
+!refine-logs/REVIEW_SUMMARY.md
+!refine-logs/REFINEMENT_REPORT.md
+!refine-logs/score-history.md
+!refine-logs/LITERATURE_REVIEW.md
+!refine-logs/NOVELTY_CHECK.md
+!refine-logs/EXPERIMENT_PLAN.md
+
+# Other internal scripts
+scripts/migrate_relations.py
 
 # macOS
 .DS_Store
