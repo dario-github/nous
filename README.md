@@ -1,45 +1,81 @@
-# Nous
+<!--
+=========================================================================
+  README for humans. If you are an LLM coding agent, jump to AGENTS.md.
+  Quick links:
+    - Agent manifest:           AGENTS.md
+    - LLM-friendly index:       llms.txt
+    - Paper-number reproduction: REPRODUCIBILITY.md
+=========================================================================
+-->
 
-> *ὁ πάντα διακοσμῶν νοῦς* — Anaxagoras
+# Nous
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![arXiv](https://img.shields.io/badge/arXiv-2604.18658-b31b1b.svg)](https://arxiv.org/abs/2604.18658)
+[![CI](https://img.shields.io/github/actions/workflow/status/dario-github/nous/test.yml?branch=main)](https://github.com/dario-github/nous/actions)
+[![AGENTS.md](https://img.shields.io/badge/agent--ready-AGENTS.md-7c3aed)](AGENTS.md)
 
-📖 **English** · [中文](README.zh.md)
+> *ὁ πάντα διακοσμῶν νοῦς* — Anaxagoras
 
-A compositional runtime safety gate for LLM-based autonomous agents. Every
-tool call is intercepted and judged by four orthogonal layers — a Datalog
-deterministic blocker (L1), a triviality filter (L2), an LLM semantic gate
-(L3), and a deterministic post-gate verifier (L4). A knowledge graph
-provides post-gate audit context.
+📖 **English** · [中文](README.zh.md) · 🤖 [AGENTS.md](AGENTS.md) · 🗺️ [llms.txt](llms.txt)
 
-Reference: [*Owner-Harm: A Missing Threat Model for AI Agent Safety*](https://arxiv.org/abs/2604.18658)
-(Zhang and Jiang, 2026; arXiv:2604.18658).
+A compositional runtime safety gate for LLM-based autonomous agents.
+Every tool call is judged by four orthogonal layers — a Datalog
+deterministic blocker (L1), a triviality filter (L2), an LLM semantic
+gate (L3), and a deterministic post-gate verifier (L4). A knowledge
+graph supplies post-gate audit context.
+
+Companion paper: [*Owner-Harm: A Missing Threat Model for AI Agent Safety*](https://arxiv.org/abs/2604.18658)
+(Zhang and Jiang, 2026).
+
+---
+
+## TL;DR for AI agents
+
+If you are an LLM coding agent helping a user with this repo, the
+project-specific manifest is at [**AGENTS.md**](AGENTS.md) — setup
+commands, test invocation, reproduction matrix, conventions, and hard
+rules in 200 lines. The repository follows the Linux Foundation
+Agentic-AI [AGENTS.md specification](https://github.com/openai/agents.md)
+and exposes [llms.txt](llms.txt) as a structured index.
+
+---
+
+## What's inside
+
+| Component | Where | What it does |
+|---|---|---|
+| **Gate pipeline** | `src/nous/gate.py` | `gate(tool_call, …) -> Verdict` — the four-layer entry point |
+| **Constraints** | `ontology/constraints/*.yaml` | 46 declarative rules (T3 destructive, owner-harm, AgentDojo iterations) |
+| **L3 semantic gate** | `src/nous/semantic_gate.py` | Minimal-pair prompting, `k=5` majority vote, `upgrade_only=True` |
+| **L4 verifier** | `src/nous/verifier.py` | 6 deterministic audit rules + content scan, +0.038 ms / call |
+| **KG store** | `src/nous/db.py` | Cozo embedded Datalog + vector + FTS |
+| **AgentDojo adapter** | `benchmarks/agentdojo_adapter/` | Real LLM-pipeline wrapper for paper §4 deployment-mode runs |
+| **Owner-Harm v3 dataset** | `data/owner_harm_heldout_v3.json` | 300 H + 150 B held-out slice (paper §3.3) |
 
 ---
 
 ## Headline results
 
-Nous reports two evaluation regimes per benchmark: **isolation** (forced
-injection, an upper bound on gate discrimination) and **deployment** (real
-LLM-pipeline, a lower bound under which most injections never trigger
-harm).
+Two evaluation regimes per benchmark — **isolation** is an upper bound
+on gate discrimination, **deployment** is a lower bound under the real
+LLM-pipeline.
 
 | Benchmark | Regime | Security (TPR) | Utility | n |
 |---|---|---|---|---|
-| AgentDojo (banking + slack + travel + workspace) | Isolation | 96.3% | 75.0% | 27 |
-| AgentDojo | Deployment | 95.9% | 75.0% | 629 |
-| AgentHarm (val) | Isolation | 100.0% | — | 176 H + 176 B |
-| Owner-centric held-out v3 (gate L1–L3) | Isolation | 75.3% | 3.3% FPR | 300 H + 150 B |
-| Owner-centric held-out v3 (full L1–L4) | Isolation | 85.3% | 3.3% FPR | 300 H + 150 B |
+| AgentDojo (banking + slack + travel + workspace) | Isolation | 96.3 % | 75.0 % | 27 |
+| AgentDojo | Deployment | 95.9 % | 75.0 % | 629 |
+| AgentHarm (val) | Isolation | 100.0 % | — | 176 H + 176 B |
+| Owner-centric held-out v3, gate L1–L3 | Isolation | 75.3 % | 3.3 % FPR | 300 H + 150 B |
+| Owner-centric held-out v3, full L1–L4 | Isolation | 85.3 % | 3.3 % FPR | 300 H + 150 B |
 
-The post-gate verifier (L4) and the L1–L3 gate cover near-disjoint failure
-modes: on the hijacking sub-slice, 11 cases are caught by the gate alone,
-30 by the verifier alone, 15 by both, and 4 by neither.
+On the hijacking sub-slice the gate (L1–L3) and the post-gate verifier
+(L4) cover near-disjoint failure modes: 11 caught by gate alone, 30 by
+verifier alone, 15 by both, 4 by neither.
 
-Full reproduction protocols, baselines, and per-category Wilson intervals
-are in the paper §3 and §4 and in `paper/main-neurips-2026.tex`.
+Per-category Wilson 95 % CIs and full ablations: paper §4 and
+[REPRODUCIBILITY.md](REPRODUCIBILITY.md).
 
 ---
 
@@ -74,8 +110,8 @@ tool_call
 Verdict + proof_trace + decision_log
 ```
 
-The knowledge graph (Cozo, embedded Datalog + vector + FTS) supplies
-post-gate audit enrichment and does not override the L3 verdict.
+The knowledge graph supplies post-gate audit enrichment and does *not*
+override the L3 verdict.
 
 ---
 
@@ -85,10 +121,9 @@ post-gate audit enrichment and does not override the L3 verdict.
 git clone https://github.com/dario-github/nous.git
 cd nous
 python3 -m venv .venv && source .venv/bin/activate
-pip install -e .                       # core
-pip install -e ".[cozo]"               # + Cozo embedded KG
-pip install -e ".[lsvj]"               # + LSVJ-S grammar tooling
-pip install -e ".[dev]"                # + pytest
+
+pip install -e ".[lsvj,dev]"
+pip install -e ".[cozo]"     # optional: Cozo embedded KG (Rust backend)
 ```
 
 Python 3.11 or newer.
@@ -120,36 +155,52 @@ verdict.decision     # "allow" | "confirm" | "block"
 verdict.proof_trace  # signal chain + which layer decided
 ```
 
-The full AgentDojo deployment-mode benchmark wrapper lives at
-`benchmarks/agentdojo_adapter/run_eval_adaptive_llm.py`.
+The full AgentDojo deployment-mode benchmark wrapper:
+[`benchmarks/agentdojo_adapter/run_eval_adaptive_llm.py`](benchmarks/agentdojo_adapter/run_eval_adaptive_llm.py).
+
+---
+
+## Reproducing the paper
+
+| Claim | Command | API key | Wall-clock |
+|---|---|---|---|
+| LSVJ-S compile gate (80 tests) | `pytest tests/lsvj/` | none | < 10 s |
+| Owner-centric v3 full (85.3 % / 3.3 %) | `python scripts/full_benchmark_eval.py` | none | ~ 30 s |
+| Hijacking layer overlap | `python scripts/eval_d2_verifier.py` | none | ~ 10 s |
+| AgentDojo isolation (96.3 % / 75.0 %) | `bash benchmarks/agentdojo_adapter/launch-l3-deepseek-repro.sh` | DeepSeek | ~ 5 h |
+| AgentDojo deployment (95.9 % / 75.0 %) | `bash benchmarks/agentdojo_adapter/launch-baseline-l1-rerun.sh` | GLM-4.6 | ~ 5 h |
+| AgentHarm val (100 %) | `python scripts/run_agentharm_threelayer_v2.py` | DeepSeek | ~ 1 h |
+
+Full table with expected output, variance budget, and known issues:
+[REPRODUCIBILITY.md](REPRODUCIBILITY.md).
 
 ---
 
 ## Repository layout
 
 ```
-src/nous/             core runtime (gate, parsers, providers, KG, LSVJ-S)
-ontology/             46 YAML constraints + KG schema + Datalog rules
-benchmarks/           AgentDojo adapter + R-Judge sample
-tests/                pytest suites; tests/lsvj/ is dependency-light
-paper/                NeurIPS 2026 E&D Track + TMLR submissions
-scripts/              benchmarks, baselines, shadow-live, pilots
-docs/                 design notes, audit reports
-refine-logs/          research-refine artefacts
+src/nous/                core runtime (gate, parsers, providers, KG, LSVJ-S)
+ontology/                46 YAML constraints + KG schema + Datalog rules
+benchmarks/              AgentDojo adapter + R-Judge sample
+tests/                   pytest suites (CI runs the path-independent subset)
+paper/                   NeurIPS 2026 E&D Track + TMLR submissions
+scripts/                 paper-reproduction drivers + analysis utilities
+dashboard/               minimal web UI for live decision logs
+data/                    Owner-Harm v3 + AgentHarm relabel + challenge slices
 ```
 
 ---
 
-## Tests
+## Documentation
 
-```bash
-python3 -m pytest tests/lsvj/ -v       # 80 dependency-light tests
-python3 -m pytest tests/ -x --tb=short # full suite (cozo + lark required)
-```
-
-Continuous integration runs the dependency-light subset on Python 3.11
-and 3.12 against every push to `main`. The full suite requires the Cozo
-Rust binding and additional fixtures and is run on developer machines.
+| Doc | Audience | Purpose |
+|---|---|---|
+| [README](README.md) (this file) | humans | overview, install, headline results |
+| [AGENTS.md](AGENTS.md) | LLM coding agents | setup, conventions, hard rules, reproduction matrix |
+| [llms.txt](llms.txt) | LLM crawlers | structured index (lllms.txt spec) |
+| [REPRODUCIBILITY.md](REPRODUCIBILITY.md) | reviewers | one command per paper number |
+| [paper/main-neurips-2026.tex](paper/main-neurips-2026.tex) | reviewers | NeurIPS 2026 E&D Track submission source |
+| [paper/main-tmlr.tex](paper/main-tmlr.tex) | reviewers | TMLR rolling-track variant |
 
 ---
 
@@ -168,20 +219,9 @@ Rust binding and additional fixtures and is run on developer machines.
 
 ---
 
-## Documentation
-
-- Paper (preprint): <https://arxiv.org/abs/2604.18658>
-- Paper sources: `paper/main-neurips-2026.tex`, `paper/main-tmlr.tex`
-- Reproduction guide for every paper number: [REPRODUCIBILITY.md](REPRODUCIBILITY.md)
-- Threat model and benchmark protocol: paper §2 and §3
-- Layer-by-layer ablation and per-category breakdown: paper §4
-- LSVJ-S companion direction: `refine-logs/FINAL_PROPOSAL.md`
-
----
-
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE).
+Apache License 2.0 — see [LICENSE](LICENSE).
 
 ---
 
@@ -190,4 +230,4 @@ Apache License 2.0. See [LICENSE](LICENSE).
 - Dongcheng Zhang — `zdclink@gmail.com`
 - Yiqing Jiang — Tongji University
 
-Issues and discussions: <https://github.com/dario-github/nous/issues>.
+Issues: <https://github.com/dario-github/nous/issues>.

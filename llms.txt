@@ -1,0 +1,54 @@
+# Nous
+
+> A compositional runtime safety gate for LLM-based autonomous agents.
+> Four orthogonal layers (Datalog blocker → triviality filter → LLM
+> semantic gate → deterministic post-gate verifier) judge every tool call.
+> Reference paper: arXiv:2604.18658.
+
+## Documentation
+
+- [README](README.md): project overview, install, quickstart, headline results.
+- [AGENTS.md](AGENTS.md): agent-specific manifest — setup commands,
+  build/test, reproduction matrix, conventions, hard rules. **Read this
+  first if you are an LLM coding agent.**
+- [REPRODUCIBILITY](REPRODUCIBILITY.md): one command per paper number,
+  with expected output and variance budget.
+- [LICENSE](LICENSE): Apache License 2.0.
+
+## Code
+
+- [src/nous/gate.py](src/nous/gate.py): main pipeline entry,
+  `gate(tool_call, …) -> Verdict`.
+- [src/nous/semantic_gate.py](src/nous/semantic_gate.py): L3 LLM gate.
+- [src/nous/verifier.py](src/nous/verifier.py): L4 deterministic
+  post-gate audit (zero LLM, +0.038 ms / call).
+- [ontology/constraints/](ontology/constraints/): 46 YAML constraints
+  (T3 destructive, owner-harm rules, AgentDojo iterations).
+
+## Reproduction entry points
+
+- [scripts/full_benchmark_eval.py](scripts/full_benchmark_eval.py):
+  Owner-centric v3 full L1–L4 (deterministic, ~30 s).
+- [scripts/eval_d2_verifier.py](scripts/eval_d2_verifier.py):
+  Hijacking layer-overlap analysis (deterministic, ~10 s).
+- [scripts/run_agentharm_threelayer_v2.py](scripts/run_agentharm_threelayer_v2.py):
+  AgentHarm L1+L2+L3 (~1 h, DeepSeek key).
+- [benchmarks/agentdojo_adapter/launch-l3-deepseek-repro.sh](benchmarks/agentdojo_adapter/launch-l3-deepseek-repro.sh):
+  AgentDojo isolation 96.3 % / 75.0 % (~5 h, DeepSeek key).
+- [benchmarks/agentdojo_adapter/launch-baseline-l1-rerun.sh](benchmarks/agentdojo_adapter/launch-baseline-l1-rerun.sh):
+  AgentDojo deployment 95.9 % / 75.0 % (~5 h, GLM-4.6 key).
+
+## Data
+
+- [data/owner_harm_heldout_v3.json](data/owner_harm_heldout_v3.json):
+  300 harmful + 150 benign held-out slice (paper §3.3 protocol).
+- [docs/agentharm-raw-scenarios.json](docs/agentharm-raw-scenarios.json):
+  AgentHarm raw scenarios used in §4.
+
+## Optional
+
+- [paper/main-neurips-2026.tex](paper/main-neurips-2026.tex): NeurIPS
+  2026 E&D Track submission source.
+- [paper/main-tmlr.tex](paper/main-tmlr.tex): TMLR rolling submission.
+- [tests/lsvj/](tests/lsvj/): LSVJ-S companion direction smoke suite
+  (80 tests, Lark-based grammar gate).
