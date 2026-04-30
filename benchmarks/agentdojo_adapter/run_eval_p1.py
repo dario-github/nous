@@ -68,7 +68,7 @@ def make_p1_config(user_goal: str = ""):
     if not api_key:
         raise ValueError("需要 OPENAI_API_KEY（检查 ~/.openclaw/openclaw.json）")
 
-    base_url = os.environ.get("OPENAI_BASE_URL", "https://nwxbqdio.cloud.sealos.io/v1")
+    base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
     model = os.environ.get("NOUS_SEMANTIC_MODEL", "qwen-turbo")
 
     provider = create_openai_provider(model=model, api_key=api_key, base_url=base_url)

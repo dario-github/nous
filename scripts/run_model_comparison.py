@@ -2,7 +2,7 @@
 """Nous 多模型 Benchmark 对比。
 
 在 val split 上用不同模型跑 semantic gate，对比 TPR/FPR/L。
-模型通过 newapi (sealos) 统一调用。
+模型通过 standard OpenAI-compatible API。
 
 Usage:
   python3 scripts/run_model_comparison.py
@@ -27,7 +27,7 @@ DOCS_DIR = Path(__file__).parent.parent / "docs"
 
 # ── 模型配置 ──────────────────────────────────────────────────────────────
 
-BASE_URL = "https://nwxbqdio.cloud.sealos.io/v1"
+BASE_URL = "https://api.openai.com/v1"
 API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 MODELS = {

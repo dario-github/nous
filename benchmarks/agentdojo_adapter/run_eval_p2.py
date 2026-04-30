@@ -84,7 +84,7 @@ def make_stripped_config():
     if not api_key:
         raise ValueError("需要 OPENAI_API_KEY")
 
-    base_url = os.environ.get("OPENAI_BASE_URL", "https://nwxbqdio.cloud.sealos.io/v1")
+    base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
     model = os.environ.get("NOUS_SEMANTIC_MODEL", "qwen-turbo")
 
     provider = create_openai_provider(model=model, api_key=api_key, base_url=base_url)
@@ -212,7 +212,7 @@ def run_agentharm_stripped(pilot: bool) -> dict:
     from nous.providers.openai_provider import create_openai_provider
 
     api_key = _load_api_key()
-    base_url = os.environ.get("OPENAI_BASE_URL", "https://nwxbqdio.cloud.sealos.io/v1")
+    base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
     model = os.environ.get("NOUS_SEMANTIC_MODEL", "qwen-turbo")
     provider = create_openai_provider(model=model, api_key=api_key, base_url=base_url)
 

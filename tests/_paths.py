@@ -12,7 +12,7 @@ def _detect_clawd_root() -> Path:
     candidate = Path(__file__).parent.parent.parent
     if (candidate / "memory" / "entities").exists():
         return candidate
-    return Path("/Users/yan/clawd")  # fallback
+    return Path.home() / "clawd"  # fallback
 
 
 CLAWD_ROOT = _detect_clawd_root()

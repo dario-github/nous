@@ -208,12 +208,12 @@ BibTeX (once arXiv preprint ID is assigned):
   title         = {Owner-Harm: A Missing Threat Model for {AI} Agent Safety},
   author        = {Zhang, Dongcheng and Jiang, Yiqing},
   year          = {2026},
-  howpublished  = {arXiv preprint arXiv:XXXX.XXXXX},
+  howpublished  = {arXiv preprint arXiv:2604.18658},
   note          = {Primary: cs.AI; cross-list: cs.CR, cs.CL}
 }
 ```
 
-Update the `arXiv:XXXX.XXXXX` field after moderation completes.
+Available at https://arxiv.org/abs/2604.18658 (v1 submitted 2026-04-20; v2 with §Limitations Erratum forthcoming).
 
 ---
 

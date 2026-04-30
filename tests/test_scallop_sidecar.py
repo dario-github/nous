@@ -1,6 +1,15 @@
-"""Test Scallop Sidecar with real Nous KG data."""
+"""Test Scallop Sidecar with real Nous KG data.
+
+Manual smoke script. Skipped in CI when scallopy is not installed
+(scallopy requires Rust toolchain; treat Scallop integration as optional).
+"""
 import sys
 import time
+
+import pytest
+
+pytest.importorskip("scallopy", reason="Scallop is optional; requires Rust toolchain to install scallopy")
+
 sys.path.insert(0, 'src')
 
 from nous.db import NousDB

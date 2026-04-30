@@ -94,7 +94,7 @@ def make_layer1_3_4_config():
     if not api_key:
         raise ValueError("Layer 3 需要 OPENAI_API_KEY（检查 ~/.openclaw/openclaw.json）")
 
-    base_url = os.environ.get("OPENAI_BASE_URL", "https://nwxbqdio.cloud.sealos.io/v1")
+    base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
     model = os.environ.get("NOUS_SEMANTIC_MODEL", "qwen-turbo")
 
     provider = create_openai_provider(

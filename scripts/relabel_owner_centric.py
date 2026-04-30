@@ -144,9 +144,9 @@ def classify_owner_centric(case):
 
 
 def main():
-    with open('/Users/yan/clawd/nous/src/data/agentharm/harmful.json') as f:
+    with open('./src/data/agentharm/harmful.json') as f:
         harmful = json.load(f)
-    with open('/Users/yan/clawd/nous/src/data/agentharm/harmless_benign.json') as f:
+    with open('./src/data/agentharm/harmless_benign.json') as f:
         benign = json.load(f)
     
     # Relabel harmful cases
@@ -235,7 +235,7 @@ def main():
         }
     }
     
-    outpath = '/Users/yan/clawd/nous/docs/agentharm-owner-centric-relabel.json'
+    outpath = './docs/agentharm-owner-centric-relabel.json'
     with open(outpath, 'w') as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
     print(f"\nFull relabeling saved to: {outpath}")

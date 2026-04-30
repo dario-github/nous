@@ -2,7 +2,7 @@
 """Run Nous gate against InjecAgent external benchmark (30 harmful scenarios).
 
 Usage:
-  cd /Users/yan/clawd/nous
+  cd ./nous
   python3 scripts/run_injecagent_benchmark.py [--l1-only]
 
 Outputs TPR and per-category breakdown.

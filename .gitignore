@@ -7,6 +7,27 @@ dist/
 *.db
 src/data/
 
-# large benchmark datasets
+# Large benchmark datasets
 benchmarks/data/longmemeval_s_cleaned.json
 benchmarks/data/longmemeval_s_cleaned.json.gz
+
+# Runtime gate decision logs (38MB+ JSONL, regenerable)
+logs/
+
+# AgentDojo adapter experiment artifacts (per-task JSON traces, per-run results)
+benchmarks/agentdojo_adapter/logs/
+benchmarks/agentdojo_adapter/logs-*/
+benchmarks/agentdojo_adapter/results-*/
+benchmarks/agentdojo_adapter/texput.log
+
+# LaTeX build byproducts
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.synctex.gz
+
+# macOS
+.DS_Store

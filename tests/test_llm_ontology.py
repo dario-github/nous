@@ -39,12 +39,12 @@ def db():
 MOCK_LLM_OUTPUT = json.dumps({
     "entities": [
         {
-            "name": "章东丞",
+            "name": "张三",
             "type": "person",
             "confidence": 0.95,
             "properties": {"role": "AI技术副总监"},
             "relations": [
-                {"to": "蓝色光标", "type": "WORKS_AT", "confidence": 0.9}
+                {"to": "某科技公司", "type": "WORKS_AT", "confidence": 0.9}
             ]
         },
         {
@@ -83,7 +83,7 @@ LOW_CONF_LLM_OUTPUT = json.dumps({
 class TestExtractEntitiesFromText:
     def test_returns_list(self):
         with patch("nous.llm_ontology._call_llm", return_value=MOCK_LLM_OUTPUT):
-            result = extract_entities_from_text("章东丞是蓝色光标的AI副总监")
+            result = extract_entities_from_text("张三是某科技公司的AI副总监")
         assert isinstance(result, list)
         assert len(result) == 3
 
@@ -91,7 +91,7 @@ class TestExtractEntitiesFromText:
         with patch("nous.llm_ontology._call_llm", return_value=MOCK_LLM_OUTPUT):
             result = extract_entities_from_text("test")
         person = next(e for e in result if e["type"] == "person")
-        assert person["name"] == "章东丞"
+        assert person["name"] == "张三"
         assert person["confidence"] == 0.95
         assert "role" in person["properties"]
 
@@ -119,7 +119,7 @@ class TestExtractEntitiesFromText:
 class TestProposeEntity:
     def test_returns_proposal(self, db):
         entity_dict = {
-            "name": "章东丞",
+            "name": "张三",
             "type": "person",
             "confidence": 0.95,
             "properties": {"role": "test"},
@@ -206,7 +206,7 @@ class TestConfirmProposal:
 class TestIngestText:
     def test_full_pipeline_with_db(self, db):
         with patch("nous.llm_ontology._call_llm", return_value=MOCK_LLM_OUTPUT):
-            result = ingest_text("章东丞做 Nous 项目", db=db)
+            result = ingest_text("张三做 Nous 项目", db=db)
 
         assert result["extracted"] == 3
         assert result["proposed"] == 3

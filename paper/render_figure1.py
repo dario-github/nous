@@ -1,3 +1,4 @@
+import os
 """
 Figure 1 v4 — Three-Layer Safety Gate Architecture
 Clean symmetric layout. BLOCK centered under L1-L3.
@@ -190,8 +191,8 @@ T(7.0, 0.22, 'Shadow mode: 19,350+ calls · 99.45% consistency', fs=7.5, c='#888
 T(BCX, BCY+BH/2+0.15, '← from L1 · L3 →', fs=7, c=CRED)
 
 # ── Save ─────────────────────────────────────────────────────────────────────
-out_png = '/Users/yan/clawd/nous/paper/figure1.png'
-out_pdf = '/Users/yan/clawd/nous/paper/figure1.pdf'
+out_png = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'figure1.png')
+out_pdf = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'figure1.pdf')
 fig.savefig(out_png, dpi=220, bbox_inches='tight', facecolor='white', pad_inches=0.15)
 fig.savefig(out_pdf, bbox_inches='tight', facecolor='white', pad_inches=0.15)
 print(f"✅  {out_png}  (v4)")

@@ -316,7 +316,7 @@ class TestFactExtractor:
         tool_call = {
             "tool_name": "write",
             "params": {
-                "path": "/Users/yan/clawd/test.py",
+                "path": "/tmp/workspace/test.py",
                 "content": "line1\nline2\nline3\nline4\nline5",
             },
         }
