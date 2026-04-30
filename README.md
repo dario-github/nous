@@ -172,6 +172,7 @@ Rust binding and additional fixtures and is run on developer machines.
 
 - Paper (preprint): <https://arxiv.org/abs/2604.18658>
 - Paper sources: `paper/main-neurips-2026.tex`, `paper/main-tmlr.tex`
+- Reproduction guide for every paper number: [REPRODUCIBILITY.md](REPRODUCIBILITY.md)
 - Threat model and benchmark protocol: paper §2 and §3
 - Layer-by-layer ablation and per-category breakdown: paper §4
 - LSVJ-S companion direction: `refine-logs/FINAL_PROPOSAL.md`
