@@ -35,9 +35,16 @@ jobs:
         run: |
           ruff check src/ tests/ || true
 
-      - name: 运行 pytest
+      - name: 运行 pytest（公共 CI 子集）
+        # 公共仓库 CI 仅运行不依赖 cozo_embedded 后端 + 不依赖私有 memory/entities/
+        # 种子的测试（cozo 在 GitHub Linux runner 上 ABI 偶发 segfault；entities
+        # 目录是作者私有 KG 的 dump，已在公开 release 中 anonymise 抽走）。完整套件
+        # 在已配置 cozo + entities seed 的开发机上仍可跑。
         run: |
-          pytest tests/ -v --tb=short --cov=src/nous --cov-report=term-missing
+          pytest tests/lsvj/ \
+                 tests/test_scallop_sidecar.py \
+                 tests/test_gateway_hook.py \
+                 -v --tb=short
 
       - name: Schema 完整性检查
         run: |

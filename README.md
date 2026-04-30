@@ -185,7 +185,11 @@ python3 -m pytest tests/ -x --tb=short # full suite (requires optional deps)
 ```
 
 CI runs against Python 3.11 and 3.12 on every push to `main` (see
-`.github/workflows/test.yml`).
+`.github/workflows/test.yml`). The CI subset covers `tests/lsvj/`,
+`tests/test_scallop_sidecar.py`, and `tests/test_gateway_hook.py` —
+the path-independent slice. The full 1248-test suite needs a configured
+`memory/entities/` seed and the `cozo_embedded` Rust binding, both of which
+are developer-machine artefacts.
 
 ---
 

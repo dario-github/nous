@@ -175,7 +175,10 @@ python3 -m pytest tests/ -x --tb=short # 完整套件（需要可选依赖）
 ```
 
 CI 在每次 push 到 `main` 时跑 Python 3.11 与 3.12 双版本（见
-`.github/workflows/test.yml`）。
+`.github/workflows/test.yml`）。CI 子集覆盖 `tests/lsvj/`、
+`tests/test_scallop_sidecar.py`、`tests/test_gateway_hook.py` —— 即与路径
+无关的部分。完整 1248 项套件需要本地有 `memory/entities/` seed 与
+`cozo_embedded` Rust 绑定，这两者属于开发机产物。
 
 ---
 
