@@ -1,4 +1,5 @@
 """Nous — Outcome 回填测试 (M3.1)"""
+import pytest
 import time
 
 from nous.db import NousDB

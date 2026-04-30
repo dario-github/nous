@@ -1,4 +1,5 @@
 """Nous — TTL 衰减测试 (M3.5)"""
+import pytest
 import tempfile
 import time
 from pathlib import Path
