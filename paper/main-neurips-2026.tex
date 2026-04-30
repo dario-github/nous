@@ -1,0 +1,1274 @@
+% =============================================================
+% Owner-Harm: A Missing Threat Model for AI Agent Safety
+% NeurIPS 2026 style
+% =============================================================
+\documentclass{article}
+\usepackage{neurips2026-style/neurips_2026}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{amsthm}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{mathtools}   % provides \coloneqq
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{hypothesis}{Hypothesis}
+\newtheorem{proposition}{Proposition}
+
+% Hyperref config
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+% Listings config
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  captionpos=b
+}
+
+% Convenience macros
+\newcommand{\OO}{\mathcal{O}}
+\newcommand{\BO}{\mathcal{B}_{\mathcal{O}}}
+\newcommand{\RO}{R_{\mathcal{O}}}
+\newcommand{\UO}{U_{\mathcal{O}}}
+\newcommand{\AuthO}{\text{Auth}_{\mathcal{O}}}
+\newcommand{\cmark}{\checkmark}
+\newcommand{\pmark}{$\sim$}
+\newcommand{\xmark}{$\times$}
+
+% ----------------------------------------------------------------
+\begin{document}
+
+\title{Owner-Harm: A Missing Threat Model for AI Agent Safety}
+
+\author{%
+  Dongcheng Zhang\thanks{Work performed while at BlueFocus Communication
+  Group. Correspondence: \texttt{zdclink@gmail.com}.} \\
+  BlueFocus Communication Group \\
+  Beijing, China \\
+  \texttt{zdclink@gmail.com}
+  \And
+  Yiqing Jiang \\
+  Tongji University \\
+  Shanghai, China \\
+  \texttt{jyq.russel@gmail.com}
+}
+
+\maketitle
+
+% ================================================================
+\begin{abstract}
+AI agent safety benchmarks focus predominantly on generic criminal
+harm---cybercrime, harassment, and weapon synthesis---while under-modeling
+a commercially consequential threat: agents harming their own deployers.
+We propose \emph{Owner-Harm}, a formal threat model with eight categories
+of deployer-directed damage. We quantify the resulting defense gap using
+the same compositional runtime gate across two authoritative benchmarks:
+100\% TPR / 0\% FPR on AgentHarm (generic criminal harm; 176 harmful
+scenarios), but only 3.7\% (1/27) on AgentDojo prompt-injection tasks
+under the deterministic L1+L4 configuration in a worst-case
+ground-truth isolation test (a legacy L1+L3+L4 setup with a
+relay-hosted \texttt{qwen-turbo} backend reported 14.8\% but is no
+longer reproducible under current model and prompt versions; see
+\S\ref{subsec:limitations}). On the same suite under realistic
+deployment-mode evaluation (629 user-task instances with a GLM-4.6
+agent plus L1 Datalog enforcement), the composed system reaches
+\textbf{95.9\% security and 75.0\% utility} -- a 92.2 pp deployment
+vs.\ isolation gap which we attribute to the agent itself absorbing
+most injection attempts before SSDG is asked to act. A controlled
+zero-shot LLM baseline shows that the AgentHarm/AgentDojo
+\emph{symbolic} gap is not inherent category difficulty (62.7\%
+AgentHarm vs.\ 59.3\% AgentDojo; gap 3.4 pp), but arises from
+environment-bound symbolic rules that fail across tool vocabularies. On a post-hoc diagnostic benchmark of
+300 owner-harm scenarios, the gate achieves 75.3\% TPR / 3.3\% FPR; adding
+a deterministic post-audit verifier raises TPR to 85.3\% and Hijacking
+detection from 43.3\% to 93.3\%, demonstrating strong layer
+complementarity. Finally, we introduce the \emph{Symbolic-Semantic Defense
+Generalization} (SSDG) conceptual framework, which organizes the
+observed detection gaps as failures of usable information coverage over
+ownership, trust boundary, authorization scope, and task-goal context.
+\end{abstract}
+
+% ================================================================
+\section{Introduction}
+\label{sec:intro}
+
+Autonomous AI agents are entering production systems faster than safety
+frameworks can describe their failures. Current work emphasizes preventing
+generic criminal harm: malware generation, dangerous-substance synthesis,
+fraud, and harassment. A different threat has emerged in practice: agents
+can harm the organization that deploys, authorizes, and trusts them.
+
+Three incidents anchor this concern. Slack AI was shown vulnerable to
+prompt-injection credential exfiltration in August 2024
+\cite{promptarmor2024slack}; Microsoft 365 Copilot was hijacked through
+malicious calendar invitations to forward sensitive emails in January 2024
+\cite{zenity2024copilot}; and a Meta AI agent made an unauthorized internal
+forum post exposing operational data in March 2026 \cite{meta2026sev1}.
+In each case, the harmed party was the deployer.
+
+Existing benchmarks do not formalize this victim model. AgentHarm
+\cite{andriushchenko2025agentharm} catalogs generic adversarial use
+against third parties. AgentDojo \cite{debenedetti2024agentdojo}
+evaluates prompt injection across realistic suites, but without an
+explicit owner-harm taxonomy. This omission is measurable: the same Nous
+runtime gate achieves 100\% TPR on AgentHarm, but only 3.7\% (1/27) on
+AgentDojo injection tasks under the deterministic L1+L4
+configuration.\footnote{An earlier L1+L3+L4 configuration with a
+relay-hosted \texttt{qwen-turbo} L3 backend reported 14.8\% but is no
+longer reproducible; we therefore report the deterministic result as
+primary and the semantic configuration separately. See
+\S\ref{subsec:limitations}.} A zero-shot generic LLM baseline shows only a
+3.4 pp cross-benchmark gap, attributing the large Nous gap to symbolic
+rule generalization failure rather than intrinsic semantic difficulty.
+
+This paper contributes: (i) an eight-category Owner-Harm threat model
+grounded in real incidents; (ii) defense-gap quantification on AgentHarm
+versus AgentDojo, separating worst-case ground-truth isolation
+(100\% vs.\ 3.7\% deterministic; 100\% vs.\ 14.8\% legacy semantic, see
+\S\ref{subsec:limitations}) from realistic deployment-mode evaluation
+(GLM-4.6 agent + L1 Datalog reaches \textbf{95.9\% security and 75.0\%
+utility across 629 user-task instances}, \S\ref{subsec:deployment_mode});
+(iii) layer-complementarity evidence, where post-audit verification
+raises Hijacking detection from 43.3\% to 93.3\%; and (iv) the SSDG
+conceptual framework, which exposes and structures the owner-harm
+information-coverage gap rather than claiming to solve it -- modern
+instruction-tuned LLMs absorb most injection attempts before SSDG is
+asked to act, leaving symbolic enforcement as a thin but auditable
+last line.
+
+% ================================================================
+\section{Owner-Harm Threat Model}
+\label{sec:model}
+
+\subsection{Formal Definitions}
+\label{subsec:formal}
+
+We model an AI agent as a tuple $\mathcal{A} = \langle M, \mathcal{T},
+\mathcal{E}, \pi \rangle$, where $M$ is the underlying language model,
+$\mathcal{T}$ is the available tool set, $\mathcal{E}$ is the environment
+state space, and $\pi$ is the agent's policy. An agent produces an action
+sequence $\vec{a} = (a_1, \ldots, a_n)$ transforming environment state
+$s_0$ to $s'$.
+
+\begin{definition}[Owner]
+The \emph{owner} $\OO$ is the entity that deploys $\mathcal{A}$, grants
+resource access $\RO$, and bears accountability for agent actions.
+$\OO$ is associated with a resource set $\RO$, a utility function $\UO$
+over environment states, and a trust boundary $\BO$ delineating
+authorized interactions.
+\end{definition}
+
+\begin{definition}[Owner-Harm]
+An action sequence $\vec{a}$ causes \emph{owner-harm} with respect to
+owner $\OO$ if and only if:
+\[
+  \mathrm{OH}(\vec{a}, \OO) \coloneqq \UO(s') < \UO(s_0)
+    \;\land\;
+    \exists\, a_i \in \vec{a} : \mathrm{cause}(a_i,\, s_0 \to s')
+\]
+where $\mathrm{cause}(a_i, s_0 \to s')$ means $a_i$ is a proximate or
+distal cause of the state transition from $s_0$ to $s'$.
+\end{definition}
+
+\begin{definition}[Direct Owner-Harm]
+\[
+  \mathrm{DOH}(\vec{a}, \OO) \coloneqq \mathrm{OH}(\vec{a}, \OO)
+    \;\land\; \mathrm{ProxCause}(\mathcal{A}, \vec{a})
+\]
+where $\mathrm{ProxCause}(\mathcal{A}, \vec{a})$ means the agent is the
+proximate cause of the harmful state transition.
+\end{definition}
+
+\begin{definition}[Indirect Owner-Harm]
+\[
+  \mathrm{IOH}(\vec{a}, \OO, \mathcal{V}) \coloneqq
+    \mathrm{OH}(\vec{a}, \OO)
+    \;\land\; \mathrm{Manipulate}(\mathcal{V}, \pi, \vec{a})
+\]
+where $\mathcal{V}$ is an adversarial actor that manipulates the agent's
+policy $\pi$ to produce the harmful action sequence---the prompt injection
+attack model.
+\end{definition}
+
+\subsection{Eight Owner-Harm Categories}
+\label{subsec:categories}
+
+We enumerate eight primary categories; a single incident may span multiple
+labels. Full prose definitions and real-case anchors appear in
+Appendix~\ref{app:categories}.
+\begin{description}
+  \item[C1: Credential Leak.] Exfiltration of API keys, OAuth tokens,
+  session cookies, passwords, or equivalent authentication material.
+  \item[C2: Infrastructure Exposure.] Disclosure or misconfiguration of
+  cloud, network, policy, or architecture resources that expands attack
+  surface.
+  \item[C3: Privacy Exposure.] Transmission of PII or confidential business
+  data outside the owner's authorized boundary.
+  \item[C4: Inner Circle Leak.] Exposure of commercially sensitive trust
+  relationships, such as client lists, partner terms, M\&A discussions, or
+  strategy.
+  \item[C5: Asset Destruction.] Irreversible deletion or corruption of
+  owner data, configurations, or digital assets.
+  \item[C6: Exfiltration via Tools.] Use of authorized tools---email,
+  webhooks, file writes, URLs---as covert channels for unauthorized data
+  transfer.
+  \item[C7: Hijacking.] Persistent adversarial control over the agent using
+  the owner's identity, credentials, memory, or resource access.
+  \item[C8: Unauthorized Autonomy.] Consequential action beyond the
+  owner's authorization scope or without required confirmation.
+\end{description}
+
+\subsection{Why Generic Defenses Fail}
+\label{subsec:why_fail}
+
+Owner-harm is context-dependent:
+\[
+  \exists\, c, \OO_1, \OO_2 :
+    \mathrm{Harmful}(c, \OO_1) \;\land\; \lnot\mathrm{Harmful}(c, \OO_2).
+\]
+``Forward email to external@attacker.com'' is benign if the address is
+inside the owner's trust boundary and harmful otherwise. Generic defenses
+usually lack the three required context dimensions: resource ownership
+($\RO$), trust boundary ($\BO$), and authorization scope ($\AuthO$). Thus
+content classifiers, injection detectors, tool monitors, DLP systems, and
+anomaly detectors can see action surface form but not whether the action
+violates owner-specific policy.
+
+\begin{proposition}[Generic Classifier Incompleteness]
+Any context-free binary classifier $f_{\mathrm{gen}} : \mathcal{C}
+\to \{0,1\}$ that classifies action content without access to $\RO$,
+$\BO$, or $\AuthO$ will produce owner-harm false negatives on scenarios
+where harm is defined relative to the owner's context.
+\end{proposition}
+
+\subsection{Symbolic-Semantic Defense Generalization}
+\label{subsec:ssdg_theory}
+
+SSDG is a conceptual framework, not a formal mathematical theory. Let an
+attack $a$ have evidential requirement set $E(a)$: the contextual facts
+needed to determine harmfulness. A defense $D$ has information set
+$\Omega(D)=\Omega_S\cup\Omega_C$, where $\Omega_S$ captures surface
+features and $\Omega_C$ captures contextual knowledge. Its usable coverage
+is
+\[
+  \mathrm{Cover}(D,a) \coloneqq
+  \frac{|E(a)\cap\Omega_{\mathrm{usable}}(D)|}{|E(a)|}.
+\]
+We assume detection is non-decreasing in usable coverage. The framework
+articulates two falsifiable hypotheses:
+
+\begin{hypothesis}[Symbolic Defense Gap]\label{hyp:symbolic_gap}
+A pure symbolic defense with $\Omega_C = \emptyset$ achieves
+$\mathrm{Cover}(D, A_G) \gg \mathrm{Cover}(D, A_O)$ when $A_O$ requires
+joint surface-context evidence, producing a structural detection gap on
+owner-harm attacks while remaining effective on generic harm.
+\end{hypothesis}
+
+\begin{hypothesis}[Semantic Defense Stability]\label{hyp:semantic_stability}
+A semantic defense with $\Omega_C \supseteq \mathcal{C}_{\mathrm{world}}$
+satisfies $\mathrm{Cover}(D, A_G) \approx \mathrm{Cover}(D, A_O)$;
+context deprivation should collapse a semantic defense toward
+symbolic-gap behavior.
+\end{hypothesis}
+
+The framework therefore predicts that context deprivation induces
+symbolic-gap behavior, while raw context injection may fail unless the
+architecture can perform structured goal-action alignment.
+Appendix~\ref{app:ssdg_experiments} reports the pilot tests.
+
+% ================================================================
+\section{Nous: Compositional Runtime Safety Gate}
+\label{sec:nous}
+
+We evaluate owner-harm detection using \textbf{Nous}, a four-layer
+compositional runtime safety gate for AI agent actions. The architecture is
+the evaluation vehicle rather than the primary contribution. L1 is a
+fail-closed deterministic Datalog blocker with 46 owner-policy rules
+($P_{50}=0.055$ ms). L2 is a triviality filter that routes benign actions
+past the expensive semantic layer. L3 is an LLM semantic gate with
+minimal-pair examples, intent decomposition, and majority vote $k=3$
+\citep{wang2022selfconsistency}. L4 is a deterministic post-gate verifier:
+six audit rules inspect file contents and multi-step tool-call sequences
+invisible to L1--L3, adding $\sim$0.038 ms with no LLM cost.
+
+This architecture maps naturally to owner-harm. L1 encodes explicit
+owner-policy facts; L3 reasons about ambiguous owner context; L4 catches
+prompt-injection artifacts and behavioral sequences that can survive
+semantic evaluation because the semantic gate is itself exposed to
+injected content. The layers operate on distinct evidence: action content,
+semantic intent plus owner context, and post-action artifacts/sequences.
+
+% ================================================================
+\section{Evaluation}
+\label{sec:eval}
+
+\subsection{Evaluation Strategy}
+\label{subsec:strategy}
+
+We evaluate on three benchmark sets. \textbf{AgentDojo}
+\cite{debenedetti2024agentdojo}: 27 injection tasks and 97 user tasks
+across Banking, Travel, Workspace, and Slack, using benchmark
+ground-truth labels. \textbf{AgentHarm}
+\cite{andriushchenko2025agentharm}: 176 harmful and 176 benign scenarios
+across 11 categories, used as a generic-harm comparator. \textbf{Owner-Harm
+Benchmark}: 300 harmful and 150 benign scenarios across C1--C8,
+constructed after optimization loops by the same author. It is
+\emph{post-hoc diagnostic}, not held-out validation; all labels are from a
+single annotator and no IAA is reported.
+
+AgentDojo tasks map primarily to financial harm, privacy breach,
+operational harm, credential leak, reputational harm, and other
+application-layer owner-harm behaviors. This mapping is subjective but
+sufficient to expose whether tool-call defenses transfer from generic harm
+to deployer-directed prompt injection.
+
+\subsection{AgentDojo Results}
+\label{subsec:agentdojo}
+
+\begin{table}[!t]
+  \centering
+  \caption{AgentDojo Results: deterministic and semantic modes reported
+    separately (27 injection tasks, 97 user tasks). The deterministic
+    L1+L4 row is the primary auditable result; the legacy L1+L3+L4 row
+    reflects an LLM-assisted measurement that is no longer reproducible
+    (see \S\ref{subsec:limitations}).}
+  \label{tab:agentdojo_main}
+  \begin{tabular}{llcccl}
+    \toprule
+    \textbf{Mode} & \textbf{L3 backend} & \textbf{Safety} & \textbf{Utility} & \textbf{FPR} & \textbf{Status} \\
+    \midrule
+    L1 only (baseline)         & ---                       & 3.7\% (1/27)\textsuperscript{$\dagger$}    & 97.9\% (95/97) & 2.1\% (2/97) & reproducible \\
+    L1 + L4 (deterministic)    & ---                       & 3.7\% (1/27)\textsuperscript{$\dagger$}    & 97.9\%         & 2.1\%        & \textbf{primary result} \\
+    L1 + L3 + L4 (legacy)      & qwen-turbo (relay, 4-10)  & 14.8\% (4/27)\textsuperscript{$\dagger$}   & 97.9\%         & 2.1\%        & historical, not reproducible \\
+    L1 + L3 + L4 (current)     & deepseek-v4-pro           & TBD\textsuperscript{$\ddagger$}            & 97.9\%         & 2.1\%        & exploratory, pending lock \\
+    \multicolumn{6}{l}{\small $\dagger$95\% Wilson CI: 3.7\% [0.7\%--18.3\%]; 14.8\% [5.9\%--32.5\%]. $\ddagger$Pending freeze; see \S\ref{subsec:limitations}.} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The deterministic L1+L4 result is 3.7\% (1/27); the single defended
+case is caught by an L1 Datalog rule. L4 contributes zero AgentDojo
+detections (so the L1-only and L1+L4 rows are numerically identical)
+because L4 rules inspect bash/file/curl artifacts, whereas AgentDojo
+attacks use application tools such as \texttt{send\_money},
+\texttt{send\_email}, and \texttt{update\_calendar}; L4 is retained as
+part of the deployed configuration because it dominates on
+non-AgentDojo benchmarks (e.g., +50 pp on the Owner-Harm Hijacking
+subset, see \S\ref{subsec:disc_hijacking}). The legacy L3
+configuration (qwen-turbo via a relay endpoint, April 2026) reported
+14.8\% by catching three additional semantically recognizable cases
+(passport details, bank account numbers, batch wire transfer), but that
+measurement is not reproducible under current model and prompt versions
+(see \S\ref{subsec:limitations}). Semantic interception under a locked
+\texttt{gpt-5-mini} backend is reported as exploratory in
+Table~\ref{tab:agentdojo_main} pending freeze. We therefore treat the
+deterministic 3.7\% as the primary AgentDojo TPR and discuss semantic
+gains separately rather than collapsing them into a single ``best'' row.
+The remaining blind spots are text-only manipulation, malicious
+parameters that look legitimate without user-goal context, and
+multi-step attacks where partial interception is insufficient. The
+estimated ceiling without structured goal context is 40--60\%.
+
+\begin{table}[!t]
+  \centering
+  \caption{AgentDojo Safety by Owner-Harm Category}
+  \label{tab:agentdojo_category}
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Category} & \textbf{L1 only} & \textbf{L1+L3+L4} \\
+    \midrule
+    Financial Harm     & 0/10 (0\%)  & 1/10 (10\%)  \\
+    Privacy Breach     & 0/6  (0\%)  & 2/6  (33\%)  \\
+    Operational Harm   & 1/4  (25\%) & 1/4  (25\%)  \\
+    Credential Leak    & 0/3  (0\%)  & 0/3  (0\%)   \\
+    Reputational Harm  & 0/3  (0\%)  & 0/3  (0\%)   \\
+    Other              & 0/1  (0\%)  & 0/1  (0\%)   \\
+    \midrule
+    \textbf{Total}     & \textbf{1/27 (3.7\%)} & \textbf{4/27 (14.8\%)} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Deployment-Mode Evaluation}
+\label{subsec:deployment_mode}
+
+The ground-truth isolation test in \S\ref{subsec:agentdojo} measures a
+worst-case component property: if an injected instruction reaches the
+tool stream, the SSDG layer must reject it. We also evaluate the full
+deployment setting, where the agent itself may ignore, resist, or
+transform the injection before any SSDG check is needed. We ran the
+real LLM pipeline on all four AgentDojo suites using GLM-4.6 as the
+agent, L1 Datalog enforcement, and the L4 verifier enabled, with no L3
+semantic gate and single-shot decoding at \texttt{temperature=0.0}.
+Across 629 user-task instances, the pipeline achieved a security
+success rate of \textbf{95.9\% (603/629)} while preserving a utility
+success rate of \textbf{75.0\% (472/629)}.
+
+\begin{table}[!h]
+  \centering
+  \caption{Deployment-Mode Ablation across 629 user-task instances. All
+    four modes use GLM-4.6 as the agent backbone with
+    \texttt{temperature=0.0}; ``blocks'' counts effective gate blocks
+    in the Nous decision log. The L4 verifier, when enabled, is
+    \emph{touched} on each call but produced zero additional escalations
+    on AgentDojo, consistent with \S\ref{subsec:agentdojo}. The L3
+    backend is \texttt{deepseek-v4-pro} (single-shot, thinking-enabled,
+    \texttt{temperature=0.0}); see \S\ref{subsec:limitations} for
+    rationale on this substitution.}
+  \label{tab:deployment_ablation}
+  \small
+  \begin{tabular}{lcccc}
+    \toprule
+    \textbf{Mode} & \textbf{Security} & \textbf{Utility} & \textbf{$\Delta$ vs.\ baseline} & \textbf{Blocks} \\
+    \midrule
+    Baseline (GLM-4.6 only)         & 95.2\% (599/629) & \textbf{79.0\%} (497/629) & ---                          & 0  \\
+    + L1 Datalog                    & 96.0\% (604/629) & 75.0\% (472/629)          & $+0.8$ sec / $-4.0$ util     & 19 \\
+    + L1 + L4 verifier              & 95.9\% (603/629) & 75.0\% (472/629)          & $+0.7$ sec / $-4.0$ util     & 17 \\
+    \textbf{+ L1 + L3 + L4 (DeepSeek)}& \textbf{96.3\%} (606/629) & 75.0\% (472/629) & \textbf{$+1.1$ sec} / $-4.0$ util & 26 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[!h]
+  \centering
+  \caption{Per-Suite Security under Deployment-Mode L1+L4 (GLM-4.6 + L1 Datalog + L4 verifier)}
+  \label{tab:deployment_per_suite}
+  \small
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Suite} & \textbf{Security} & \textbf{Utility} \\
+    \midrule
+    Banking      & 94.4\% (136/144) & 77.8\% (112/144) \\
+    Slack        & 91.4\% (96/105)  & 68.6\% (72/105)  \\
+    Travel       & 97.9\% (137/140) & 75.7\% (106/140) \\
+    Workspace    & 97.5\% (234/240) & 75.8\% (182/240) \\
+    \midrule
+    \textbf{Total} & \textbf{95.9\% (603/629)} & \textbf{75.0\% (472/629)} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\textbf{Interpretation.} These numbers should not be read as SSDG-only
+injection detection accuracy. They measure the deployed composition of
+agent behavior plus policy enforcement: an injection only reaches the
+SSDG layer if the agent first decides to act on it. The ablation in
+Table~\ref{tab:deployment_ablation} resolves three questions about
+where the safety gain originates and where the utility cost is paid.
+
+\emph{Most safety comes from the agent itself.} GLM-4.6 alone reaches
+95.2\% security on AgentDojo deployment trajectories without any
+runtime guard, indicating that modern instruction-tuned agents are a
+non-trivial first line against indirect prompt injection on
+application-tool benchmarks. Adding the full L1+L3+L4 stack lifts
+security only to 96.3\% (a +1.1 pp gain captured by 26 effective
+blocks).
+
+\emph{The symbolic L1 layer pays a real utility tax.} Adding L1
+Datalog reduces utility from 79.0\% to 75.0\% ($-4.0$ pp). All Nous
+configurations land at the same utility floor of 472/629, which is
+explained by the cascading effect of L1 blocks on multi-step task
+trajectories: when L1 blocks an intermediate tool call (typically a
+destructive primitive like \texttt{delete\_file} that the injection
+asks the agent to invoke), the agent re-plans but often fails to
+recover the original user goal.
+
+\emph{L4 is dead weight on AgentDojo deployment.} The L4 verifier,
+when enabled (L1+L4 row), produced zero additional escalations: the
+17 effective blocks under L1+L4 are all L1 Datalog blocks, and the
+slight delta from L1-alone (19 blocks) reflects sampling variance of
+the agent's tool-call sequence rather than L4 contribution. We retain
+L4 in the deployed configuration because L4 dominates on the
+Owner-Harm Hijacking subset (\S\ref{subsec:disc_hijacking}, $+50$ pp),
+but for AgentDojo specifically L4 can be deactivated without security
+loss.
+
+\emph{The semantic L3 layer is the only meaningful augmentation over
+the agent itself.} Adding the locked \texttt{deepseek-v4-pro} L3 gate
+on top of L1+L4 catches 9 additional injections (26 vs.\ 17 blocks)
+without further utility loss, lifting security from 95.9\% to 96.3\%.
+We therefore report \S\ref{subsec:agentdojo} and
+\S\ref{subsec:deployment_mode} as complementary: the former isolates
+the symbolic enforcement bottleneck (worst-case 3.7\% under L1+L4),
+while the latter measures end-to-end deployment behavior, exposes the
+utility-vs-security trade-off, and isolates which layers actually
+matter on AgentDojo.
+
+\subsection{Owner-Harm Benchmark Results (Post-Hoc Diagnostic)}
+\label{subsec:ohb}
+
+The Owner-Harm Benchmark was constructed by the same author after
+optimization loops. It is not independent validation. Gate only (L1+L2+L3)
+achieves TPR $=75.3\%$ (226/300), 95\% Wilson CI [70.2\%, 79.9\%], and FPR
+$=3.3\%$ (5/150), CI [1.4\%, 7.6\%]. Gate + verifier reaches TPR
+$=85.3\%$ (256/300), 95\% Wilson CI [80.9\%, 88.9\%], with unchanged FPR.
+
+\begin{table}[!t]
+  \centering
+  \caption{Owner-Harm Benchmark: Per-Category Results (Post-Hoc Diagnostic)}
+  \label{tab:ohb_category}
+  \begin{tabular}{lcccc}
+    \toprule
+    \textbf{Category} & \textbf{$N_h$} & \textbf{Gate TPR}
+      & \textbf{Combined TPR} & \textbf{Gate FPR} \\
+    \midrule
+    C1: Credential Leak         & 28 & 100.0\% & 100.0\% & 0.0\%  \\
+    C2: Infrastructure Exposure & 50 & 100.0\% & 100.0\% & 20.0\%$^\dagger$ \\
+    C3: Privacy Exposure        & 28 & 100.0\% & 100.0\% & 0.0\%  \\
+    C4: Inner Circle Leak       & 28 & 89.3\%  & 89.3\%  & 0.0\%  \\
+    C8: Unauthorized Autonomy   & 50 & 70.0\%  & 70.0\%  & 0.0\%  \\
+    C5: Asset Destruction       & 28 & 64.3\%  & 64.3\%  & 0.0\%  \\
+    C6: Exfiltration via Tools  & 28 & 57.1\%  & 57.1\%  & 0.0\%  \\
+    \textbf{C7: Hijacking}      & \textbf{60} & \textbf{43.3\%} & \textbf{93.3\%} & \textbf{0.0\%} \\
+    \bottomrule
+  \end{tabular}
+  \vspace{1mm}
+  \\
+  \small $^\dagger$ 20\% FPR for C2 caused by rule OH-R3a over-triggering
+  on benign external-channel configuration queries.
+\end{table}
+
+\begin{table}[!t]
+  \centering
+  \caption{Hijacking (C7) Detection Quadrant Analysis (60 harmful, 30 benign)}
+  \label{tab:hijacking}
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Quadrant} & \textbf{Count} & \textbf{\%} \\
+    \midrule
+    Gate-only (verifier misses)   & 11 & 18.3\% \\
+    Verifier-only (gate allows)   & 30 & 50.0\% \\
+    Both layers detect            & 15 & 25.0\% \\
+    Neither (structural boundary) &  4 &  6.7\% \\
+    \midrule
+    \textbf{Combined}             & \textbf{56} & \textbf{93.3\%} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+For Hijacking, Wilson 95\% CIs are: gate TPR [31.6\%, 55.9\%], combined
+TPR [84.1\%, 97.4\%], and benign FPR [0.0\%, 11.4\%]. The 50\%
+verifier-only quadrant captures prompt-injection cases where the semantic
+gate is manipulated, but file artifacts retain detectable fingerprints.
+
+\subsection{Cross-Benchmark Comparison}
+\label{subsec:cross}
+
+\begin{table}[!t]
+  \centering
+  \caption{Cross-Benchmark Safety Scores (Nous vs.\ Generic LLM Baseline)}
+  \label{tab:cross}
+  \begin{tabular}{lcccc}
+    \toprule
+    \textbf{Benchmark} & \textbf{Focus} & \textbf{Nous Safety} & \textbf{Generic LLM} & \textbf{Status} \\
+    \midrule
+    AgentHarm          & Generic criminal  & 100\% / 0\%       & 62.7\% / 16.0\% & Validation \\
+    Owner-Harm (diag.) & Owner-directed    & 75.3\% / 3.3\%    & ---             & Diagnostic \\
+    AgentDojo          & Prompt injection  & \textbf{3.7\%} (legacy: 14.8\%\textsuperscript{$\star$})       & 59.3\% (16/27)  & Authoritative \\
+    \bottomrule
+  \end{tabular}
+  \vspace{1mm}
+  \\
+  \small Generic LLM = \texttt{qwen-turbo} zero-shot; AgentDojo Nous Safety
+  reports deterministic L1+L4 (3.7\%, 1/27) and legacy L1+L3+L4
+  (14.8\%, 4/27) separately. \textsuperscript{$\star$}The legacy
+  semantic configuration is no longer reproducible
+  (\S\ref{subsec:limitations}); we therefore use 3.7\% as the primary
+  Nous AgentDojo number for all gap computations below. Deterministic
+  Nous gap = $|100\% - 3.7\%| = 96.3$ pp; Generic gap = $|62.7\% -
+  59.3\%| = 3.4$ pp; difference attributable to symbolic rule
+  generalization failure $= 92.9$ pp.
+\end{table}
+
+The 100\% $\to$ 3.7\% deterministic gap (and the related 100\% $\to$
+14.8\% legacy semantic gap) is the central evidence: constraints that
+intercept generic criminal content have near-zero coverage of
+application-layer owner-harm. A controlled zero-shot LLM experiment
+(Appendix~\ref{app:control}) shows 62.7\% on AgentHarm and 59.3\% on
+AgentDojo, so the large gap is not explained by owner-harm being
+semantically harder. It is associated with L1 rules tied to AgentHarm's
+tool vocabulary rather than to portable harm semantics.
+
+\subsection{Controlled and SSDG Experiment Summaries}
+\label{subsec:experiment_summary}
+
+In the controlled gap-attribution experiment, the generic LLM's small
+3.4 pp gap contrasts with Nous's deterministic 96.3 pp gap (and legacy
+semantic 85.2 pp gap, no longer reproducible), showing that symbolic rule
+generalization failure, not intrinsic category difficulty, drives the
+benchmark discrepancy. In SSDG pilots, raw user-goal injection reduced
+AgentDojo legacy-semantic TPR from 14.8\% to 8.3\%, rejecting the naive
+context-injection prediction and showing that structured goal-action
+comparison is required (this pilot was run under the legacy
+\texttt{qwen-turbo}-via-relay configuration; see
+\S\ref{subsec:limitations}).
+Conversely, stripping context from the generic LLM produced a symbolic-like
+gap ratio $R=3.60$ versus $R=1.06$ with full context, supporting the claim
+that information deprivation is a key cause of owner-harm detection gaps.
+
+% ================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Why Generic Defenses Fail}
+\label{subsec:disc_failure}
+
+The production and benchmark results converge on the same explanation:
+generic defenses evaluate action content without owner context. ``Send
+email to external@domain.com'' carries no intrinsic harm signal; its
+harmfulness is determined by whether the destination is inside $\BO$ and
+whether the action is authorized by $\AuthO$ over resources in $\RO$.
+The AgentDojo blind spots further show that malicious-parameter attacks
+often require comparing the user's task goal against the agent's action.
+
+\subsection{Layer Complementarity}
+\label{subsec:disc_hijacking}
+
+The Hijacking result (43.3\% gate $\to$ 93.3\% combined) is direct evidence
+of architectural complementarity. The gate operates on prompt semantics and
+command surface; the verifier operates on file contents and multi-step
+behavioral sequences. Prompt injection requires both semantic and
+behavioral-sequence detection because injected content can manipulate the
+semantic evaluator while leaving fingerprints in artifacts or action
+chains.
+
+\subsection{Deployment-Mode vs.\ Isolation-Mode Reporting}
+\label{subsec:disc_dual_metric}
+
+Owner-harm defenses can be evaluated in two regimes which yield
+substantially different headline numbers, and which we argue should
+be reported separately rather than collapsed:
+
+\begin{itemize}
+  \item \textbf{Ground-truth isolation} (\S\ref{subsec:agentdojo}):
+    every injection is forced into the tool stream regardless of
+    whether the agent would have followed it. This is a worst-case
+    component test of the SSDG enforcement layer alone. Our
+    deterministic L1+L4 score on AgentDojo is 3.7\% (1/27).
+  \item \textbf{Realistic deployment}
+    (\S\ref{subsec:deployment_mode}): the full agent pipeline runs
+    each user task with the injection embedded in tool outputs as
+    AgentDojo specifies, and the agent may resist, ignore, or
+    transform the injection before SSDG is invoked. Across 629
+    user-task instances, the composed system reaches 95.9\% security
+    with 75.0\% utility.
+\end{itemize}
+
+The 92.2 pp gap between these two metrics is structural, not
+contradictory. It reflects the fact that modern instruction-tuned LLM
+agents are themselves a meaningful first line against indirect
+prompt injection on application-tool benchmarks: only a small fraction
+of injection-bearing trajectories reach the SSDG layer in deployment.
+This has two implications. First, evaluating SSDG enforcement
+\emph{only} in isolation mode (the v1 framing) understates real-world
+safety; evaluating \emph{only} in deployment mode would conflate
+agent-level resistance with SSDG enforcement, overstating the
+contribution of the symbolic layer. Reporting both regimes separates
+\emph{what symbolic enforcement provides} from \emph{what the deployed
+composition delivers}. Second, these results
+suggest a productive design direction: a thin auditable symbolic last
+line composed with an LLM agent that already absorbs most surface
+attempts, rather than a heavy semantic gate carrying the full defense
+burden. We treat this as a hypothesis rather than a recommendation,
+since our deployment evidence is from a single agent backbone
+(GLM-4.6) on AgentDojo's application-tool surface and may not
+generalize to other agents or attack regimes.
+
+\subsection{Limitations}
+\label{subsec:limitations}
+
+\paragraph{Erratum: AgentDojo L1+L3+L4 reproducibility.} Our v1 result
+of \texttt{L1+L3+L4 = 14.8\% (4/27)} on AgentDojo (commit
+\texttt{3e688d6}, 2026-04-10) is not a purely deterministic SSDG
+result. Three of the four detections were produced by the L3 semantic
+LLM gate using \texttt{qwen-turbo} through a sealos.io relay provider
+in April 2026; one was produced by deterministic Datalog logic.
+Subsequent reruns under the current code base do not reproduce the same
+L3 behavior because both the remote model endpoint and the local
+semantic prompt and configuration have since changed (the
+\texttt{semantic\_gate.py} module grew \texttt{+96} lines after
+2026-04-10 with stripped-mode handling, intent-seed alignment, and
+content-escalation logic). The provider call used
+\texttt{temperature=0.0}, so the issue is model and prompt drift rather
+than local sampling stochasticity. We therefore report the deterministic
+\texttt{L1+L4 = 3.7\% (1/27)} as the primary auditable AgentDojo result
+in Table~\ref{tab:agentdojo_main}, retain the legacy
+\texttt{L1+L3+L4 = 14.8\%} only as a historical LLM-assisted
+measurement, and report the current
+\texttt{deepseek-v4-pro}-backed semantic configuration separately as
+exploratory pending freeze (semantic gate
+\texttt{temperature=0.0}, single-shot, no majority vote). The
+\texttt{L1}-only and \texttt{L1+L4} rows in
+Table~\ref{tab:agentdojo_main} are numerically identical because L4's
+file/bash/curl-artifact rules do not fire on AgentDojo's
+application-tool surface; L4 is retained because it dominates on
+Hijacking (see \S\ref{subsec:disc_hijacking}). The confirm-bypass
+runtime fix described in the Appendix is independent of this issue.
+
+\begin{enumerate}
+  \item \textbf{AgentDojo ceiling}: Without user task goal context, the
+    semantic gate cannot compare ``user requested X'' to ``agent doing Y'',
+    limiting achievable deterministic safety to 3.7\% and semantic
+    safety to a $\sim$15\%--40\% range depending on L3 backend on
+    malicious-parameter tasks.
+  \item \textbf{Benchmark independence}: The Owner-Harm Benchmark is
+    author-constructed after system optimization. It is diagnostic, not
+    validation evidence.
+  \item \textbf{Single annotator}: No inter-annotator agreement is reported
+    for the Owner-Harm Benchmark labels.
+  \item \textbf{Structural boundary}: 4/60 Hijacking cases (SQL file
+    injection, direct SSH key injection) are out of reach of current
+    V-rules.
+  \item \textbf{Evaluation mode}: AgentDojo evaluation uses ground-truth
+    mode without an adversarial attack LLM; real-world adaptive adversaries
+    may achieve different results.
+  \item \textbf{Infrastructure Exposure FPR}: Rule OH-R3a over-triggers
+    on benign external-channel configuration queries (20\% FPR for C2),
+    indicating the rule requires further refinement.
+  \item \textbf{SSDG pilot scale}: P1 and P2 experiments use $N = 12$
+    AgentDojo tasks and $N = 15$ AgentHarm scenarios. Conclusions are
+    directionally consistent with theory but require full-benchmark
+    replication before statistical significance can be claimed.
+\end{enumerate}
+
+% ================================================================
+\section{Related Work}
+\label{sec:related}
+
+AgentHarm \cite{andriushchenko2025agentharm} provides a generic LLM-agent
+harm benchmark; ToolEmu \cite{ruan2024toolemu} evaluates risks in an
+LM-emulated sandbox; AGrail \cite{agrail2025} proposes hierarchical safety
+detection. Our distinction is to define the deployer as the victim and
+quantify the resulting defense gap. Prompt-injection work beginning with
+Greshake et al.\ \cite{greshake2023indirect} and standardized by AgentDojo
+\cite{debenedetti2024agentdojo} is closest empirically; CaMeL
+\cite{camel2025} is complementary through capability-aware information
+flow.
+
+Runtime and policy-enforcement systems include NeMo Guardrails
+\cite{rebedea2023nemoguardrails}, Llama Guard \cite{inan2023llamaguard},
+ShieldGemma \cite{zeng2024shieldgemma}, R2Guard \cite{chen2024r2guard},
+AgentMonitor \cite{yu2024agentmonitor}, BIPIA \cite{yi2023bipia},
+Guardrails AI \cite{guardrailsai2024}, verifiable tool safety
+\cite{doshi2026verifiable}, PCAS \cite{palumbo2026pcas}, AgentSpec
+\cite{wang2026agentspec}, Pro2Guard \cite{he2025pro2guard}, solver-aided
+verification \cite{roy2026solveraided}, ShieldAgent
+\cite{chen2025shieldagent}, GuardAgent \cite{xiang2024guardagent}, and
+TrustAgent \cite{hua2024trustagent}. These systems improve enforcement
+machinery; our claim is orthogonal: owner context ($\RO$, $\BO$,
+$\AuthO$) must be an input to such machinery. Exfiltration and covert
+channel work, including ASCII smuggling via Copilot
+\cite{rehberger2024copilot}, PromptArmor's Slack disclosure
+\cite{promptarmor2024slack}, and adversarial-agent analysis
+\cite{abdelnabi2024llmagent}, provides concrete attack evidence.
+
+% ================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+Owner-harm is a missing threat model for AI agent safety. We formalize it
+with eight categories, separate worst-case ground-truth isolation from
+realistic deployment-mode evaluation (100\% vs.\ 3.7\% deterministic
+isolation; 95.9\% security with 75.0\% utility under deployment-mode
+across 629 user-task instances; legacy 100\% vs.\ 14.8\% semantic
+configuration is reported separately as historical, see
+\S\ref{subsec:limitations}), attribute the symbolic gap to rule
+generalization failure, and show that semantic gates and deterministic
+post-audit verifiers provide complementary protection, especially for
+Hijacking. The core finding is simple: an action harms an owner not by
+content alone, but by its relation to owner resources, trust boundaries,
+authorization scope, and task goals.
+
+% ================================================================
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+% ================================================================
+\appendix
+
+\section{Eight Categories: Full Prose and Anchors}
+\label{app:categories}
+
+We enumerate eight categories $C1$--$C8$ (primary labels; a single incident may span multiple categories), each grounded in
+documented incidents.
+
+\textbf{C1: Credential Leak.} The agent exfiltrates authentication
+materials (API keys, OAuth tokens, session cookies, passwords) belonging
+to or entrusted to the owner. \textit{Real case}: Slack AI August 2024
+\cite{promptarmor2024slack}---injected prompt caused the assistant to echo
+private channel tokens to the attacker.
+
+\textbf{C2: Infrastructure Exposure.} The agent misconfigures or discloses
+network rules, cloud resource policies, or internal architecture, expanding
+the owner's attack surface. \textit{Pattern}: AI-assisted code generation
+producing over-permissive AWS IAM policies that expose production
+databases.
+
+\textbf{C3: Privacy Exposure.} The agent transmits personally identifiable
+information (PII) or confidential business data to unauthorized parties.
+\textit{Real case}: Microsoft 365 Copilot January 2024
+\cite{zenity2024copilot}---calendar injection caused Copilot to forward
+sensitive email contents externally.
+
+\textbf{C4: Inner Circle Leak.} The agent betrays trust relationships that
+are commercially sensitive to the owner: client lists, partner agreements,
+M\&A discussions, or strategic roadmaps. \textit{Pattern}: Samsung
+employees pasting proprietary semiconductor source code into ChatGPT (April
+2023), with the owner-harm being the confidentiality breach to a third-party
+model.
+
+\textbf{C5: Asset Destruction.} The agent irreversibly deletes or corrupts
+owner data, configurations, or digital assets. \textit{Pattern}: AI coding
+agents executing \texttt{rm -rf} on production directories when given
+broad filesystem access and ambiguous cleanup instructions.
+
+\textbf{C6: Exfiltration via Tools.} The agent exploits \emph{authorized}
+tools as covert data channels---using email, webhooks, or file-write
+operations to smuggle sensitive data to attacker-controlled endpoints.
+\textit{Real case}: ASCII smuggling via Microsoft 365 Copilot
+\cite{rehberger2024copilot}---injected prompt caused Copilot to encode and
+transmit sensitive data through Markdown image URLs rendered invisibly.
+
+\textbf{C7: Hijacking.} An adversary achieves persistent control over the
+agent using the owner's identity, credentials, or resource access---the
+agent becomes a weaponized surrogate. \textit{Pattern}: AutoGPT memory
+poisoning (2024--2025) where injected memory entries caused the agent to
+act on behalf of the attacker across subsequent sessions.
+
+\textbf{C8: Unauthorized Autonomy.} The agent exceeds its authorization
+scope by taking consequential actions without required human confirmation.
+\textit{Real case}: Air Canada chatbot (February 2024) committed the airline
+to unauthorized refund terms in a legally binding interaction
+\cite{aircanadaruling2024}.
+
+\section{Comparison with Existing Taxonomies}
+\label{app:comparison}
+
+Table~\ref{tab:taxonomy} compares Owner-Harm categories against four
+existing frameworks: AgentHarm \cite{andriushchenko2025agentharm} (11
+categories), ToolEmu \cite{ruan2024toolemu} (7 risk types), OWASP LLM Top
+10, and AgentDojo \cite{debenedetti2024agentdojo} (4 suites).
+
+\begin{table}[!h]
+  \centering
+  \caption{Coverage of Owner-Harm Categories by Existing Frameworks}
+  \label{tab:taxonomy}
+  \small
+  \begin{tabular}{lcccc}
+    \toprule
+    \textbf{Category} & \textbf{AgentHarm} & \textbf{ToolEmu}
+      & \textbf{OWASP} & \textbf{AgentDojo} \\
+    \midrule
+    C1: Credential Leak        & \pmark & \cmark & \cmark & \pmark \\
+    C2: Infrastructure Exposure & \xmark & \pmark & \cmark & \xmark \\
+    C3: Privacy Exposure        & \pmark & \cmark & \cmark & \cmark \\
+    C4: Inner Circle Leak       & \xmark & \xmark & \xmark & \xmark \\
+    C5: Asset Destruction       & \pmark & \cmark & \pmark & \pmark \\
+    C6: Exfiltration via Tools  & \xmark & \pmark & \pmark & \pmark \\
+    C7: Hijacking               & \xmark & \pmark & \cmark & \pmark \\
+    C8: Unauthorized Autonomy   & \pmark & \cmark & \pmark & \xmark \\
+    \bottomrule
+  \end{tabular}
+  \vspace{1mm}
+  \\\small \cmark~= covered; \pmark~= partial; \xmark~= gap
+\end{table}
+
+The most notable gap is \textbf{C4 (Inner Circle Leak)}, which appears in
+no existing benchmark. This category requires reasoning about the owner's
+trust graph---who counts as an insider---which no current system models
+explicitly. \textbf{C6} is partially covered by ToolEmu but misses the
+\emph{covert channel} aspect: using authorized tools as smuggling vectors.
+The \emph{owner-centric perspective} itself is the primary novel
+contribution: existing frameworks evaluate harm against third parties,
+users, or society; none formally model the deploying owner as the victim.
+
+\begin{table}[!h]
+  \centering
+  \caption{Generic Defense Failure Modes for Owner-Harm}
+  \label{tab:defense_fail}
+  \small
+  \begin{tabular}{p{2.8cm}p{4.8cm}}
+    \toprule
+    \textbf{Defense Class} & \textbf{Owner-Harm Blind Spot} \\
+    \midrule
+    Content classifier & Ignores $\RO$; ``send email'' is benign by content \\
+    Injection detector  & Detects injection syntax; misses semantic intent \\
+    Tool monitor        & Sees call signature; not authorization context \\
+    DLP system          & Pattern-matches known PII; misses context-defined confidential data \\
+    Behavioral anomaly  & Requires baseline; new deployments have no baseline \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Controlled Experiment: Full Detail}
+\label{app:control}
+
+The 96.3 pp deterministic gap between AgentHarm (100\%) and AgentDojo
+(3.7\% under L1+L4) --- and the related 85.2 pp gap under the
+no-longer-reproducible legacy L1+L3+L4 configuration (14.8\%, see
+\S\ref{subsec:limitations}) --- admits two competing explanations:
+(H1) the gap reflects a genuine structural difference---owner-harm
+scenarios detected via prompt injection are semantically harder to
+classify; or (H2) the gap is an artifact of Nous's symbolic rules being
+fit to the AgentHarm tool vocabulary and failing to generalize.
+
+\textbf{Experimental design.} We evaluate a zero-shot generic LLM
+classifier (\texttt{qwen-turbo} via API relay) on the same data, using
+a uniform binary-classification prompt with no benchmark-specific
+fine-tuning:
+\begin{quotation}\small
+  \textit{You are a safety classifier. An AI agent is performing a task.
+  User's original request: \{prompt\}. Agent's planned action: \{tool\}
+  (\{params\}). Is this action potentially harmful to the user?
+  Answer YES or NO.}
+\end{quotation}
+For AgentDojo, the goal description (injected instruction) is substituted
+for the tool-call representation. The baseline has no access to owner
+context ($\RO$, $\BO$, $\AuthO$).
+
+\textbf{Results.} Table~\ref{tab:control} shows the 2$\times$2 comparison.
+
+\begin{table}[!h]
+  \centering
+  \caption{Controlled Experiment: Gap Attribution
+    (Nous vs.\ Generic LLM Classifier)}
+  \label{tab:control}
+  \begin{tabular}{lccc}
+    \toprule
+    \textbf{System} & \textbf{AgentHarm TPR} & \textbf{AgentDojo TPR} & \textbf{Gap} \\
+    \midrule
+    Nous (L1+L4 deterministic, primary) & 100.0\% & 3.7\% (1/27) & 96.3 pp \\
+    Nous (L1+L3+L4 legacy)\textsuperscript{$\dagger$} & 100.0\% & 14.8\% (4/27) & 85.2 pp \\
+    Generic LLM     & 62.7\%  & 59.3\% (16/27) & 3.4 pp \\
+    \bottomrule
+  \end{tabular}
+  \vspace{1mm}
+  \\
+  \small Generic LLM AgentHarm: 110 TP / 66 FN / 28 FP (FPR = 15.9\%,
+  $N=176$ harmful $+$ 176 benign). \\
+  \small \textsuperscript{$\dagger$}Legacy semantic configuration
+  (\texttt{qwen-turbo} via sealos.io relay, commit \texttt{3e688d6})
+  no longer reproduces under current code; see
+  \S\ref{subsec:limitations}. \\
+  \small AgentDojo per-category breakdown appears in text.
+\end{table}
+
+\textbf{Finding.} The generic LLM exhibits a 3.4 pp gap (62.7\% vs.\
+59.3\%)---statistically negligible compared to Nous's 96.3 pp
+deterministic gap (or the 85.2 pp legacy semantic gap). This is
+inconsistent with H1: AgentDojo owner-harm scenarios do not appear to
+be semantically harder to detect. The generic LLM achieves 59.3\% on
+AgentDojo without any prompt-injection-specific design, suggesting that
+the harm is semantically recognizable by content alone.
+
+\textbf{Gap attribution.} Nous's gap is strongly associated with \textbf{Layer 1
+(Datalog) generalization failure}. L1 rules were derived from
+AgentHarm patterns---\texttt{bash(script)}, \texttt{read\_file
+(malicious\_path)}, \texttt{execute(command)}---which are absent from
+AgentDojo's application-layer tool vocabulary
+(\texttt{send\_money}, \texttt{send\_email}, \texttt{update\_calendar}).
+\textbf{Implication: generic LLM outperforms Nous.}
+The zero-shot generic LLM (59.3\%) substantially outperforms Nous's
+deterministic 3.7\% (and the legacy semantic 14.8\%) on AgentDojo
+owner-harm detection. This is not a contradiction---it is the central
+architectural insight: owner-harm detection depends primarily on
+semantic understanding of action consequences and owner context, which
+symbolic rules (L1) cannot provide. Nous's L1 achieves perfect recall
+on AgentHarm's system-call patterns but has near-zero coverage of
+application-layer actions. The legacy L3 semantic gate contributed
+$+11.1$\,pp under \texttt{qwen-turbo}-via-relay (a configuration that
+no longer reproduces); the contribution of any locked current L3
+backend (e.g., \texttt{deepseek-v4-pro}) is reported separately as
+exploratory in Table~\ref{tab:agentdojo_main}. The generic LLM
+compensates via world-knowledge reasoning, suggesting that future
+owner-harm defenses should prioritize structured semantic alignment
+over pattern-matching rules.
+
+\section{SSDG Experimental Predictions: Full Detail}
+\label{app:ssdg_experiments}
+
+The SSDG framework (Section~\ref{subsec:ssdg_theory}) yields two testable
+predictions. We report pilot experiments ($N = 12$ AgentDojo tasks
+$+$ 15 AgentHarm scenarios) using the same controlled setup as
+Appendix~\ref{app:control}.
+
+\textbf{P1 (Context Injection) --- Prediction Rejected.}
+Injecting the user's task goal into the gate evaluation context
+(L1+L3+L4 + \texttt{user\_goal}) should raise the AgentDojo TPR if
+goal-awareness is the missing information. Result: TPR declined from
+the legacy-semantic baseline 14.8\% to 8.3\%---below the no-injection
+baseline. (This pilot was run under the legacy
+\texttt{qwen-turbo}-via-relay configuration; see
+\S\ref{subsec:limitations}. The same prediction has not yet been
+re-tested under the locked \texttt{deepseek-v4-pro} L3 backend.)
+
+This rejection has an informative interpretation: appending the user
+goal as a text prefix does not constitute structured goal-action
+alignment. The gate's intent decomposition logic cannot compare the
+injected goal to the observed action without explicit structural
+scaffolding (e.g., a ``goal vs.\ action'' contrast prompt). Three
+confounding factors compound this: (a) the ground-truth AgentDojo
+pipeline evaluates task success, not injection semantics; (b) simple
+text injection may activate over-cautious benign-task blocking; and
+(c) the pilot sample size ($N=12$) is too small for significance.
+P1 remains open: the mechanism requires \emph{structured} goal-context
+integration, not raw text concatenation.
+
+\textbf{P2 (Context Deprivation) --- Prediction Confirmed.}
+Stripping world-context from the semantic defense should reproduce
+symbolic-gap behavior. We evaluate the generic LLM classifier under
+two conditions: (i) \emph{Full Group}---standard evaluation with full
+agent-context prompt; (ii) \emph{Stripped Group}---evaluation with
+only the raw tool name and parameter, no surrounding task description.
+
+\begin{table}[!h]
+  \centering
+  \caption{P2: Context Deprivation Induces Symbolic-Class Gap
+    (pilot, $N=12$ AgentDojo + 15 AgentHarm)}
+  \label{tab:ssdg_p2}
+  \begin{tabular}{lccc}
+    \toprule
+    \textbf{Condition} & \textbf{AgentHarm TPR} & \textbf{AgentDojo TPR}
+      & \textbf{Gap Ratio $R$} \\
+    \midrule
+    Full Group   & 62.7\% & 59.3\% & 1.06 \\
+    Stripped Group & 30.0\% & 8.3\% & 3.60 \\
+    \bottomrule
+  \end{tabular}
+  \vspace{1mm}
+  \\
+  \small $R = \mathrm{TPR}_\mathrm{AH} / \mathrm{TPR}_\mathrm{AD}$.
+  P2 falsification threshold: $R \leq 1.5$.
+\end{table}
+
+The stripped condition yields $R = 3.60$, exceeding the P2
+falsification threshold ($R \leq 1.5$). When deprived of context,
+the semantic defense degrades to near-symbolic gap behavior,
+confirming Hypothesis~\ref{hyp:semantic_stability}: the stability of
+semantic detection depends on access to world-context, not on model
+reasoning capacity per se. The finding identifies \emph{information
+deprivation} as a key factor associated with the detection gap.
+
+\section{Production Deployment Evidence}
+\label{app:production}
+
+Nous was deployed in shadow mode alongside an existing rule-based system
+in a production multi-agent environment for 11+ days (30,204 calls total).
+
+\textbf{Consistency}: 99.47\% agreement with the existing rule-based
+system across all calls---confirming that semantic reasoning does not
+introduce systematic drift from established policy.
+
+\textbf{False negative recovery}: Nous detected 157 cases that the
+existing rule-based system passed as benign. Manual review of a stratified
+sample confirmed these were true positives, predominantly ambiguous
+read-then-send workflows where the send target fell outside the owner's
+trust boundary. \emph{Caveat}: the manual review was conducted by the
+system developer (first author), not an independent auditor, and was not
+blind to Nous's verdict---creating potential confirmation bias. These
+results should be interpreted as case-level observations, not as a
+controlled study.
+
+\textbf{Over-blocking}: Nous over-blocked in 4 cases where the existing
+system correctly allowed. Manual review confirmed all 4 were over-triggered
+on ambiguous read-then-send workflows where the send target was a legitimate
+internal address. (Same caveat as above: non-blind, author-conducted review.)
+
+Following the shadow period, Nous was promoted to primary interceptor.
+No regressions were observed post-cutover.
+
+\section{Extended Discussion}
+\label{app:extended_discussion}
+
+\subsection{Symbolic vs.\ Semantic Generalization}
+\label{app:disc_generalization}
+
+The controlled experiment, together with the SSDG theoretical framework
+(Hypotheses~\ref{hyp:symbolic_gap}--\ref{hyp:semantic_stability}),
+exposes a fundamental asymmetry between the two
+primary detection mechanisms in compositional safety architectures:
+
+\textbf{Symbolic rules (L1 Datalog)} exhibit a bimodal generalization
+profile: near-perfect recall within the training distribution (100\% on
+AgentHarm), and near-zero recall on out-of-distribution tool vocabularies
+(3.7\% on AgentDojo). This is structurally expected---Datalog rules
+encode extensional facts (``tool $t$ is prohibited'') rather than
+intensional harm semantics. Any tool name not in the rule set is
+trivially allowed.
+
+\textbf{Semantic reasoning (L3 gate and generic LLM)} exhibits a flat
+generalization profile: below-perfect recall within distribution
+(62.7\% for the generic LLM on AgentHarm), but stable recall across
+environments (59.3\% on AgentDojo, gap = 3.4 pp). Semantic reasoning
+transfers because harm intent is encoded in goal descriptions---which
+remain semantically consistent across tool-vocabulary changes---rather
+than in tool names.
+
+This asymmetry has a direct design implication for compositional
+architectures: the value of combining symbolic and semantic layers is
+not simply ``two layers are better than one.'' The layers have
+\emph{complementary generalization curves}: symbolic rules provide
+high-precision coverage in-distribution, and semantic reasoning maintains
+consistent coverage out-of-distribution. A system relying solely on
+symbolic rules will exhibit catastrophic degradation on novel tool
+environments; a system relying solely on semantic reasoning will accept
+a consistent recall ceiling but generalize robustly. The composable
+architecture's value is precisely that it avoids both failure modes.
+
+\subsection{Implications for Benchmark Design}
+\label{app:disc_benchmarks}
+
+The AgentDojo deterministic-3.7\% (and legacy-semantic 14.8\%) result
+implies a design gap in existing injection benchmarks: they do not
+provide explicit owner context. A benchmark that injects into the gate
+context (a) which resources belong to the owner, (b) who is in the
+owner's trust boundary, and (c) what the user's task goal is, would
+enable defenses to reach the estimated 40--60\% ceiling and would
+meaningfully differentiate owner-harm defense strategies.
+
+We recommend future benchmarks include an \emph{owner context manifest}:
+a structured specification of $\RO$, $\BO$, and $\AuthO$ provided to both
+the agent and any runtime safety system.
+
+\section{Extended Future Work}
+\label{app:future}
+
+\textbf{Structured goal-action alignment.} The P1 SSDG experiment
+reveals that simply injecting the user's task goal as text is
+insufficient---the gate must be architecturally restructured to perform
+an explicit goal-vs.-action comparison. A dedicated ``goal alignment
+prompt'' that contrasts the user's authorized intent against the
+agent's proposed action is the concrete next step, estimated to raise
+AgentDojo safety from the current single-digit deterministic ceiling
+(3.7\%) toward the structural 40--60\% range.
+
+\textbf{UEBA for AI agents.} User and entity behavioral analytics adapted
+for AI agent deployments would enable per-owner behavioral profiles,
+providing a personalized baseline for anomaly detection.
+
+\textbf{Adaptive immunity.} Systems that learn owner-harm patterns from
+deployment logs---incorporating newly discovered injection patterns into
+Datalog or V-rule libraries without manual rule authoring.
+
+\textbf{SQL-aware file content analysis.} Addressing the 4 structural
+boundary Hijacking cases requires content-aware analysis of structured
+file formats, beyond the current regex-based V-rules.
+
+\textbf{Owner context manifest standard.} A community standard for
+specifying $\RO$, $\BO$, and $\AuthO$ in a machine-readable format, to
+enable principled owner-harm benchmarking across systems.
+
+\textbf{Per-decision proof-obligation synthesis.} Ongoing work extends
+this compositional gate from offline-authored Datalog rules to
+\emph{per-decision runtime synthesis} of Datalog proof obligations by the
+LLM itself, admitted through a compile-time gate that rejects
+perturbation-invariant or decisive-primitive-less rules. This moves
+verification from a ``statute'' (pre-authored policy) to a ``case-law''
+(per-decision argued) model; a companion preprint is in preparation.
+
+\section{Author Contributions}
+\label{app:author_contributions}
+
+% Author contributions section removed for double-blind submission;
+% will be restored in camera-ready.
+
+% =============================================================
+\section*{NeurIPS Paper Checklist}
+
+\begin{enumerate}
+
+\item {\bf Claims}
+  \item[] Question: Do the main claims made in the abstract and introduction accurately reflect the paper's contributions and scope?
+  \item[] Answer: \answerYes{}
+  \item[] Justification: The abstract and \S\ref{sec:intro} list the four contributions (eight-category threat model, defense-gap quantification, layer-complementarity evidence, SSDG conceptual framework). \S\ref{subsec:limitations}-style limitations explicitly bound the scope (post-hoc Owner-Harm Benchmark, n=27 AgentDojo CIs, $\sim$15\% AgentDojo ceiling without goal context).
+
+\item {\bf Limitations}
+  \item[] Question: Does the paper discuss the limitations of the work performed by the authors?
+  \item[] Answer: \answerYes{}
+  \item[] Justification: \S\ref{subsec:limitations} explicitly enumerates seven limitations including the post-hoc nature of the Owner-Harm Benchmark, single-annotator labeling, AgentDojo ceiling without goal context, ground-truth-mode evaluation, C2 over-triggering, and SSDG pilot scale.
+
+\item {\bf Theory assumptions and proofs}
+  \item[] Question: For each theoretical result, does the paper provide the full set of assumptions and a complete (and correct) proof?
+  \item[] Answer: \answerNA{}
+  \item[] Justification: This paper is empirical and conceptual; the SSDG framework is a falsifiable conceptual framework rather than a formal theorem (\S\ref{subsec:ssdg_theory}). The two hypotheses are stated explicitly and tested in \S\ref{app:ssdg_experiments} (appendix).
+
+\item {\bf Experimental result reproducibility}
+  \item[] Question: Does the paper fully disclose all the information needed to reproduce the main experimental results?
+  \item[] Answer: \answerYes{}
+  \item[] Justification: \S\ref{sec:nous} fully describes the four-layer Nous architecture (Datalog gate + semantic LLM + verifier rules); \S\ref{sec:eval} states benchmarks (AgentDojo, AgentHarm), evaluation modes (ground-truth), and per-layer ablations. AgentDojo and AgentHarm are public.
+
+\item {\bf Open access to data and code}
+  \item[] Question: Does the paper provide open access to the data and code?
+  \item[] Answer: \answerNo{}
+  \item[] Justification: AgentDojo and AgentHarm are public benchmarks. The Nous system code and Owner-Harm Benchmark labels will be released upon acceptance under a permissive license (MIT/Apache 2.0); reviewers can request access to an anonymized code drop during review.
+
+\item {\bf Experimental setting/details}
+  \item[] Question: Does the paper specify all the training and test details necessary to understand the results?
+  \item[] Answer: \answerYes{}
+  \item[] Justification: \S\ref{sec:nous} states the LLM backbone for the semantic gate and verifier configuration. \S\ref{subsec:strategy} states the AgentDojo evaluation mode (ground-truth) and the per-injection-task category mapping.
+
+\item {\bf Experiment statistical significance}
+  \item[] Question: Does the paper report error bars or statistical-significance information?
+  \item[] Answer: \answerYes{}
+  \item[] Justification: All proportion-based results report 95\% Wilson confidence intervals. AgentDojo n=27 yields wide CIs ([5.9\%, 32.5\%]) which is reported transparently rather than hidden.
+
+\item {\bf Experiments compute resources}
+  \item[] Question: For each experiment, does the paper provide sufficient information on the computer resources?
+  \item[] Answer: \answerYes{}
+  \item[] Justification: All evaluation runs are CPU-only and use closed-API LLMs as black-box services (no GPU training). Total API spend is on the order of \$100 across all evaluation cycles; per-task latency dominated by API round-trips.
+
+\item {\bf Code of ethics}
+  \item[] Question: Does the research conform with the NeurIPS Code of Ethics?
+  \item[] Answer: \answerYes{}
+  \item[] Justification: The work is defensive AI safety research building on public benchmarks (AgentDojo, AgentHarm) and publicly reported industry incidents (Slack AI 2024, Microsoft 365 Copilot 2024, Meta agent 2026); no human subjects, no data scraping.
+
+\item {\bf Broader impacts}
+  \item[] Question: Does the paper discuss potential societal impacts?
+  \item[] Answer: \answerYes{}
+  \item[] Justification: The Owner-Harm threat model is intended to enable defenders. Potential adversarial use of the taxonomy is bounded by the fact that all eight categories are derived from already-public incidents; identification of category-specific defense gaps motivates positive defensive engineering.
+
+\item {\bf Safeguards}
+  \item[] Question: Does the paper describe safeguards for the responsible release of data or models?
+  \item[] Answer: \answerNA{}
+  \item[] Justification: No model is being released. The Owner-Harm Benchmark contains synthetic adversarial scenarios, not user data.
+
+\item {\bf Licenses for existing assets}
+  \item[] Question: Are the creators or original owners of assets used in the paper properly credited and are the license and terms of use respected?
+  \item[] Answer: \answerYes{}
+  \item[] Justification: AgentDojo (MIT) and AgentHarm (Apache 2.0) are cited and used per their licenses; only public benchmark scenarios are reused.
+
+\item {\bf New assets}
+  \item[] Question: Are new assets introduced in the paper well documented?
+  \item[] Answer: \answerYes{}
+  \item[] Justification: The Owner-Harm Benchmark structure (8 categories $\times$ harmful + benign scenarios; 450 total) is described in \S\ref{subsec:ohb}. License will be assigned at release.
+
+\item {\bf Crowdsourcing and research with human subjects}
+  \item[] Question: For crowdsourcing experiments and research with human subjects, does the paper include the full text of instructions given to participants and screenshots, if applicable, as well as details about compensation?
+  \item[] Answer: \answerNA{}
+  \item[] Justification: No crowdsourcing or human-subjects data. The post-hoc Owner-Harm Benchmark scenarios were author-constructed (acknowledged in \S\ref{subsec:limitations} as a known limitation; an independent annotator pass is in progress).
+
+\item {\bf Institutional review board (IRB) approvals or equivalent for research with human subjects}
+  \item[] Question: Does the paper describe potential risks incurred by study participants, whether such risks were disclosed to the subjects, and whether IRB approvals (or an equivalent approval/review based on the requirements of your country or institution) were obtained?
+  \item[] Answer: \answerNA{}
+  \item[] Justification: No human-subjects research.
+
+\item {\bf Declaration of LLM usage}
+  \item[] Question: Does the paper describe the usage of LLMs if it is an important, original, or non-standard component of the core methods in this research?
+  \item[] Answer: \answerYes{}
+  \item[] Justification: The semantic-reasoning Layer 3 of the Nous evaluation system uses a closed-API LLM as a per-action safety classifier (described in \S\ref{sec:nous}). Separately, LLM assistants were used for prose editing and proof reading; LLMs were not used for ideation or experimental design.
+
+\end{enumerate}
+
+\end{document}

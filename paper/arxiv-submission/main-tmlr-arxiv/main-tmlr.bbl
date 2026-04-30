@@ -1,0 +1,163 @@
+\begin{thebibliography}{20}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Andriushchenko et~al.(2025)Andriushchenko, Croce, and
+  Flammarion]{andriushchenko2025agentharm}
+Maksym Andriushchenko, Francesco Croce, and Nicolas Flammarion.
+\newblock {AgentHarm}: A benchmark for measuring harmfulness of {LLM} agents.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2025.
+
+\bibitem[Canonne(2020)]{canonne2020survey}
+Cl{\'e}ment~L. Canonne.
+\newblock A survey on distribution testing: Your data is big. but is it blue?
+\newblock \emph{Theory of Computing Library, Graduate Surveys}, \penalty0 (9),
+  2020.
+
+\bibitem[Cover and Thomas(2006)]{coverthomas2006}
+Thomas~M. Cover and Joy~A. Thomas.
+\newblock \emph{Elements of Information Theory}.
+\newblock Wiley, 2 edition, 2006.
+
+\bibitem[Debenedetti et~al.(2024)Debenedetti, Zhang, Balunovi{\'c},
+  Beurer-Kellner, Fischer, and Tram{\`e}r]{debenedetti2024agentdojo}
+Edoardo Debenedetti, Jie Zhang, Mislav Balunovi{\'c}, Luca Beurer-Kellner, Marc
+  Fischer, and Florian Tram{\`e}r.
+\newblock {AgentDojo}: A dynamic environment to evaluate prompt injection
+  attacks and defenses for {LLM} agents.
+\newblock In \emph{Advances in Neural Information Processing Systems 37
+  (Datasets and Benchmarks Track)}, 2024.
+\newblock arXiv:2406.13352.
+
+\bibitem[Geiger et~al.(2022)Geiger, Wu, Lu, Rozner, Kreiss, Icard, Goodman, and
+  Potts]{geiger2022inducing}
+Atticus Geiger, Zhengxuan Wu, Hanson Lu, Josh Rozner, Elisa Kreiss, Thomas
+  Icard, Noah~D. Goodman, and Christopher Potts.
+\newblock Inducing causal structure for interpretable neural networks.
+\newblock In \emph{Proceedings of the 39th International Conference on Machine
+  Learning (ICML)}, volume 162 of \emph{Proceedings of Machine Learning
+  Research}. PMLR, 2022.
+
+\bibitem[Geiger et~al.(2023)Geiger, Ibeling, Zur, Chaudhary, Chauhan, Huang,
+  Arora, Wu, Goodman, Potts, and Icard]{geiger2023causal}
+Atticus Geiger, Duligur Ibeling, Amir Zur, Maheep Chaudhary, Sonakshi Chauhan,
+  Jing Huang, Aryaman Arora, Zhengxuan Wu, Noah Goodman, Christopher Potts, and
+  Thomas Icard.
+\newblock Causal abstraction for faithful model interpretation.
+\newblock \emph{arXiv preprint arXiv:2301.04709}, 2023.
+
+\bibitem[Goldreich(2001)]{goldreich2001foundations}
+Oded Goldreich.
+\newblock \emph{Foundations of Cryptography, Volume 1: Basic Tools}.
+\newblock Cambridge University Press, 2001.
+
+\bibitem[Kallenberg(2021)]{kallenberg2021}
+Olav Kallenberg.
+\newblock \emph{Foundations of Modern Probability}, volume~99 of
+  \emph{Probability Theory and Stochastic Modelling}.
+\newblock Springer, 3 edition, 2021.
+\newblock \doi{10.1007/978-3-030-61871-1}.
+
+\bibitem[Lanham et~al.(2023)Lanham, Chen, Radhakrishnan, Steiner, Denison,
+  Hernandez, Li, Durmus, Hubinger, Kernion, Lukoši{\=u}t{\.e}, Nguyen, Cheng,
+  Joseph, Schiefer, Rausch, Larson, McCandlish, Kundu, Kadavath, Yang,
+  Henighan, Maxwell, Telleen-Lawton, Hume, Hatfield-Dodds, Kaplan, Brauner,
+  Bowman, and Perez]{lanham2023measuring}
+Tamera Lanham, Anna Chen, Ansh Radhakrishnan, Benoit Steiner, Carson Denison,
+  Danny Hernandez, Dustin Li, Esin Durmus, Evan Hubinger, Jackson Kernion,
+  Kamil{\.e} Lukoši{\=u}t{\.e}, Karina Nguyen, Newton Cheng, Nicholas Joseph,
+  Nicholas Schiefer, Oliver Rausch, Robin Larson, Sam McCandlish, Sandipan
+  Kundu, Saurav Kadavath, Shannon Yang, Thomas Henighan, Timothy Maxwell,
+  Timothy Telleen-Lawton, Tristan Hume, Zac Hatfield-Dodds, Jared Kaplan, Jan
+  Brauner, Samuel~R. Bowman, and Ethan Perez.
+\newblock Measuring faithfulness in chain-of-thought reasoning.
+\newblock \emph{arXiv preprint arXiv:2307.13702}, 2023.
+\newblock URL \url{https://arxiv.org/abs/2307.13702}.
+
+\bibitem[Le~Cam(1986)]{lecam1986}
+Lucien Le~Cam.
+\newblock \emph{Asymptotic Methods in Statistical Decision Theory}.
+\newblock Springer, 1986.
+
+\bibitem[Murphy et~al.(2025)Murphy, Rizvi, Haussmann, Nie, Liu, Gema, and
+  Minervini]{murphy2025faithful}
+Alexander Murphy, Mohd Sanad~Zaki Rizvi, Aden Haussmann, Ping Nie, Guifu Liu,
+  Aryo~Pradipta Gema, and Pasquale Minervini.
+\newblock An analysis of decoding methods for {LLM}-based agents for faithful
+  multi-hop question answering.
+\newblock \emph{arXiv preprint arXiv:2503.23415}, 2025.
+
+\bibitem[Pearl(2001)]{pearl2001direct}
+Judea Pearl.
+\newblock Direct and indirect effects.
+\newblock In \emph{Proceedings of the Seventeenth Conference on Uncertainty in
+  Artificial Intelligence (UAI)}, pages 411--420, 2001.
+
+\bibitem[Pearl(2009)]{pearl2009}
+Judea Pearl.
+\newblock \emph{Causality: Models, Reasoning, and Inference}.
+\newblock Cambridge University Press, 2 edition, 2009.
+
+\bibitem[Tsybakov(2009)]{tsybakov2009}
+Alexandre~B. Tsybakov.
+\newblock \emph{Introduction to Nonparametric Estimation}.
+\newblock Springer, 2009.
+\newblock Le Cam two-point method, Pinsker's inequality, hypothesis testing
+  lower bounds.
+
+\bibitem[Wei et~al.(2022)Wei, Wang, Schuurmans, Bosma, Ichter, Xia, Chi, Le,
+  and Zhou]{wei2022cot}
+Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Brian Ichter, Fei Xia,
+  Ed~Chi, Quoc~V. Le, and Denny Zhou.
+\newblock Chain-of-thought prompting elicits reasoning in large language
+  models.
+\newblock In \emph{Advances in Neural Information Processing Systems 35}, 2022.
+
+\bibitem[Xiang et~al.(2025)Xiang, Zheng, Li, Hong, Li, Xie, Zhang, Xiong, Xie,
+  Yang, Song, and Li]{xiang2024guardagent}
+Zhen Xiang, Linzhi Zheng, Yanjie Li, Junyuan Hong, Qinbin Li, Han Xie, Jiawei
+  Zhang, Zidi Xiong, Chulin Xie, Carl Yang, Dawn Song, and Bo~Li.
+\newblock {GuardAgent}: Safeguard {LLM} agents by a guard agent via
+  knowledge-enabled reasoning.
+\newblock In \emph{Proceedings of the 42nd International Conference on Machine
+  Learning (ICML)}, 2025.
+\newblock arXiv:2406.09187.
+
+\bibitem[Yao et~al.(2023)Yao, Zhao, Yu, Du, Shafran, Narasimhan, and
+  Cao]{yao2023react}
+Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik Narasimhan,
+  and Yuan Cao.
+\newblock {ReAct}: Synergizing reasoning and acting in language models.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2023.
+
+\bibitem[Yuan et~al.(2024)Yuan, He, Dong, Wang, Zhao, Xia, Xu, Zhou, Li, Zhang,
+  Wang, and Liu]{yuan2024rjudge}
+Tongxin Yuan, Zhiwei He, Lingzhong Dong, Yiming Wang, Ruijie Zhao, Tian Xia,
+  Lizhen Xu, Binglin Zhou, Fangqi Li, Zhuosheng Zhang, Rui Wang, and Gongshen
+  Liu.
+\newblock {R-Judge}: Benchmarking safety risk awareness for {LLM} agents.
+\newblock In \emph{Findings of the Association for Computational Linguistics:
+  EMNLP 2024}, pages 1467--1490. Association for Computational Linguistics,
+  2024.
+\newblock \doi{10.18653/v1/2024.findings-emnlp.79}.
+
+\bibitem[Zhang and Jiang(2025)]{zhang2025ownerharm}
+Dongcheng Zhang and Yiqing Jiang.
+\newblock Owner-harm: A missing threat model for {AI} agent safety.
+\newblock \emph{arXiv preprint arXiv:TBD}, 2025.
+\newblock arXiv preprint, submitted 2026-04-20; companion paper to the present
+  manuscript.
+
+\bibitem[Zhang et~al.(2024)Zhang, Cui, Lu, Zhou, Yang, Wang, and
+  Huang]{zhang2024agentsafetybench}
+Zhexin Zhang, Shiyao Cui, Yida Lu, Jingzhuo Zhou, Junxiao Yang, Hongning Wang,
+  and Minlie Huang.
+\newblock {Agent-SafetyBench}: Evaluating the safety of {LLM} agents.
+\newblock \emph{arXiv preprint arXiv:2412.14470}, 2024.
+
+\end{thebibliography}
