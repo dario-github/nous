@@ -12,7 +12,13 @@ sys.path.insert(0, str(SRC_DIR))
 from nous.db import NousDB
 from nous.sync import IncrementalSync
 
-from _paths import ENTITIES_ROOT
+from _paths import ENTITIES_ROOT, KG_AVAILABLE
+
+
+pytestmark = pytest.mark.skipif(
+    not KG_AVAILABLE,
+    reason="KG entities dir not present (skipped on bare CI / sanitised public clones)",
+)
 
 
 @pytest.fixture

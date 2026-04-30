@@ -11,7 +11,7 @@ sys.path.insert(0, str(SRC_DIR))
 from nous.parser import parse_entity_file, scan_entities_dir, build_slug_to_id_map
 from nous.schema import Entity, Relation
 
-from _paths import ENTITIES_ROOT
+from _paths import ENTITIES_ROOT, KG_AVAILABLE
 
 # 测试用的 3 个真实文件
 PERSON_FILE = ENTITIES_ROOT / "people" / "东丞.md"
@@ -24,6 +24,12 @@ _skip_if_no_file = pytest.mark.skipif(
 
 
 # ── 文件存在性检查 ────────────────────────────────────────────────────────────
+
+pytestmark = pytest.mark.skipif(
+    not KG_AVAILABLE,
+    reason="KG entities dir not present (skipped on bare CI / sanitised public clones)",
+)
+
 
 @pytest.mark.parametrize("path", [PERSON_FILE, PROJECT_FILE, CONCEPT_FILE])
 def test_files_exist(path):

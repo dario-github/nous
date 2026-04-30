@@ -1,10 +1,19 @@
 """Tests for M11.3 — 时序查询 API"""
 import time
 import pytest
+import sys
+sys.path.insert(0, 'tests')
+from _paths import KG_AVAILABLE
 
 from nous.temporal_query import query_at, entity_timeline, TemporalSnapshot
 from nous.db import NousDB
 from nous.schema import Entity, Relation
+
+
+pytestmark = pytest.mark.skipif(
+    not KG_AVAILABLE,
+    reason="KG entities dir not present (skipped on bare CI / sanitised public clones)",
+)
 
 
 @pytest.fixture

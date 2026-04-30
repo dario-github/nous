@@ -7,6 +7,9 @@ import time
 from pathlib import Path
 
 import pytest
+import sys
+sys.path.insert(0, 'tests')
+from _paths import KG_AVAILABLE
 
 SRC_DIR = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(SRC_DIR))
@@ -17,6 +20,12 @@ from nous.observability import SamplingPolicy, log_decision, get_decision_stats,
 
 
 # ── fixtures ──────────────────────────────────────────────────────────────
+
+
+pytestmark = pytest.mark.skipif(
+    not KG_AVAILABLE,
+    reason="KG entities dir not present (skipped on bare CI / sanitised public clones)",
+)
 
 
 @pytest.fixture

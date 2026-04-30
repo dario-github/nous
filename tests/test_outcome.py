@@ -9,6 +9,12 @@ from nous.proof_trace import ProofTrace
 from nous.verdict import Verdict
 
 
+pytestmark = pytest.mark.skipif(
+    not KG_AVAILABLE,
+    reason="KG entities dir not present (skipped on bare CI / sanitised public clones)",
+)
+
+
 def test_outcome_backfill():
     db = NousDB(":memory:")
 

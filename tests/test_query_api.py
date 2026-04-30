@@ -10,6 +10,9 @@ import sys
 from pathlib import Path
 
 import pytest
+import sys
+sys.path.insert(0, 'tests')
+from _paths import KG_AVAILABLE
 
 SRC_DIR = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(SRC_DIR))
@@ -19,6 +22,12 @@ from nous.schema import Entity, Relation
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+pytestmark = pytest.mark.skipif(
+    not KG_AVAILABLE,
+    reason="KG entities dir not present (skipped on bare CI / sanitised public clones)",
+)
+
 
 def _entity(id_: str, etype: str, confidence: float = 1.0, **props) -> Entity:
     return Entity(

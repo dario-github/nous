@@ -2,9 +2,18 @@
 from pathlib import Path
 
 import pytest
+import sys
+sys.path.insert(0, 'tests')
+from _paths import KG_AVAILABLE
 
 from nous.db import NousDB
 from nous.sync import sync_entities
+
+
+pytestmark = pytest.mark.skipif(
+    not KG_AVAILABLE,
+    reason="KG entities dir not present (skipped on bare CI / sanitised public clones)",
+)
 
 
 @pytest.fixture

@@ -11,6 +11,12 @@ from nous.proof_trace import ProofTrace
 from nous.ttl import check_rule_ttl
 
 
+pytestmark = pytest.mark.skipif(
+    not KG_AVAILABLE,
+    reason="KG entities dir not present (skipped on bare CI / sanitised public clones)",
+)
+
+
 def _write_rule(path: Path, rule_id: str, enabled: bool = True, created_at: float | None = None):
     data = {
         "id": rule_id,

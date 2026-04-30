@@ -8,6 +8,9 @@ Covers:
 - MITRE ATT&CK data scenarios
 """
 import pytest
+import sys
+sys.path.insert(0, 'tests')
+from _paths import KG_AVAILABLE
 import time
 
 from nous.db import NousDB
@@ -22,6 +25,12 @@ from nous.owl_rules import (
     subclass_closure,
     subclass_descendants,
     init_owl_schema,
+)
+
+
+pytestmark = pytest.mark.skipif(
+    not KG_AVAILABLE,
+    reason="KG entities dir not present (skipped on bare CI / sanitised public clones)",
 )
 
 

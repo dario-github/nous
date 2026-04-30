@@ -17,3 +17,8 @@ def _detect_clawd_root() -> Path:
 
 CLAWD_ROOT = _detect_clawd_root()
 ENTITIES_ROOT = CLAWD_ROOT / "memory" / "entities"
+
+# True only when the personal KG seed directory is present (host-specific).
+# Tests that need real KG entities use this to skip cleanly on bare CI runners
+# and on machines where the entities dir was anonymised away for public release.
+KG_AVAILABLE = ENTITIES_ROOT.exists()
