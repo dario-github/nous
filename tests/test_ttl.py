@@ -1,5 +1,8 @@
 """Nous — TTL 衰减测试 (M3.5)"""
 import pytest
+import sys as _sys
+_sys.path.insert(0, 'tests')
+from _paths import KG_AVAILABLE
 import tempfile
 import time
 from pathlib import Path

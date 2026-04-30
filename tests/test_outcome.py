@@ -1,5 +1,8 @@
 """Nous — Outcome 回填测试 (M3.1)"""
 import pytest
+import sys as _sys
+_sys.path.insert(0, 'tests')
+from _paths import KG_AVAILABLE
 import time
 
 from nous.db import NousDB
