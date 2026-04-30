@@ -693,8 +693,8 @@ generalize to other agents or attack regimes.
 of \texttt{L1+L3+L4 = 14.8\% (4/27)} on AgentDojo (commit
 \texttt{3e688d6}, 2026-04-10) is not a purely deterministic SSDG
 result. Three of the four detections were produced by the L3 semantic
-LLM gate using \texttt{qwen-turbo} through a sealos.io relay provider
-in April 2026; one was produced by deterministic Datalog logic.
+LLM gate using \texttt{qwen-turbo} through an internal OpenAI-compatible
+relay (since deprecated) in April 2026; one was produced by deterministic Datalog logic.
 Subsequent reruns under the current code base do not reproduce the same
 L3 behavior because both the remote model endpoint and the local
 semantic prompt and configuration have since changed (the
@@ -959,8 +959,8 @@ context ($\RO$, $\BO$, $\AuthO$).
   \small Generic LLM AgentHarm: 110 TP / 66 FN / 28 FP (FPR = 15.9\%,
   $N=176$ harmful $+$ 176 benign). \\
   \small \textsuperscript{$\dagger$}Legacy semantic configuration
-  (\texttt{qwen-turbo} via sealos.io relay, commit \texttt{3e688d6})
-  no longer reproduces under current code; see
+  (\texttt{qwen-turbo} via a now-deprecated internal relay, commit
+  \texttt{3e688d6}) no longer reproduces under current code; see
   \S\ref{subsec:limitations}. \\
   \small AgentDojo per-category breakdown appears in text.
 \end{table}
