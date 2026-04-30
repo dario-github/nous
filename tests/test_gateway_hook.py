@@ -394,3 +394,56 @@ class TestAfterToolCallEvalIsolation:
         )
         assert result["extracted"] == 1
         assert len(db.entities) == 1
+
+
+# ── Tests: create_production_hook factory (Loop 78 / M12.0) ───────────────
+
+
+class TestCreateProductionHook:
+    """Test that create_production_hook properly initializes L2+L3 configs."""
+
+    def test_factory_sets_triviality_config(self):
+        """create_production_hook() should always set triviality_config (L2)."""
+        from nous.gateway_hook import create_production_hook
+        hook = create_production_hook()
+        assert hook.triviality_config is not None
+
+    def test_factory_sets_semantic_config(self):
+        """create_production_hook() should always set semantic_config (L3)."""
+        from nous.gateway_hook import create_production_hook
+        hook = create_production_hook()
+        assert hook.semantic_config is not None
+        # upgrade_only must be True (Loop 73 policy)
+        assert hook.semantic_config.upgrade_only is True
+
+    def test_factory_reads_env_model(self, monkeypatch):
+        """NOUS_SEMANTIC_MODEL env var should override config.yaml."""
+        from nous.gateway_hook import create_production_hook
+        monkeypatch.setenv("NOUS_SEMANTIC_MODEL", "test-model-xyz")
+        hook = create_production_hook()
+        assert hook.semantic_config.model == "test-model-xyz"
+
+    def test_factory_default_shadow_mode(self):
+        """Default shadow_mode should be True."""
+        from nous.gateway_hook import create_production_hook
+        hook = create_production_hook()
+        assert hook.shadow_mode is True
+
+    def test_factory_gate_receives_l2l3(self):
+        """Hook created by factory should pass L2+L3 configs to gate()."""
+        from nous.gateway_hook import create_production_hook
+        hook = create_production_hook()
+        # SAFE_TOOL_CALL won't trigger any constraint -> verdict=allow
+        result = hook.before_tool_call(ALLOW_TOOL_CALL)
+        # Should return the tool_call (shadow mode, no block)
+        assert result["tool_name"] == "web_search"
+
+    def test_factory_model_not_hardcoded_v32(self):
+        """Model should NOT be hardcoded to DeepSeek-V3.2 (old default)."""
+        from nous.gateway_hook import create_production_hook
+        import os
+        # Only test when env var is not set
+        if "NOUS_SEMANTIC_MODEL" not in os.environ:
+            hook = create_production_hook()
+            assert hook.semantic_config.model != "DeepSeek-V3.2", \
+                "Model should read from config.yaml, not hardcode DeepSeek-V3.2"

@@ -335,7 +335,18 @@ def create_production_hook(
 
     triviality_cfg = TrivialityConfig()
 
-    sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", "DeepSeek-V3.2")
+    # Loop 78: 从 config.yaml 读 T2 model（与 shadow_live.py 统一）
+    _cfg_model = None
+    _cfg_path = Path(__file__).parent.parent.parent.parent / "config.yaml"
+    if _cfg_path.exists():
+        try:
+            import yaml as _yaml
+            with open(_cfg_path) as _cf:
+                _cfg = _yaml.safe_load(_cf)
+            _cfg_model = (_cfg.get("models", {}).get("T2_production", {}).get("id") or "").split("/")[-1]
+        except Exception:
+            pass
+    sem_model = os.environ.get("NOUS_SEMANTIC_MODEL", _cfg_model or "gpt-5-mini")
     try:
         from nous.providers.openai_provider import create_openai_provider
         provider = create_openai_provider(model=sem_model)

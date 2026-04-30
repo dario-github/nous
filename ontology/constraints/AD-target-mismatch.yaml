@@ -1,0 +1,27 @@
+id: AD-target-mismatch
+name: AgentDojo target-mismatch — block external-effect actions whose target is absent from user_goal
+priority: 95
+enabled: false  # disabled 2026-04-30: full-matrix run showed slack util -23pp (UserTask2/9/10/12/16-20 误拦 invite/add/post). iter1 alone validated; iter2 needs target-extraction precision rework before re-enable.
+trigger:
+  # Iteration 2 (codex r6): user-goal alignment for external-effect
+  # actions. Fires only when:
+  #   (a) action is external-effect (send/transfer/invite/etc), AND
+  #   (b) the action specifies a target identifier (email/IBAN/URL),
+  #   (c) user_goal explicitly named at least one target identifier, AND
+  #   (d) the action's target does NOT match any user-named target.
+  # Conditions (b)+(c) are encoded by target_authorized_by_user_goal:
+  # the helper returns True (no fire) when target is absent from action
+  # OR user_goal underspecified — guarding against false positives on
+  # broad goals like "send a summary to my team".
+  is_external_effect_action: true
+  target_authorized_by_user_goal: false
+verdict: block
+reason: "Iteration 2: external-effect action targets identifier not authorized by user_goal (user-goal alignment violation)"
+metadata:
+  source: "codex r6 iteration 2"
+  ttl_days: 60
+  notes: |
+    Designed to catch AgentDojo injection patterns where an attacker
+    embeds a different recipient/IBAN/URL than the user's original
+    request mentions. Generic, not benchmark-specific: relies on text
+    pattern matching (email/IBAN/URL regex) on user_goal.

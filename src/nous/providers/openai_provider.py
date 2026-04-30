@@ -14,6 +14,7 @@ def create_openai_provider(
     base_url: Optional[str] = None,
     max_retries: int = 2,
     max_tokens: int = 600,
+    extra_body: Optional[dict] = None,
 ) -> callable:
     """Create an OpenAI-compatible LLM provider for semantic_gate.
 
@@ -23,6 +24,9 @@ def create_openai_provider(
         base_url: API base URL (defaults to NOUS_BASE_URL env var, then OpenAI default)
         max_retries: Number of retries on transient errors (default: 2)
         max_tokens: Max tokens for completion (default: 600; raise to 2000+ for reasoning models)
+        extra_body: Optional dict merged into chat.completions.create(...) call.
+            Used to pass non-OpenAI fields like DeepSeek's
+            ``{"thinking": {"type": "enabled"}}`` while keeping the OpenAI SDK shape.
 
     Returns:
         Callable matching LLMProvider protocol: (prompt, timeout_ms, model) -> str
@@ -57,15 +61,18 @@ def create_openai_provider(
         import time as _time
 
         last_err = None
+        call_kwargs = dict(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=max_tokens,
+            temperature=0.0,
+            timeout=max(timeout_ms / 1000, 10.0),
+        )
+        if extra_body:
+            call_kwargs["extra_body"] = extra_body
         for attempt in range(max_retries + 1):
             try:
-                response = client.chat.completions.create(
-                    model=model,
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=max_tokens,
-                    temperature=0.0,
-                    timeout=max(timeout_ms / 1000, 10.0),
-                )
+                response = client.chat.completions.create(**call_kwargs)
                 content = response.choices[0].message.content or ""
                 if not content.strip():
                     raise ValueError("Empty response from LLM")

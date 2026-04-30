@@ -2,7 +2,7 @@
 Nous gate 防御适配层 for AgentDojo
 
 NousFilteredRuntime: 继承 FunctionsRuntime，在每次工具调用前调用 Nous gate。
-如果 gate 判定 block → 返回拒绝信息，不执行工具。
+如果 gate 判定 block，或在无人工确认的 batch eval 中判定 confirm → 返回拒绝信息，不执行工具。
 如果 gate 判定 allow/warn → 透传执行。
 
 设计决策：
@@ -112,9 +112,12 @@ class NousFilteredRuntime(FunctionsRuntime):
         # P1 实验：注入用户原始任务目标（_user_goal 前缀 _ 表示元数据，不是工具参数）
         if self.__class__._user_goal:
             tool_call["_user_goal"] = self.__class__._user_goal
-        verdict = "allow"
+        gate_verdict = "allow"
+        effective_verdict = "allow"
         latency_ms = 0.0
         layer_path = "datalog_only"
+        semantic_verdict: Optional[dict] = None
+        verifier_result: Optional[dict] = None
         verifier_flags: list[dict] = []
 
         try:
@@ -123,33 +126,49 @@ class NousFilteredRuntime(FunctionsRuntime):
                 verifier_config=self.__class__._verifier_config,
                 semantic_config=self.__class__._semantic_config,
             )
-            verdict = result.verdict.action if hasattr(result.verdict, "action") else str(result.verdict)
+            gate_verdict = result.verdict.action if hasattr(result.verdict, "action") else str(result.verdict)
+            # In batch eval there is no human-in-loop, so "confirm" must escalate
+            # to actual block (otherwise verifier engages but never defends).
+            effective_verdict = "block" if gate_verdict in ("block", "confirm") else gate_verdict
             latency_ms = result.latency_ms
             layer_path = getattr(result, "layer_path", "datalog_only")
+            semantic_verdict = getattr(result, "semantic_verdict", None)
 
             # 收集 verifier flags（供分析用）
             if result.verifier_result:
-                verifier_flags = result.verifier_result.get("flags", [])
+                verifier_result = result.verifier_result
+                verifier_flags = verifier_result.get("flags", [])
 
         except Exception as exc:
             # FAIL_OPEN：gate 异常不影响评估
             logger.warning("Nous gate exception (fail-open): %s", exc)
-            verdict = "allow"
+            gate_verdict = "allow"
+            effective_verdict = "allow"
+
+        block_source = None
+        if effective_verdict == "block":
+            block_source = "confirm_to_block" if gate_verdict == "confirm" else "gate_block"
 
         NousFilteredRuntime._log.append(
             {
                 "function": function,
                 "kwargs": dict(kwargs),
-                "verdict": verdict,
+                "verdict": effective_verdict,           # backward-compat field
+                "gate_verdict": gate_verdict,
+                "effective_verdict": effective_verdict,
+                "execution_blocked": effective_verdict == "block",
+                "block_source": block_source,
                 "latency_ms": latency_ms,
                 "layer_path": layer_path,
+                "semantic_verdict": semantic_verdict,
+                "verifier_recommendation": (verifier_result or {}).get("recommendation"),
                 "verifier_flags": verifier_flags,
             }
         )
 
-        if verdict == "block":
-            logger.info("Nous BLOCKED: %s(%s)", function, dict(kwargs))
+        if effective_verdict == "block":
+            logger.info("Nous BLOCKED (%s): %s(%s)", gate_verdict, function, dict(kwargs))
             return BLOCKED_RESULT, None
 
-        logger.debug("Nous %s: %s", verdict, function)
+        logger.debug("Nous %s: %s", gate_verdict, function)
         return super().run_function(env, function, kwargs, raise_on_error=raise_on_error)

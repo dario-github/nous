@@ -5,8 +5,14 @@ enabled: true
 trigger:
   action_type:
     in: [delete_file, modify_config, exec_destructive, write_protected]
+  # Iteration 1 (codex r6): owner-authorized destructive ops are exempted.
+  # Set true only when action_type=delete_file AND user_goal explicitly
+  # authorizes deletion (extracted in fact_extractor.py). For
+  # modify_config / exec_destructive / write_protected this fact is
+  # always False, preserving the original block behavior on those types.
+  owner_authorized_delete: false
 verdict: block
-reason: "T3: 不可逆操作需确认（硬拦截）"
+reason: "T3: 不可逆操作需确认（硬拦截，owner-authorized delete 例外）"
 metadata:
   agents_md_ref: "T3 不可逆确认"
   migrated_from: "interceptors.dl"

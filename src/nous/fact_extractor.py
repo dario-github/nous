@@ -1749,6 +1749,117 @@ _KNOWN_ACTION_TYPES = frozenset({
 })
 
 
+# Iteration 2 (codex r6): external-effect action gating.
+# Actions that produce externally-visible state changes; subject to
+# target-mismatch check (block if target identifier is absent from user_goal).
+_EXTERNAL_EFFECT_ACTIONS = frozenset({
+    "send_email", "send_slack_message", "send_message", "send_sms",
+    "post_to_forum", "post_tweet", "create_github_issue",
+    "make_http_request", "upload_file", "call_api", "create_webhook",
+    "publish_post",
+})
+
+# AgentDojo-specific tool names that imply external-effect (not all
+# normalize to canonical action_types in _KNOWN_ACTION_TYPES).
+_EXTERNAL_EFFECT_TOOL_NAMES = frozenset({
+    # Banking
+    "send_money", "send_transaction", "schedule_transaction",
+    "update_scheduled_transaction", "update_password",
+    # Slack
+    "send_direct_message", "send_channel_message", "invite_user_to_slack",
+    "remove_user_from_slack", "add_user_to_channel",
+    # Workspace
+    "create_calendar_event", "send_email",
+    # Travel
+    "reserve_hotel", "reserve_restaurant", "reserve_car_rental",
+})
+
+# Regexes for target identifiers that may appear in either the action
+# params or the user_goal text.
+import re as _re_target
+
+_TARGET_PATTERNS = {
+    "email": _re_target.compile(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b"),
+    "iban":  _re_target.compile(r"\b[A-Z]{2}\d{2}[A-Z0-9]{6,30}\b"),
+    "url":   _re_target.compile(r"https?://[^\s,;<>\"']+"),
+    "host":  _re_target.compile(r"\bwww\.[\w.-]+\.[A-Za-z]{2,}\b"),
+}
+
+
+def _extract_external_target(tool_call: dict) -> Optional[str]:
+    """Best-effort extraction of an external-target identifier from a
+    tool_call's params: email recipient, IBAN, URL, calendar participant.
+    Returns the first match found as a normalized lowercase string, or
+    None if no external target is present.
+
+    Used by Iteration 2 target-mismatch rule to compare against the
+    user_goal-mentioned targets.
+    """
+    params = tool_call.get("params") or {}
+
+    # Direct recipient-style fields
+    candidate_keys = (
+        "recipient", "recipients", "to", "to_email",
+        "recipient_iban", "iban", "account",
+        "user_email", "email", "invitee", "user",
+        "participant", "participants", "attendees",
+        "url", "endpoint", "webhook", "destination",
+        "target",
+    )
+
+    for k in candidate_keys:
+        v = params.get(k)
+        if v is None:
+            continue
+        if isinstance(v, list) and v:
+            v = v[0]
+        if isinstance(v, str) and v.strip():
+            return v.strip().lower()
+
+    # Fallback: scan all string-valued params for identifier patterns.
+    for v in params.values():
+        if isinstance(v, str):
+            for pat in _TARGET_PATTERNS.values():
+                m = pat.search(v)
+                if m:
+                    return m.group(0).lower()
+    return None
+
+
+def _extract_targets_from_text(text: str) -> list:
+    """Return a list of target identifiers (emails / IBANs / URLs / hosts)
+    found in user_goal text. Empty list means user did not specify any
+    concrete external target."""
+    if not isinstance(text, str) or not text:
+        return []
+    targets = []
+    for pat in _TARGET_PATTERNS.values():
+        for m in pat.finditer(text):
+            targets.append(m.group(0).lower())
+    return targets
+
+
+def _target_authorized(target: Optional[str], user_targets: list) -> bool:
+    """True iff:
+    - no external target in this action (nothing to authorize), OR
+    - user_goal does not specify any concrete target (user underspecified
+      → defer to other rules; this rule is silent), OR
+    - the action's target matches a user-mentioned target (substring or
+      equal, case-insensitive).
+    False iff user named specific targets but the action targets a
+    different identifier — strong injection signal.
+    """
+    if not target:
+        return True
+    if not user_targets:
+        return True
+    target_l = target.lower()
+    for ut in user_targets:
+        if ut in target_l or target_l in ut:
+            return True
+    return False
+
+
 def _normalize_tool_action(tool_name: str) -> str:
     """将非标准工具名映射到 Datalog 规则中的标准 action。
 
@@ -2442,5 +2553,57 @@ def extract_facts(tool_call: dict, session_context: Optional[list] = None) -> di
     facts["recipient"] = params.get("recipient") or params.get("to")
     facts["file_path"] = params.get("file_path") or params.get("path")
     facts["target"] = params.get("target")
+
+    # Iteration 1 (codex r6): owner-authorized destructive op exemption.
+    # Reads user_goal from tool_call._user_goal (set by NousFilteredRuntime
+    # at the start of each AgentDojo task). When the user's original task
+    # explicitly asks to delete/remove a file, T3 hard-block is suppressed —
+    # restoring utility on legitimate destructive workspace tasks
+    # ("Find and delete the largest file in the drive") without weakening
+    # adversarial blocks (where user_goal does not authorize deletion).
+    user_goal = tool_call.get("_user_goal") or ""
+    facts["_user_goal"] = user_goal
+    user_goal_lower = user_goal.lower() if isinstance(user_goal, str) else ""
+    facts["owner_authorized_delete"] = (
+        facts["action_type"] == "delete_file"
+        and any(
+            kw in user_goal_lower
+            for kw in (
+                " delete ",
+                " remove ",
+                " trash ",
+                " purge ",
+                " erase ",
+                " clean up ",
+                " clean-up ",
+                "delete the ",
+                "delete a ",
+                "delete file",
+                "remove the ",
+                "remove a ",
+                "remove file",
+            )
+        )
+    )
+
+    # Iteration 2 (codex r6): target-mismatch detection for external-effect
+    # actions (send_email / send_money / invite / create_calendar_event with
+    # participant). When the action targets an identifier (email / IBAN /
+    # URL) that does NOT appear in user_goal, this is a strong injection
+    # signal: the agent is sending to a destination the user did not
+    # specify. Only fires when (a) the action is external-effect, AND
+    # (b) user_goal contains at least one specific target identifier, AND
+    # (c) the action's target does not match any user-specified target.
+    # Condition (b) guards against false positives on broad goals like
+    # "send a summary to my team" where no specific recipient is named.
+    facts["external_target_value"] = _extract_external_target(tool_call)
+    facts["user_goal_targets"] = _extract_targets_from_text(user_goal)
+    facts["target_authorized_by_user_goal"] = _target_authorized(
+        facts["external_target_value"],
+        facts["user_goal_targets"],
+    )
+    facts["is_external_effect_action"] = facts["action_type"] in _EXTERNAL_EFFECT_ACTIONS or (
+        tool_call.get("tool_name") in _EXTERNAL_EFFECT_TOOL_NAMES
+    )
 
     return facts

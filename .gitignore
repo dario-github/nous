@@ -29,5 +29,8 @@ paper/*.out
 paper/*.toc
 paper/*.synctex.gz
 
+# Sibling project (nous-invest quant workspace, ~450 MB; not part of Nous core)
+invest/
+
 # macOS
 .DS_Store
