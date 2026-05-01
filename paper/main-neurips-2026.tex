@@ -1044,9 +1044,10 @@ users, or society; none formally model the deploying owner as the victim.
 \section{Controlled Experiment: Full Detail}
 \label{app:control}
 
-The 96.3 pp deterministic gap between AgentHarm (100\%) and AgentDojo
-(3.7\% under L1+L4) --- and the related 85.2 pp gap under the
-no-longer-reproducible legacy L1+L3+L4 configuration (14.8\%, see
+The 96.3 pp gap between AgentHarm L1+L2+L3-validation
+(100\%, val $n$=36+36) and AgentDojo L1+L4-deterministic (3.7\%, full
+27-task isolation) --- and the related 85.2 pp gap under the
+no-longer-reproducible legacy AgentDojo L1+L3+L4 configuration (14.8\%, see
 \S\ref{subsec:limitations}) --- admits two competing explanations:
 (H1) the gap reflects a genuine structural difference---owner-harm
 scenarios detected via prompt injection are semantically harder to
@@ -1078,15 +1079,20 @@ context ($\RO$, $\BO$, $\AuthO$).
     \toprule
     \textbf{System} & \textbf{AgentHarm TPR} & \textbf{AgentDojo TPR} & \textbf{Gap} \\
     \midrule
-    Nous (L1+L4 deterministic, primary) & 100.0\% & 3.7\% (1/27) & 96.3 pp \\
+    Nous (L1+L2+L3 semantic-gate val, primary)\textsuperscript{$\flat$} & 100.0\% & 3.7\% (1/27) & 96.3 pp \\
     Nous (L1+L3+L4 legacy)\textsuperscript{$\dagger$} & 100.0\% & 14.8\% (4/27) & 85.2 pp \\
-    Generic LLM     & 62.7\%  & 59.3\% (16/27) & 3.4 pp \\
+    Generic LLM (L1, full $N$=176+176) & 62.7\%  & 59.3\% (16/27) & 3.4 pp \\
     \bottomrule
   \end{tabular}
   \vspace{1mm}
   \\
   \small Generic LLM AgentHarm: 110 TP / 66 FN / 28 FP (FPR = 15.9\%,
   $N=176$ harmful $+$ 176 benign). \\
+  \small \textsuperscript{$\flat$}Nous AgentHarm 100\% is the L1+L2+L3
+  semantic-gate result on the validation slice ($n{=}36$ + 36, ICLR
+  2025 split); AgentDojo 3.7\% is the L1+L4 deterministic-isolation
+  result on the full 27-task suite. The two columns are reported
+  separately because no single layer-stack achieves both. \\
   \small \textsuperscript{$\dagger$}Legacy semantic configuration
   (\texttt{qwen-turbo} via a now-deprecated internal relay, commit
   \texttt{3e688d6}) no longer reproduces under current code; see
