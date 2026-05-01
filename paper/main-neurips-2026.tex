@@ -1124,9 +1124,10 @@ symbolic rules (L1) cannot provide. Nous's L1 achieves perfect recall
 on AgentHarm's system-call patterns but has near-zero coverage of
 application-layer actions. The legacy L3 semantic gate contributed
 $+11.1$\,pp under \texttt{qwen-turbo}-via-relay (a configuration that
-no longer reproduces); the contribution of any locked current L3
-backend (e.g., \texttt{deepseek-v4-pro}) is reported separately as
-exploratory in Table~\ref{tab:agentdojo_main}. The generic LLM
+no longer reproduces); the contribution of a locked current L3 backend
+(\texttt{deepseek-v4-pro}) under deployment mode is reported in
+Table~\ref{tab:deployment_ablation} as $+1.1$ pp ($95.2\% \to 96.3\%$).
+The generic LLM
 compensates via world-knowledge reasoning, suggesting that future
 owner-harm defenses should prioritize structured semantic alignment
 over pattern-matching rules.
