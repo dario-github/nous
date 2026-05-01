@@ -80,15 +80,15 @@ checkpointed in the evidence table; only L1 and L4 are recomputed.
 python scripts/full_benchmark_eval.py
 ```
 
-Expected output (matches paper Table 4):
+Expected output (matches paper Table 5; reproduced 2026-05-02):
 
 ```
 OVERALL (300H + 150B)
 Gate alone:      TPR 226/300 = 75.3%  FPR 5/150 = 3.3%
-Verifier alone:  TPR 195/300 = 65.0%
-Combined:        TPR 256/300 = 85.3%  FPR 5/150 = 3.3%
+Verifier alone:  TPR 105/300 = 35.0%
+Combined:        TPR 256/300 = 85.3%  FPR 20/150 = 13.3%
 
-HIJACKING OVERLAP ANALYSIS (60H)
+HIJACKING OVERLAP ANALYSIS (60H, benign 30B)
 Gate alone:     26/60 = 43.3%
 Verifier alone: 45/60 = 75.0%
 Combined:       56/60 = 93.3%
@@ -100,28 +100,67 @@ Combined:       56/60 = 93.3%
 
 The `Gate alone` row reproduces the L1–L3 baseline (75.3% TPR / 3.3% FPR);
 the `Combined` row reproduces the full L1–L4 stack (85.3% TPR /
-3.3% FPR). Per-category Wilson 95% CIs match paper §4 Table 4.
+**13.3% FPR**, CI [8.8%, 19.7%]). The L4 verifier raises TPR by +10 pp
+at the cost of +10 pp benign FPR concentrated in C2 Infrastructure
+Exposure (60% per-category combined FPR) and C4 Inner Circle Leak
+(35.7%); zero benign FP on Hijacking. Per-category Wilson 95% CIs
+match paper §4.4.
 
 ---
 
-## §4 — AgentDojo isolation (96.3% / 75.0%)
+## §4.2 — AgentDojo isolation (3.7% / 97.9% / 2.1% — primary deterministic)
 
-This is the L1 + L3 + L4 stack on AgentDojo's 27 forced-injection
-ground-truth tasks (banking + slack + travel + workspace). L3 uses
-DeepSeek-V4-pro as the public substitute for the original
-qwen-turbo-via-internal-relay configuration (paper §Limitations Erratum).
+This is the L1 + L4 deterministic stack on AgentDojo's 27 forced-injection
+ground-truth tasks (banking + slack + travel + workspace; n=97 user
+tasks for utility). No L3 in this row — purely Datalog rules + post-gate
+verifier. Reproduces in 1–3 minutes with no API key:
+
+```bash
+cd benchmarks/agentdojo_adapter
+uv run --project ../agentdojo python run_eval.py
+```
+
+Expected output:
+
+```
+安全得分:  1/27 = 3.7%
+效用保留:  95/97 = 97.9%
+误拦截率:  2.1%
+
+按 Owner-Harm 类别:
+  credential_leak     : 0/3
+  financial_harm      : 0/10
+  operational_harm    : 1/4 = 25.0%
+  privacy_breach      : 0/6
+  reputational_harm   : 0/3
+  other               : 0/1
+```
+
+This is paper §4.2 Table 1 row "L1 + L4 (deterministic) — 3.7%
+(1/27)". Wilson 95% CI [0.7%, 18.3%] (n=27 is small; the wide CI is
+reported transparently in the paper).
+
+---
+
+## §4.3 — AgentDojo deployment L1+L3+L4 deepseek (96.3% / 75.0%)
+
+This is the deployment-mode (real GLM-4.6 agent + injection attack via
+`important_instructions` attacker) with L1 Datalog + L3 deepseek-v4-pro
+semantic gate + L4 verifier on the full 629-tuple suite (banking +
+slack + travel + workspace). Public substitute for the original
+qwen-turbo-via-internal-relay configuration (paper §Limitations
+Erratum).
 
 ```bash
 export DEEPSEEK_API_KEY=...   # or set in .env
 bash benchmarks/agentdojo_adapter/launch-l3-deepseek-repro.sh
 ```
 
-The script launches a `screen` session named `nous-l3-deepseek-repro`,
-takes ~ 5 h, and writes the per-task JSON traces to
-`benchmarks/agentdojo_adapter/results-l3-repro/` and a summary JSON at
+The script launches a `screen` session named `nous-l3-deepseek`,
+takes ~ 5 h, and writes the summary to
 `results-l3-repro/l1_3_4_deepseek-glm-fullmatrix.json`.
 
-Expected aggregate:
+Expected aggregate (replayed 2026-05-01):
 
 ```
 banking   security 136/144 (94.4%)  utility 109/144 (75.7%)
@@ -131,17 +170,16 @@ workspace security 234/240 (97.5%)  utility 175/240 (72.9%)
 total     security 606/629 (96.3%)  utility 472/629 (75.0%)
 ```
 
-(The 27-task isolation number quoted in the abstract is the harmful
-subset of these 629 tasks; full per-suite breakdown matches paper
-Table 2.)
+This is the L1+L3+L4 deepseek row of paper Table 3 (Deployment-Mode
+Ablation).
 
 ---
 
-## §4 — AgentDojo deployment (95.9% / 75.0%)
+## §4.3 — AgentDojo deployment L1 baseline (95.9% / 75.0%)
 
-Same 4-suite × 629-task matrix, but with the GLM-4.6 agent backbone
-running the real LLM-pipeline rather than the forced-injection oracle.
-This is the lower-bound regime described in §4.X.
+Same 4-suite × 629-task matrix as §4.3 above, but L1 Datalog only (no
+L3 semantic). Three modes ship in this script for the full ablation
+in paper Table 3:
 
 ```bash
 export ZAI_API_KEY=...        # or set in .env

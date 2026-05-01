@@ -76,8 +76,11 @@ a commercially consequential threat: agents harming their own deployers.
 We propose \emph{Owner-Harm}, a formal threat model with eight categories
 of deployer-directed damage. We quantify the resulting defense gap using
 the same compositional runtime gate across two authoritative benchmarks:
-100\% TPR / 0\% FPR on AgentHarm (generic criminal harm; 176 harmful
-scenarios), but only 3.7\% (1/27) on AgentDojo prompt-injection tasks
+100\% TPR / 0\% FPR on the AgentHarm validation slice (generic criminal
+harm; $n{=}36$ harmful $+$ 36 benign, ICLR 2025 split; full-176
+reproduction is exploratory under current models, see
+\S\ref{subsec:limitations}), but only 3.7\% (1/27) on AgentDojo
+prompt-injection tasks
 under the deterministic L1+L4 configuration in a worst-case
 ground-truth isolation test (a legacy L1+L3+L4 setup with a
 relay-hosted \texttt{qwen-turbo} backend reported 14.8\% but is no
@@ -127,9 +130,9 @@ Existing benchmarks do not formalize this victim model. AgentHarm
 against third parties. AgentDojo \cite{debenedetti2024agentdojo}
 evaluates prompt injection across realistic suites, but without an
 explicit owner-harm taxonomy. This omission is measurable: the same Nous
-runtime gate achieves 100\% TPR on AgentHarm, but only 3.7\% (1/27) on
-AgentDojo injection tasks under the deterministic L1+L4
-configuration.\footnote{An earlier L1+L3+L4 configuration with a
+runtime gate achieves 100\% TPR on the AgentHarm validation slice
+($n{=}36$+$36$, ICLR 2025 split), but only 3.7\% (1/27) on AgentDojo
+injection tasks under the deterministic L1+L4 configuration.\footnote{An earlier L1+L3+L4 configuration with a
 relay-hosted \texttt{qwen-turbo} L3 backend reported 14.8\% but is no
 longer reproducible; we therefore report the deterministic result as
 primary and the semantic configuration separately. See
@@ -614,8 +617,8 @@ gate is manipulated, but file artifacts retain detectable fingerprints.
     \toprule
     \textbf{Benchmark} & \textbf{Focus} & \textbf{Nous Safety} & \textbf{Generic LLM} & \textbf{Status} \\
     \midrule
-    AgentHarm          & Generic criminal  & 100\% / 0\%       & 62.7\% / 16.0\% & Validation \\
-    Owner-Harm (diag.) & Owner-directed    & 75.3\% / 3.3\%    & ---             & Diagnostic \\
+    AgentHarm (val, $n{=}36$+$36$) & Generic criminal  & 100\% / 0\%\textsuperscript{$\flat$} & 62.7\% / 16.0\% & Validation \\
+    Owner-Harm (diag., 300H+150B) & Owner-directed & 75.3\% / 3.3\% gate-only; \textbf{85.3\%} / \textbf{13.3\%} full L1--L4 & --- & Diagnostic \\
     AgentDojo          & Prompt injection  & \textbf{3.7\%} (legacy: 14.8\%\textsuperscript{$\star$})       & 59.3\% (16/27)  & Authoritative \\
     \bottomrule
   \end{tabular}
@@ -626,7 +629,12 @@ gate is manipulated, but file artifacts retain detectable fingerprints.
   (14.8\%, 4/27) separately. \textsuperscript{$\star$}The legacy
   semantic configuration is no longer reproducible
   (\S\ref{subsec:limitations}); we therefore use 3.7\% as the primary
-  Nous AgentDojo number for all gap computations below. Deterministic
+  Nous AgentDojo number for all gap computations below.
+  \textsuperscript{$\flat$}AgentHarm 100\% / 0\% is the L1+L2+L3
+  semantic-gate configuration on the 36+36 validation slice (Souly et
+  al.\ ICLR 2025); fresh full-176 reproduction under the current
+  DeepSeek-V4-pro endpoint is reported as exploratory in
+  \S\ref{subsec:limitations} (paper-killer audit task). Deterministic
   Nous gap = $|100\% - 3.7\%| = 96.3$ pp; Generic gap = $|62.7\% -
   59.3\%| = 3.4$ pp; difference attributable to symbolic rule
   generalization failure $= 92.9$ pp.
@@ -790,27 +798,25 @@ runtime fix described in the Appendix is independent of this issue.
     AgentDojo tasks and $N = 15$ AgentHarm scenarios. Conclusions are
     directionally consistent with theory but require full-benchmark
     replication before statistical significance can be claimed.
-  \item \textbf{Deployment-mode attribution}: The headline
-    deployment-mode result (\textbf{95.9\%/75.0\%} on AgentDojo with
-    L1 Datalog, \textbf{96.3\%/75.0\%} with L1+L3+L4 deepseek) measures
-    the \emph{composed} system: a GLM-4.6 agent backbone whose
-    instruction-tuned refusal already absorbs $95.2\%$ of injections
-    (Table~\ref{tab:deployment_ablation} baseline row), plus the Nous
-    gate. The gate's \emph{marginal} contribution on AgentDojo
-    deployment is therefore $+0.8$ pp (L1 alone) to $+1.1$ pp (full
-    L1+L3+L4 stack). We report deployment numbers as a deployment
-    measurement, not as a per-layer attribution; per-layer attribution
-    must be read from the AgentDojo \emph{isolation} table
-    (\S\ref{subsec:agentdojo}, $3.7\%$ deterministic L1+L4 isolation
-    TPR), the Owner-Harm held-out diagnostic
-    (\S\ref{subsec:ohb}, $75.3\% \to 85.3\%$ TPR with $+10$ pp from L4),
-    and the Hijacking layer-overlap analysis
-    (Table~\ref{tab:hijacking}, gate-only / verifier-only / both /
-    neither $= 11/30/15/4$). This separation is structural to our
-    claim: deployment numbers describe what users would see, while
-    isolation and held-out numbers describe what the gate alone is
-    doing. Confounding the two would inflate the apparent gate
-    contribution.
+  \item \textbf{Deployment-mode attribution}: The headline deployment
+    results ($95.9\%/96.3\%$ TPR with $75.0\%$ utility) measure the
+    \emph{composed} GLM-4.6-agent-plus-Nous-gate system; the gate's
+    \emph{marginal} contribution is only $+0.8$ to $+1.1$ pp because
+    the GLM-4.6 backbone already absorbs $95.2\%$ of injections
+    (Table~\ref{tab:deployment_ablation} baseline). Per-layer
+    attribution should be read from the AgentDojo isolation
+    ($3.7\%$ L1+L4, \S\ref{subsec:agentdojo}), the Owner-Harm held-out
+    diagnostic ($75.3\% \to 85.3\%$ TPR, \S\ref{subsec:ohb}), and the
+    Hijacking layer-overlap (11/30/15/4,
+    Table~\ref{tab:hijacking}); these isolate gate behavior independent
+    of the agent. The +0.8 / +1.1 pp deltas are composition
+    measurements, not statistically calibrated marginal estimates.
+  \item \textbf{AgentHarm reproducibility regime}: The headline 100\%
+    TPR / 0\% FPR on AgentHarm is the L1+L2+L3 semantic-gate result on
+    the validation slice ($n{=}36$ + 36, ICLR 2025 split). Full-176
+    reproduction under the current \texttt{deepseek-v4-pro}-routed L3
+    endpoint is treated as future work (similar Erratum scope as the
+    AgentDojo L1+L3+L4 entry above).
 \end{enumerate}
 
 % ================================================================
@@ -827,22 +833,18 @@ Greshake et al.\ \cite{greshake2023indirect} and standardized by AgentDojo
 \cite{camel2025} is complementary through capability-aware information
 flow.
 
-Runtime and policy-enforcement systems include NeMo Guardrails
-\cite{rebedea2023nemoguardrails}, Llama Guard \cite{inan2023llamaguard},
-ShieldGemma \cite{zeng2024shieldgemma}, R2Guard \cite{chen2024r2guard},
-AgentMonitor \cite{yu2024agentmonitor}, BIPIA \cite{yi2023bipia},
-Guardrails AI \cite{guardrailsai2024}, verifiable tool safety
-\cite{doshi2026verifiable}, PCAS \cite{palumbo2026pcas}, AgentSpec
-\cite{wang2026agentspec}, Pro2Guard \cite{he2025pro2guard}, solver-aided
-verification \cite{roy2026solveraided}, ShieldAgent
-\cite{chen2025shieldagent}, GuardAgent \cite{xiang2024guardagent}, and
-TrustAgent \cite{hua2024trustagent}. These systems improve enforcement
-machinery; our claim is orthogonal: owner context ($\RO$, $\BO$,
-$\AuthO$) must be an input to such machinery. Exfiltration and covert
-channel work, including ASCII smuggling via Copilot
-\cite{rehberger2024copilot}, PromptArmor's Slack disclosure
+Runtime policy enforcement spans output filters
+\cite{rebedea2023nemoguardrails,inan2023llamaguard,zeng2024shieldgemma},
+runtime guards
+\cite{chen2024r2guard,yu2024agentmonitor,yi2023bipia,guardrailsai2024},
+verifiable agent safety
+\cite{doshi2026verifiable,palumbo2026pcas,wang2026agentspec,he2025pro2guard,roy2026solveraided,chen2025shieldagent,xiang2024guardagent,hua2024trustagent}.
+These improve enforcement machinery; our claim is orthogonal: owner
+context ($\RO$, $\BO$, $\AuthO$) must be an input to such machinery.
+Concrete attack evidence comes from Copilot ASCII smuggling
+\cite{rehberger2024copilot}, the PromptArmor Slack disclosure
 \cite{promptarmor2024slack}, and adversarial-agent analysis
-\cite{abdelnabi2024llmagent}, provides concrete attack evidence.
+\cite{abdelnabi2024llmagent}.
 
 % ================================================================
 \section{Conclusion}
@@ -876,7 +878,7 @@ the anonymized supplementary code repository (\texttt{REPRODUCIBILITY.md}
 in the supplementary materials). The deterministic claims (LSVJ-S compile
 gate, Owner-Harm v3 full L1--L4, Hijacking layer overlap) require no
 API key and complete in under one minute on commodity hardware. The
-LLM-bound claims (AgentDojo isolation/deployment, AgentHarm 100\% TPR)
+LLM-bound claims (AgentDojo deployment, AgentHarm validation 100\% TPR)
 require the corresponding subscription endpoint.
 
 \begin{table}[!h]
@@ -903,7 +905,7 @@ require the corresponding subscription endpoint.
       & \texttt{bash benchmarks/agentdojo\_adapter/} \texttt{launch-baseline-l1-rerun.sh} & GLM & $\sim$5h & \$0 \\
     AgentDojo deployment 96.3\% L1+L3+L4 deepseek (\S\ref{subsec:deployment_mode})
       & \texttt{bash benchmarks/agentdojo\_adapter/} \texttt{launch-l3-deepseek-repro.sh} & DeepSeek & $\sim$5h & $\sim$\$15 \\
-    AgentHarm L1+L4: 100\% TPR (\S\ref{subsec:cross})
+    AgentHarm L1+L2+L3 val ($n{=}36$+$36$): 100\% TPR / 0\% FPR (\S\ref{subsec:cross})
       & \texttt{python scripts/run\_agentharm\_threelayer\_v2.py} & DeepSeek & $\sim$1h & $\sim$\$10 \\
     \bottomrule
   \end{tabular}
@@ -1323,7 +1325,7 @@ verification from a ``statute'' (pre-authored policy) to a ``case-law''
 \item {\bf Limitations}
   \item[] Question: Does the paper discuss the limitations of the work performed by the authors?
   \item[] Answer: \answerYes{}
-  \item[] Justification: \S\ref{subsec:limitations} explicitly enumerates seven limitations including the post-hoc nature of the Owner-Harm Benchmark, single-annotator labeling, AgentDojo ceiling without goal context, ground-truth-mode evaluation, C2 over-triggering, and SSDG pilot scale.
+  \item[] Justification: \S\ref{subsec:limitations} explicitly enumerates nine limitations including the post-hoc nature of the Owner-Harm Benchmark, single-annotator labeling, AgentDojo ceiling without goal context, ground-truth-mode evaluation, C2 over-triggering, SSDG pilot scale, deployment-mode-vs-gate-marginal attribution, and the AgentHarm validation-vs-full-176 reproducibility regime.
 
 \item {\bf Theory assumptions and proofs}
   \item[] Question: For each theoretical result, does the paper provide the full set of assumptions and a complete (and correct) proof?
@@ -1338,7 +1340,7 @@ verification from a ``statute'' (pre-authored policy) to a ``case-law''
 \item {\bf Open access to data and code}
   \item[] Question: Does the paper provide open access to the data and code?
   \item[] Answer: \answerNo{}
-  \item[] Justification: AgentDojo and AgentHarm are public benchmarks. The Nous system code and Owner-Harm Benchmark labels will be released upon acceptance under a permissive license (MIT/Apache 2.0); reviewers can request access to an anonymized code drop during review.
+  \item[] Justification: AgentDojo and AgentHarm are public benchmarks. The Nous system code and Owner-Harm Benchmark labels are licensed under Apache 2.0 and made available to reviewers as an anonymized supplementary code drop; the public release will follow the same license.
 
 \item {\bf Experimental setting/details}
   \item[] Question: Does the paper specify all the training and test details necessary to understand the results?
@@ -1378,7 +1380,7 @@ verification from a ``statute'' (pre-authored policy) to a ``case-law''
 \item {\bf New assets}
   \item[] Question: Are new assets introduced in the paper well documented?
   \item[] Answer: \answerYes{}
-  \item[] Justification: The Owner-Harm Benchmark structure (8 categories $\times$ harmful + benign scenarios; 450 total) is described in \S\ref{subsec:ohb}. License will be assigned at release.
+  \item[] Justification: The Owner-Harm Benchmark structure (8 categories $\times$ harmful + benign scenarios; 450 total) is described in \S\ref{subsec:ohb}. The benchmark and the Nous gate code are released under Apache License 2.0 (anonymized supplementary code drop during review).
 
 \item {\bf Crowdsourcing and research with human subjects}
   \item[] Question: For crowdsourcing experiments and research with human subjects, does the paper include the full text of instructions given to participants and screenshots, if applicable, as well as details about compensation?
