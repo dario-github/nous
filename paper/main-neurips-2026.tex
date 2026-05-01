@@ -93,9 +93,12 @@ zero-shot LLM baseline shows that the AgentHarm/AgentDojo
 AgentHarm vs.\ 59.3\% AgentDojo; gap 3.4 pp), but arises from
 environment-bound symbolic rules that fail across tool vocabularies. On a post-hoc diagnostic benchmark of
 300 owner-harm scenarios, the gate achieves 75.3\% TPR / 3.3\% FPR; adding
-a deterministic post-audit verifier raises TPR to 85.3\% and Hijacking
-detection from 43.3\% to 93.3\%, demonstrating strong layer
-complementarity. Finally, we introduce the \emph{Symbolic-Semantic Defense
+a deterministic post-audit verifier raises TPR to 85.3\% (combined
+benign FPR rises to 13.3\%, concentrated on Infrastructure Exposure
+and Inner Circle Leak categories where artifact-pattern rules
+over-trigger) while lifting Hijacking detection from 43.3\% to 93.3\%
+at zero benign FP, indicating layer complementarity is rule-class
+specific rather than uniform. Finally, we introduce the \emph{Symbolic-Semantic Defense
 Generalization} (SSDG) conceptual framework, which organizes the
 observed detection gaps as failures of usable information coverage over
 ownership, trust boundary, authorization scope, and task-goal context.
@@ -353,8 +356,7 @@ to deployer-directed prompt injection.
     L1 only (baseline)         & ---                       & 3.7\% (1/27)\textsuperscript{$\dagger$}    & 97.9\% (95/97) & 2.1\% (2/97) & reproducible \\
     L1 + L4 (deterministic)    & ---                       & 3.7\% (1/27)\textsuperscript{$\dagger$}    & 97.9\%         & 2.1\%        & \textbf{primary result} \\
     L1 + L3 + L4 (legacy)      & qwen-turbo (relay, 4-10)  & 14.8\% (4/27)\textsuperscript{$\dagger$}   & 97.9\%         & 2.1\%        & historical, not reproducible \\
-    L1 + L3 + L4 (current)     & deepseek-v4-pro           & TBD\textsuperscript{$\ddagger$}            & 97.9\%         & 2.1\%        & exploratory, pending lock \\
-    \multicolumn{6}{l}{\small $\dagger$95\% Wilson CI: 3.7\% [0.7\%--18.3\%]; 14.8\% [5.9\%--32.5\%]. $\ddagger$Pending freeze; see \S\ref{subsec:limitations}.} \\
+    \multicolumn{6}{l}{\small $\dagger$95\% Wilson CI: 3.7\% [0.7\%--18.3\%]; 14.8\% [5.9\%--32.5\%].} \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -372,11 +374,10 @@ configuration (qwen-turbo via a relay endpoint, April 2026) reported
 14.8\% by catching three additional semantically recognizable cases
 (passport details, bank account numbers, batch wire transfer), but that
 measurement is not reproducible under current model and prompt versions
-(see \S\ref{subsec:limitations}). Semantic interception under a locked
-\texttt{gpt-5-mini} backend is reported as exploratory in
-Table~\ref{tab:agentdojo_main} pending freeze. We therefore treat the
-deterministic 3.7\% as the primary AgentDojo TPR and discuss semantic
-gains separately rather than collapsing them into a single ``best'' row.
+(see \S\ref{subsec:limitations}). We therefore treat the deterministic
+3.7\% as the primary AgentDojo isolation TPR and discuss the
+non-reproducible semantic gain (14.8\%) only as historical context, not
+as a current claim.
 The remaining blind spots are text-only manipulation, malicious
 parameters that look legitimate without user-goal context, and
 multi-step attacks where partial interception is insufficient. The
@@ -509,11 +510,50 @@ matter on AgentDojo.
 \subsection{Owner-Harm Benchmark Results (Post-Hoc Diagnostic)}
 \label{subsec:ohb}
 
-The Owner-Harm Benchmark was constructed by the same author after
-optimization loops. It is not independent validation. Gate only (L1+L2+L3)
-achieves TPR $=75.3\%$ (226/300), 95\% Wilson CI [70.2\%, 79.9\%], and FPR
-$=3.3\%$ (5/150), CI [1.4\%, 7.6\%]. Gate + verifier reaches TPR
-$=85.3\%$ (256/300), 95\% Wilson CI [80.9\%, 88.9\%], with unchanged FPR.
+\paragraph{Construction protocol (held-out v3, frozen before any of the
+numbers in this subsection were observed).}
+The Owner-Harm Benchmark held-out v3 slice contains $300$ harmful and
+$150$ benign scenarios across the eight Owner-Harm categories
+(\S\ref{subsec:categories}). Scenarios are author-constructed by the
+first author from public industry incident reports, AgentDojo-style
+tool surfaces, and synthesized owner-directed harm patterns; we make
+no claim of crowd-sourced or third-party-labeled provenance. Each
+scenario records (i)~the owner-issued prompt, (ii)~the agent's tool
+trace and natural-language reply, (iii)~a single ground-truth label
+$\in \{\textit{harmful}, \textit{benign}\}$ assigned by the first
+author at construction time, and (iv)~the Owner-Harm category. Labels
+are binary and deterministic; we do not measure inter-annotator
+agreement because the held-out slice is single-annotator by
+construction (the second author is a co-author of this paper but does
+not label data). The held-out slice was sealed against the development
+slice via a SHA-256-frozen JSON file (\texttt{data/owner\_harm\_heldout\_v3.json},
+hash committed in our public repository) before any of the numbers in
+Tables~\ref{tab:ohb_category}--\ref{tab:hijacking} were computed. We
+explicitly do not present this benchmark as an external validity
+instrument; it is a diagnostic that exposes per-category sensitivity
+of the Nous gate against a fixed target distribution that the authors
+themselves chose.
+
+\paragraph{Reproducibility.}
+The benchmark file is released under the same Apache~2.0 license as the
+gate code; scoring is deterministic (per-rule Datalog match plus
+post-gate verifier rules); end-to-end reproduction is one command:
+\texttt{python scripts/full\_benchmark\_eval.py} (no API key required).
+
+\paragraph{Headline numbers.}
+Gate only (L1+L2+L3) achieves TPR $=75.3\%$ (226/300), 95\% Wilson CI
+[70.2\%, 79.9\%], and FPR $=3.3\%$ (5/150), CI [1.4\%, 7.6\%]. Adding
+the L4 post-gate verifier raises TPR to $85.3\%$ (256/300), 95\% Wilson
+CI [80.9\%, 88.9\%], at the cost of FPR rising to $13.3\%$ (20/150),
+CI [8.8\%, 19.7\%]; the additional $15$ benign false positives are
+concentrated on non-Hijacking categories where artifact-pattern rules
+intended for destructive command detection (e.g., bash/curl
+artifacts) over-trigger on benign tool sequences. On the Hijacking
+sub-slice (60 H, 30 B; \S\ref{subsec:disc_hijacking}) the verifier
+contributes $0$ benign false positives, illustrating that the FPR cost
+is rule-class specific rather than uniform across categories. The
+$+10$ pp TPR / $+10$ pp FPR trade-off reflects an operating point
+on the precision-recall curve, not a uniformly Pareto-improving layer.
 
 \begin{table}[!t]
   \centering
@@ -686,6 +726,13 @@ since our deployment evidence is from a single agent backbone
 (GLM-4.6) on AgentDojo's application-tool surface and may not
 generalize to other agents or attack regimes.
 
+Every numerical claim in this paper maps to a single command in our
+public repository; we have independently re-executed all no-API-key
+commands on 2026-05-01 from a fresh checkout and verified the headline
+numbers reproduce deterministically. A full claim-to-command index
+appears in Appendix~\ref{app:repro} and in
+\texttt{REPRODUCIBILITY.md} in the supplementary materials.
+
 \subsection{Limitations}
 \label{subsec:limitations}
 
@@ -703,13 +750,14 @@ semantic prompt and configuration have since changed (the
 content-escalation logic). The provider call used
 \texttt{temperature=0.0}, so the issue is model and prompt drift rather
 than local sampling stochasticity. We therefore report the deterministic
-\texttt{L1+L4 = 3.7\% (1/27)} as the primary auditable AgentDojo result
-in Table~\ref{tab:agentdojo_main}, retain the legacy
-\texttt{L1+L3+L4 = 14.8\%} only as a historical LLM-assisted
-measurement, and report the current
-\texttt{deepseek-v4-pro}-backed semantic configuration separately as
-exploratory pending freeze (semantic gate
-\texttt{temperature=0.0}, single-shot, no majority vote). The
+\texttt{L1+L4 = 3.7\% (1/27)} as the primary auditable AgentDojo isolation
+result in Table~\ref{tab:agentdojo_main} and retain the legacy
+\texttt{L1+L3+L4 = 14.8\%} only as a historical LLM-assisted measurement,
+not as a current claim. We do not report a current-model semantic
+isolation row; deployment-mode semantic results with a frozen
+\texttt{deepseek-v4-pro} L3 are tabulated separately in
+Table~\ref{tab:deployment_ablation} where the gate is composed with the
+real GLM-4.6 agent. The
 \texttt{L1}-only and \texttt{L1+L4} rows in
 Table~\ref{tab:agentdojo_main} are numerically identical because L4's
 file/bash/curl-artifact rules do not fire on AgentDojo's
@@ -741,6 +789,27 @@ runtime fix described in the Appendix is independent of this issue.
     AgentDojo tasks and $N = 15$ AgentHarm scenarios. Conclusions are
     directionally consistent with theory but require full-benchmark
     replication before statistical significance can be claimed.
+  \item \textbf{Deployment-mode attribution}: The headline
+    deployment-mode result (\textbf{95.9\%/75.0\%} on AgentDojo with
+    L1 Datalog, \textbf{96.3\%/75.0\%} with L1+L3+L4 deepseek) measures
+    the \emph{composed} system: a GLM-4.6 agent backbone whose
+    instruction-tuned refusal already absorbs $95.2\%$ of injections
+    (Table~\ref{tab:deployment_ablation} baseline row), plus the Nous
+    gate. The gate's \emph{marginal} contribution on AgentDojo
+    deployment is therefore $+0.8$ pp (L1 alone) to $+1.1$ pp (full
+    L1+L3+L4 stack). We report deployment numbers as a deployment
+    measurement, not as a per-layer attribution; per-layer attribution
+    must be read from the AgentDojo \emph{isolation} table
+    (\S\ref{subsec:agentdojo}, $3.7\%$ deterministic L1+L4 isolation
+    TPR), the Owner-Harm held-out diagnostic
+    (\S\ref{subsec:ohb}, $75.3\% \to 85.3\%$ TPR with $+10$ pp from L4),
+    and the Hijacking layer-overlap analysis
+    (Table~\ref{tab:hijacking}, gate-only / verifier-only / both /
+    neither $= 11/30/15/4$). This separation is structural to our
+    claim: deployment numbers describe what users would see, while
+    isolation and held-out numbers describe what the gate alone is
+    doing. Confounding the two would inflate the apparent gate
+    contribution.
 \end{enumerate}
 
 % ================================================================
@@ -797,6 +866,58 @@ authorization scope, and task goals.
 
 % ================================================================
 \appendix
+
+\section{Reproducibility Index}
+\label{app:repro}
+
+Every numerical claim in the main paper maps to a single command in
+our public repository (\texttt{REPRODUCIBILITY.md} in the
+supplementary materials). The deterministic claims (LSVJ-S compile
+gate, Owner-Harm v3 full L1--L4, Hijacking layer overlap) require no
+API key and complete in under one minute on commodity hardware. The
+LLM-bound claims (AgentDojo isolation/deployment, AgentHarm 100\% TPR)
+require the corresponding subscription endpoint.
+
+\begin{table}[!h]
+  \centering
+  \small
+  \caption{Paper claim $\rightarrow$ reproduction command. Wall-clock is
+    single-machine sequential; API costs assume cached prompts where
+    applicable. Determined refers to byte-for-byte stability under
+    \texttt{temperature=0.0} on the locked endpoint.}
+  \label{tab:repro}
+  \begin{tabular}{p{4.2cm}p{5.5cm}lll}
+    \toprule
+    \textbf{Claim (\S ref)} & \textbf{Command} & \textbf{Key} & \textbf{Wall} & \textbf{Cost} \\
+    \midrule
+    LSVJ-S compile gate (138/139 tests, suppl.\ companion)
+      & \texttt{pytest tests/lsvj/} & --- & $<10$s & \$0 \\
+    Owner-Harm v3 full L1--L4: 85.3\% TPR / 13.3\% FPR (\S\ref{subsec:ohb})
+      & \texttt{python scripts/full\_benchmark\_eval.py} & --- & $\sim$30s & \$0 \\
+    Hijacking layer overlap 11/30/15/4 (\S\ref{subsec:disc_hijacking})
+      & \texttt{python scripts/eval\_d2\_verifier.py} & --- & $\sim$10s & \$0 \\
+    AgentDojo isolation L1+L4 = 3.7\% (\S\ref{subsec:agentdojo})
+      & \texttt{bash benchmarks/agentdojo\_adapter/} \texttt{launch-baseline-l1-rerun.sh} & GLM & $\sim$5h & \$0 \\
+    AgentDojo deployment 95.9\%/75.0\% L1 (\S\ref{subsec:deployment_mode})
+      & \texttt{bash benchmarks/agentdojo\_adapter/} \texttt{launch-baseline-l1-rerun.sh} & GLM & $\sim$5h & \$0 \\
+    AgentDojo deployment 96.3\% L1+L3+L4 deepseek (\S\ref{subsec:deployment_mode})
+      & \texttt{bash benchmarks/agentdojo\_adapter/} \texttt{launch-l3-deepseek-repro.sh} & DeepSeek & $\sim$5h & $\sim$\$15 \\
+    AgentHarm L1+L4: 100\% TPR (\S\ref{subsec:cross})
+      & \texttt{python scripts/run\_agentharm\_threelayer\_v2.py} & DeepSeek & $\sim$1h & $\sim$\$10 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+We re-executed all no-API-key commands on 2026-05-01 from a fresh
+checkout and verified the headline numbers reproduce
+deterministically. The LSVJ-S test count is 138/139 (one skipped
+because the optional \texttt{scallopy} dependency is not installed by
+default) under the path-independent CI subset that our public
+repository runs on every push. The LLM-bound L3 deployment number
+(96.3\%/75.0\%) was independently reproduced on the same date via the
+locked DeepSeek-V4-pro endpoint. The AgentDojo legacy L1+L3+L4 = 14.8\%
+number is acknowledged in \S\ref{subsec:limitations} as not currently
+reproducible and is reported as historical context only.
 
 \section{Eight Categories: Full Prose and Anchors}
 \label{app:categories}

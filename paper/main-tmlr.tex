@@ -763,32 +763,60 @@ distance, with explicit model-class realizability assumption. This is
 % =============================================================
 \section{Empirical Motivation}\label{sec:empirical}
 
-\paragraph{Three failed audit attempts (Table~\ref{tab:empirical-fails}).}
-Three of our prior internal projects attempted to certify reasoning
-faithfulness from black-box transcripts and failed in three different
-modes. We recast them here as motivating examples; none validate
-\Cref{thm:transcript-indist}.
+\paragraph{Two failed audit attempts (Table~\ref{tab:empirical-fails}).}
+Two of our prior internal projects attempted to certify reasoning
+faithfulness from black-box transcripts and failed in two orthogonal
+ways: an LLM-judge ordinal scoring path
+(CCCM) failed an inter-rater reliability gate even with a frontier judge panel,
+and a deterministic schema-match path (ASP) failed a known-groups validity
+test on a metamorphic battery. We recast them here as motivating
+examples; neither validates \Cref{thm:transcript-indist}.
 
 \begin{table}[h]
 \centering\small
-\begin{tabular}{p{1.5cm}p{3.5cm}p{3.5cm}p{4cm}}
+\begin{tabular}{p{1.7cm}p{3.4cm}p{3.6cm}p{4cm}}
 \toprule
 Case & What was attempted & What the data shows & Honest interpretation \\
 \midrule
-CCCM v1 & LLM-judge ordinal scoring of mutated reasoning traces &
-  Inter-judge Fleiss $\kappa = 0.06$ &
-  Judge unreliability motivates skepticism about transcript-based faithfulness claims. \\
-ASP & Deterministic action-form sensitivity across canonical mutations &
-  Cliff's $\delta_{F\text{--}RR} = -0.222$ &
-  Action-form sensitivity failed to track the intended latent property. \\
-V3 frontier & 7-variant metamorphic battery + 3-judge frontier ensemble &
-  Pooled 44\% pairwise agreement &
-  Stronger judges did not resolve the gap. \\
+CCCM frontier panel\footnote{An earlier weak-panel configuration
+(\texttt{glm-4.5} + \texttt{claude-haiku-3.5} + \texttt{gemini-2.0-flash})
+reported $\kappa = 0.06$; the frontier-panel replay on 2026-05-01
+supersedes it because the weak panel had silent gemini-3.1-pro reasoning-token
+starvations under un-patched \texttt{max\_tokens=1500}. Both
+configurations yielded $\kappa$ below the pre-registered $0.5$ threshold.} &
+LLM-judge ordinal scoring (3-judge ensemble: GPT-5.5 + Claude Opus 4.7
++ Gemini 3.1 Pro) of mutated reasoning traces, locked rubric, $n = 10$
+R-Judge personal-agent records (16 eligible tuples) &
+min Fleiss $\kappa = 0.464$ (entity-swap $\kappa = 0.811$,
+premise-remove $\kappa = 0.464$); 2 silent content-moderation refusals
+on harm-content prompts &
+Even frontier-panel judges fail an inter-rater reliability gate
+($\kappa < 0.5$); rubric ambiguity dominates on partial-tracking
+mutations. \\
+ASP (deterministic) & Schema-match action sensitivity across a
+7-variant metamorphic battery (28 R-Judge tuples $\times$ 7 variants $=$
+196 items): F (faithful), FP (paraphrase), CE (compressed), DP
+(decorative-padded), PI (premise-invalidated), WC (wrong-context), RR
+(random text); pre-registered ordering $F \approx FP > CE \geq DP > PI
+\approx WC \approx RR$ &
+Aggregate Spearman $\rho = 0.264$ (below pre-registered abort
+threshold $0.3$); pairwise $F > \mathrm{RR}$ accuracy
+$= 0/28 = 0\%$ (vs.\ pre-registered threshold $\geq 70\%$); Cliff's
+$\delta_{F\text{--}RR} = -0.18$ &
+Schema-match measures whether the action shifted, not whether it shifted in
+the correct semantic direction; random reasoning satisfies ``shifted''
+trivially, scoring identically high to faithful reasoning. \\
 \bottomrule
 \end{tabular}
-\caption{Three failed black-box audit attempts. None estimate $\varepsilon$.
-None validate \Cref{thm:transcript-indist}. All motivate why a formal
-access-model boundary is useful.}
+\caption{Two failed black-box audit attempts (CCCM ordinal LLM-judge;
+ASP deterministic schema-match). Both abort under pre-registered
+thresholds across the same 7-variant metamorphic battery; failure
+modes are orthogonal (judge unreliability vs.\ direction-blind
+schema-match). Neither estimates $\varepsilon$ nor validates
+\Cref{thm:transcript-indist}; both motivate why a formal access-model
+boundary is useful. Numbers are from a 2026-05-01 replay with sha-256-frozen
+artifacts in the supplementary repository under
+\texttt{cases/cccm/CCCM-ABORT-REPORT.md}.}
 \label{tab:empirical-fails}
 \end{table}
 
