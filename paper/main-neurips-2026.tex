@@ -76,10 +76,11 @@ a commercially consequential threat: agents harming their own deployers.
 We propose \emph{Owner-Harm}, a formal threat model with eight categories
 of deployer-directed damage. We quantify the resulting defense gap using
 the same compositional runtime gate across two authoritative benchmarks:
-100\% TPR / 0\% FPR on the AgentHarm validation slice (generic criminal
-harm; $n{=}36$ harmful $+$ 36 benign, ICLR 2025 split; full-176
-reproduction is exploratory under current models, see
-\S\ref{subsec:limitations}), but only 3.7\% (1/27) on AgentDojo
+97.7\% TPR / 2.3\% FPR on AgentHarm (full $N{=}176$+$176$,
+\cite{andriushchenko2025agentharm} ICLR 2025 \texttt{test\_public}
+split, L1+L2+L3 with locked \texttt{deepseek-chat}, reproduced
+2026-05-02; the L3 semantic gate adds $+38.6$ pp TPR over the L1+L2
+deterministic baseline of 59.1\%), but only 3.7\% (1/27) on AgentDojo
 prompt-injection tasks
 under the deterministic L1+L4 configuration in a worst-case
 ground-truth isolation test (a legacy L1+L3+L4 setup with a
@@ -130,9 +131,10 @@ Existing benchmarks do not formalize this victim model. AgentHarm
 against third parties. AgentDojo \cite{debenedetti2024agentdojo}
 evaluates prompt injection across realistic suites, but without an
 explicit owner-harm taxonomy. This omission is measurable: the same Nous
-runtime gate achieves 100\% TPR on the AgentHarm validation slice
-($n{=}36$+$36$, ICLR 2025 split), but only 3.7\% (1/27) on AgentDojo
-injection tasks under the deterministic L1+L4 configuration.\footnote{An earlier L1+L3+L4 configuration with a
+runtime gate achieves 97.7\% TPR / 2.3\% FPR on AgentHarm full
+$N{=}176$+$176$ (L1+L2+L3 with \texttt{deepseek-chat}), but only
+3.7\% (1/27) on AgentDojo injection tasks under the deterministic L1+L4
+configuration.\footnote{An earlier L1+L3+L4 configuration with a
 relay-hosted \texttt{qwen-turbo} L3 backend reported 14.8\% but is no
 longer reproducible; we therefore report the deterministic result as
 primary and the semantic configuration separately. See
@@ -619,7 +621,7 @@ gate is manipulated, but file artifacts retain detectable fingerprints.
     \toprule
     \textbf{Benchmark} & \textbf{Focus} & \textbf{Nous Safety} & \textbf{Generic LLM} & \textbf{Status} \\
     \midrule
-    AgentHarm (val, $n{=}36$+$36$) & Generic criminal  & 100\% / 0\%\textsuperscript{$\flat$} & 62.7\% / 16.0\% & Validation \\
+    AgentHarm (full, $N{=}176$+$176$) & Generic criminal  & \textbf{97.7\% / 2.3\%}\textsuperscript{$\flat$} & 62.7\% / 16.0\% & Authoritative \\
     Owner-Harm (diag., 300H+150B) & Owner-directed & 75.3\% / 3.3\% gate-only; \textbf{85.3\%} / \textbf{13.3\%} full L1--L4 & --- & Diagnostic \\
     AgentDojo          & Prompt injection  & \textbf{3.7\%} (legacy: 14.8\%\textsuperscript{$\star$})       & 59.3\% (16/27)  & Authoritative \\
     \bottomrule
@@ -632,14 +634,15 @@ gate is manipulated, but file artifacts retain detectable fingerprints.
   semantic configuration is no longer reproducible
   (\S\ref{subsec:limitations}); we therefore use 3.7\% as the primary
   Nous AgentDojo number for all gap computations below.
-  \textsuperscript{$\flat$}AgentHarm 100\% / 0\% is the L1+L2+L3
-  semantic-gate configuration on the 36+36 validation slice (Souly et
-  al.\ ICLR 2025); fresh full-176 reproduction under the current
-  DeepSeek-V4-pro endpoint is reported as exploratory in
-  \S\ref{subsec:limitations} (paper-killer audit task). Deterministic
-  Nous gap = $|100\% - 3.7\%| = 96.3$ pp; Generic gap = $|62.7\% -
-  59.3\%| = 3.4$ pp; difference attributable to symbolic rule
-  generalization failure $= 92.9$ pp.
+  \textsuperscript{$\flat$}AgentHarm 97.7\% / 2.3\% is the L1+L2+L3
+  semantic-gate configuration on the full $N{=}176$+$176$ benchmark
+  (\cite{andriushchenko2025agentharm} ICLR 2025 \texttt{test\_public}
+  split), reproduced 2026-05-02 with locked \texttt{deepseek-chat}
+  endpoint at \texttt{temperature=0.0}; the L1-only deterministic
+  baseline alone gives 59.1\% / 52.3\%, so L3 contributes $+38.6$ pp
+  TPR with $-50.0$ pp FPR. Nous gap = $|97.7\% - 3.7\%| = 94.0$ pp;
+  Generic gap = $|62.7\% - 59.3\%| = 3.4$ pp; difference attributable
+  to layer-specific generalization failure $= 90.6$ pp.
 \end{table}
 
 The 100\% $\to$ 3.7\% deterministic gap (and the related 100\% $\to$
@@ -655,10 +658,11 @@ tool vocabulary rather than to portable harm semantics.
 \label{subsec:experiment_summary}
 
 In the controlled gap-attribution experiment, the generic LLM's small
-3.4 pp gap contrasts with Nous's deterministic 96.3 pp gap (and legacy
-semantic 85.2 pp gap, no longer reproducible), showing that symbolic rule
-generalization failure, not intrinsic category difficulty, drives the
-benchmark discrepancy. In SSDG pilots, raw user-goal injection reduced
+3.4 pp gap contrasts with Nous's 94.0 pp gap (97.7\% AgentHarm full
+$N{=}176{+}176$ vs.\ 3.7\% AgentDojo, locked \texttt{deepseek-chat} L3;
+the legacy 85.2 pp gap under \texttt{qwen-turbo} L3 is no longer
+reproducible), showing that layer-specific generalization failure, not
+intrinsic category difficulty, drives the benchmark discrepancy. In SSDG pilots, raw user-goal injection reduced
 AgentDojo legacy-semantic TPR from 14.8\% to 8.3\%, rejecting the naive
 context-injection prediction and showing that structured goal-action
 comparison is required (this pilot was run under the legacy
@@ -812,12 +816,6 @@ runtime fix described in the Appendix is independent of this issue.
     Table~\ref{tab:hijacking}); these isolate gate behavior independent
     of the agent. The +0.8 / +1.1 pp deltas are composition
     measurements, not statistically calibrated marginal estimates.
-  \item \textbf{AgentHarm reproducibility regime}: The headline 100\%
-    TPR / 0\% FPR on AgentHarm is the L1+L2+L3 semantic-gate result on
-    the validation slice ($n{=}36$ + 36, ICLR 2025 split). Full-176
-    reproduction under the current \texttt{deepseek-v4-pro}-routed L3
-    endpoint is treated as future work (similar Erratum scope as the
-    AgentDojo L1+L3+L4 entry above).
 \end{enumerate}
 
 % ================================================================
@@ -879,7 +877,7 @@ the anonymized supplementary code repository (\texttt{REPRODUCIBILITY.md}
 in the supplementary materials). The deterministic claims (LSVJ-S compile
 gate, Owner-Harm v3 full L1--L4, Hijacking layer overlap) require no
 API key and complete in under one minute on commodity hardware. The
-LLM-bound claims (AgentDojo deployment, AgentHarm validation 100\% TPR)
+LLM-bound claims (AgentDojo deployment, AgentHarm full 97.7\% TPR)
 require the corresponding subscription endpoint.
 
 \begin{table}[!h]
@@ -906,8 +904,8 @@ require the corresponding subscription endpoint.
       & \texttt{bash benchmarks/agentdojo\_adapter/} \texttt{launch-baseline-l1-rerun.sh} & GLM & $\sim$5h & \$0 \\
     AgentDojo deployment 96.3\% L1+L3+L4 deepseek (\S\ref{subsec:deployment_mode})
       & \texttt{bash benchmarks/agentdojo\_adapter/} \texttt{launch-l3-deepseek-repro.sh} & DeepSeek & $\sim$5h & $\sim$\$15 \\
-    AgentHarm L1+L2+L3 val ($n{=}36$+$36$): 100\% TPR / 0\% FPR (\S\ref{subsec:cross})
-      & \texttt{python scripts/run\_agentharm\_threelayer\_v2.py} & DeepSeek & $\sim$1h & $\sim$\$10 \\
+    AgentHarm L1+L2+L3 full ($N{=}176$+$176$): 97.7\% TPR / 2.3\% FPR (\S\ref{subsec:cross})
+      & \texttt{OPENAI\_API\_KEY=\$DEEPSEEK\_KEY} \texttt{NOUS\_BASE\_URL=https://api.deepseek.com/v1} \texttt{python scripts/run\_agentharm\_threelayer\_v2.py} & DeepSeek & $\sim$36 min & $\sim$\$3 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -1044,10 +1042,10 @@ users, or society; none formally model the deploying owner as the victim.
 \section{Controlled Experiment: Full Detail}
 \label{app:control}
 
-The 96.3 pp gap between AgentHarm L1+L2+L3-validation
-(100\%, val $n$=36+36) and AgentDojo L1+L4-deterministic (3.7\%, full
-27-task isolation) --- and the related 85.2 pp gap under the
-no-longer-reproducible legacy AgentDojo L1+L3+L4 configuration (14.8\%, see
+The 94.0 pp gap between AgentHarm L1+L2+L3 (97.7\%, full $N$=176+176)
+and AgentDojo L1+L4-deterministic (3.7\%, full 27-task isolation)
+--- and the related 85.2 pp gap under the no-longer-reproducible
+legacy AgentDojo L1+L3+L4 configuration (14.8\%, see
 \S\ref{subsec:limitations}) --- admits two competing explanations:
 (H1) the gap reflects a genuine structural difference---owner-harm
 scenarios detected via prompt injection are semantically harder to
@@ -1079,7 +1077,7 @@ context ($\RO$, $\BO$, $\AuthO$).
     \toprule
     \textbf{System} & \textbf{AgentHarm TPR} & \textbf{AgentDojo TPR} & \textbf{Gap} \\
     \midrule
-    Nous (L1+L2+L3 semantic-gate val, primary)\textsuperscript{$\flat$} & 100.0\% & 3.7\% (1/27) & 96.3 pp \\
+    Nous (L1+L2+L3 semantic-gate, primary)\textsuperscript{$\flat$} & 97.7\% & 3.7\% (1/27) & 94.0 pp \\
     Nous (L1+L3+L4 legacy)\textsuperscript{$\dagger$} & 100.0\% & 14.8\% (4/27) & 85.2 pp \\
     Generic LLM (L1, full $N$=176+176) & 62.7\%  & 59.3\% (16/27) & 3.4 pp \\
     \bottomrule
@@ -1088,11 +1086,12 @@ context ($\RO$, $\BO$, $\AuthO$).
   \\
   \small Generic LLM AgentHarm: 110 TP / 66 FN / 28 FP (FPR = 15.9\%,
   $N=176$ harmful $+$ 176 benign). \\
-  \small \textsuperscript{$\flat$}Nous AgentHarm 100\% is the L1+L2+L3
-  semantic-gate result on the validation slice ($n{=}36$ + 36, ICLR
-  2025 split); AgentDojo 3.7\% is the L1+L4 deterministic-isolation
-  result on the full 27-task suite. The two columns are reported
-  separately because no single layer-stack achieves both. \\
+  \small \textsuperscript{$\flat$}Nous AgentHarm 97.7\% is the
+  L1+L2+L3 semantic-gate result on the full $N{=}176$+$176$ benchmark
+  (\cite{andriushchenko2025agentharm} ICLR 2025 \texttt{test\_public}
+  split, locked \texttt{deepseek-chat}, \texttt{temperature=0.0},
+  reproduced 2026-05-02); AgentDojo 3.7\% is the L1+L4
+  deterministic-isolation result on the full 27-task suite. \\
   \small \textsuperscript{$\dagger$}Legacy semantic configuration
   (\texttt{qwen-turbo} via a now-deprecated internal relay, commit
   \texttt{3e688d6}) no longer reproduces under current code; see
@@ -1101,8 +1100,8 @@ context ($\RO$, $\BO$, $\AuthO$).
 \end{table}
 
 \textbf{Finding.} The generic LLM exhibits a 3.4 pp gap (62.7\% vs.\
-59.3\%)---statistically negligible compared to Nous's 96.3 pp
-deterministic gap (or the 85.2 pp legacy semantic gap). This is
+59.3\%)---statistically negligible compared to Nous's 94.0 pp
+gap (or the 85.2 pp legacy semantic gap). This is
 inconsistent with H1: AgentDojo owner-harm scenarios do not appear to
 be semantically harder to detect. The generic LLM achieves 59.3\% on
 AgentDojo without any prompt-injection-specific design, suggesting that
@@ -1333,7 +1332,7 @@ verification from a ``statute'' (pre-authored policy) to a ``case-law''
 \item {\bf Limitations}
   \item[] Question: Does the paper discuss the limitations of the work performed by the authors?
   \item[] Answer: \answerYes{}
-  \item[] Justification: \S\ref{subsec:limitations} explicitly enumerates the post-hoc nature of the Owner-Harm Benchmark, the AgentDojo deterministic-isolation ceiling without goal context, structural-boundary cases out of reach of current verifier rules, single-annotator + ground-truth + C2-over-trigger + small-pilot caveats, deployment-mode-vs-gate-marginal attribution, and the AgentHarm validation-vs-full-176 reproducibility regime.
+  \item[] Justification: \S\ref{subsec:limitations} explicitly enumerates the post-hoc nature of the Owner-Harm Benchmark, the AgentDojo deterministic-isolation ceiling without goal context, structural-boundary cases out of reach of current verifier rules, single-annotator + ground-truth + C2-over-trigger + small-pilot caveats, and deployment-mode-vs-gate-marginal attribution.
 
 \item {\bf Theory assumptions and proofs}
   \item[] Question: For each theoretical result, does the paper provide the full set of assumptions and a complete (and correct) proof?

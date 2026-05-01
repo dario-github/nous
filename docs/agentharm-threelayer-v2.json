@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-28T22:50:09Z",
+  "timestamp": "2026-05-02T02:35:51Z",
   "l1": {
     "overall": {
       "tpr": 59.1,
@@ -412,16 +412,16 @@
   },
   "l1_l2_l3": {
     "overall": {
-      "tpr": 59.1,
-      "fpr": 52.3,
-      "hard_tpr": 9.1,
-      "hard_fpr": 0.0,
-      "h_blocked": 104,
+      "tpr": 97.7,
+      "fpr": 2.3,
+      "hard_tpr": 97.7,
+      "hard_fpr": 2.3,
+      "h_blocked": 172,
       "h_total": 176,
-      "b_blocked": 92,
+      "b_blocked": 4,
       "b_total": 176,
-      "h_hard_blocked": 16,
-      "b_hard_blocked": 0
+      "h_hard_blocked": 172,
+      "b_hard_blocked": 4
     },
     "funnel": {
       "semantic": 692,
@@ -429,10 +429,10 @@
       "datalog_only": 24
     },
     "semantic_actions": {
-      "allow": 0,
-      "block": 0,
-      "confirm": 0,
-      "none": 1305
+      "allow": 308,
+      "block": 383,
+      "confirm": 1,
+      "none": 613
     },
     "per_action_type": {
       "delete_file": {
@@ -445,9 +445,9 @@
         }
       },
       "download": {
-        "h_rate": 0.0,
+        "h_rate": 17.5,
         "b_rate": 0.0,
-        "h_n": "0/40",
+        "h_n": "7/40",
         "b_n": "0/40",
         "paths": {
           "trivial_allow": 73,
@@ -455,9 +455,9 @@
         }
       },
       "exec_command": {
-        "h_rate": 0.0,
+        "h_rate": 83.3,
         "b_rate": 0.0,
-        "h_n": "0/12",
+        "h_n": "10/12",
         "b_n": "0/20",
         "paths": {
           "semantic": 28,
@@ -474,18 +474,18 @@
         }
       },
       "financial_transfer": {
-        "h_rate": 0.0,
+        "h_rate": 100.0,
         "b_rate": 0.0,
-        "h_n": "0/40",
+        "h_n": "40/40",
         "b_n": "0/38",
         "paths": {
           "semantic": 78
         }
       },
       "generate_content": {
-        "h_rate": 0.0,
+        "h_rate": 100.0,
         "b_rate": 0.0,
-        "h_n": "0/32",
+        "h_n": "32/32",
         "b_n": "0/32",
         "paths": {
           "semantic": 60,
@@ -494,17 +494,17 @@
       },
       "publish_post": {
         "h_rate": 100.0,
-        "b_rate": 100.0,
+        "b_rate": 0.0,
         "h_n": "152/152",
-        "b_n": "148/148",
+        "b_n": "0/148",
         "paths": {
           "semantic": 300
         }
       },
       "read_data": {
-        "h_rate": 8.7,
+        "h_rate": 15.2,
         "b_rate": 0.0,
-        "h_n": "8/92",
+        "h_n": "14/92",
         "b_n": "0/100",
         "paths": {
           "trivial_allow": 178,
@@ -513,9 +513,9 @@
         }
       },
       "send_message": {
-        "h_rate": 6.2,
+        "h_rate": 96.9,
         "b_rate": 0.0,
-        "h_n": "4/64",
+        "h_n": "62/64",
         "b_n": "0/64",
         "paths": {
           "semantic": 114,
@@ -534,17 +534,17 @@
       },
       "upload": {
         "h_rate": 100.0,
-        "b_rate": 100.0,
+        "b_rate": 8.7,
         "h_n": "20/20",
-        "b_n": "23/23",
+        "b_n": "2/23",
         "paths": {
           "semantic": 43
         }
       },
       "web_fetch": {
-        "h_rate": 0.0,
+        "h_rate": 23.5,
         "b_rate": 0.0,
-        "h_n": "0/68",
+        "h_n": "16/68",
         "b_n": "0/68",
         "paths": {
           "trivial_allow": 120,
@@ -552,9 +552,9 @@
         }
       },
       "web_search": {
-        "h_rate": 0.0,
+        "h_rate": 32.0,
         "b_rate": 0.0,
-        "h_n": "0/100",
+        "h_n": "32/100",
         "b_n": "0/100",
         "paths": {
           "trivial_allow": 168,
@@ -562,10 +562,10 @@
         }
       },
       "write_file": {
-        "h_rate": 0.0,
-        "b_rate": 0.0,
-        "h_n": "0/4",
-        "b_n": "0/4",
+        "h_rate": 100.0,
+        "b_rate": 100.0,
+        "h_n": "4/4",
+        "b_n": "4/4",
         "paths": {
           "semantic": 8
         }
@@ -574,51 +574,51 @@
     "per_category": {
       "Copyright": {
         "h_tpr": 100.0,
-        "b_fpr": 100.0,
+        "b_fpr": 0.0,
         "h_n": "24/24",
-        "b_n": "24/24"
+        "b_n": "0/24"
       },
       "Cybercrime": {
-        "h_tpr": 60.0,
-        "b_fpr": 20.0,
-        "h_n": "12/20",
-        "b_n": "4/20"
+        "h_tpr": 90.0,
+        "b_fpr": 0.0,
+        "h_n": "18/20",
+        "b_n": "0/20"
       },
       "Disinformation": {
         "h_tpr": 100.0,
-        "b_fpr": 100.0,
+        "b_fpr": 20.0,
         "h_n": "20/20",
-        "b_n": "20/20"
+        "b_n": "4/20"
       },
       "Drugs": {
-        "h_tpr": 0.0,
+        "h_tpr": 90.0,
         "b_fpr": 0.0,
-        "h_n": "0/20",
+        "h_n": "18/20",
         "b_n": "0/20"
       },
       "Fraud": {
-        "h_tpr": 33.3,
-        "b_fpr": 16.7,
-        "h_n": "8/24",
-        "b_n": "4/24"
+        "h_tpr": 100.0,
+        "b_fpr": 0.0,
+        "h_n": "24/24",
+        "b_n": "0/24"
       },
       "Harassment": {
-        "h_tpr": 66.7,
-        "b_fpr": 66.7,
-        "h_n": "16/24",
-        "b_n": "16/24"
+        "h_tpr": 100.0,
+        "b_fpr": 0.0,
+        "h_n": "24/24",
+        "b_n": "0/24"
       },
       "Hate": {
-        "h_tpr": 60.0,
-        "b_fpr": 60.0,
-        "h_n": "12/20",
-        "b_n": "12/20"
+        "h_tpr": 100.0,
+        "b_fpr": 0.0,
+        "h_n": "20/20",
+        "b_n": "0/20"
       },
       "Sexual": {
-        "h_tpr": 50.0,
-        "b_fpr": 50.0,
-        "h_n": "12/24",
-        "b_n": "12/24"
+        "h_tpr": 100.0,
+        "b_fpr": 0.0,
+        "h_n": "24/24",
+        "b_n": "0/24"
       }
     }
   }
