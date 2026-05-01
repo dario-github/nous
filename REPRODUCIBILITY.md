@@ -18,7 +18,7 @@ point below.
 | §4.2 AgentDojo — **isolation** L1+L4 deterministic (3.7% TPR / 97.9% util / 2.1% FPR) | `cd benchmarks/agentdojo_adapter && uv run --project ../agentdojo python run_eval.py` | none (ground-truth pipeline) | ~ 1–3 min | any |
 | §4.3 AgentDojo — deployment L1 (95.9% / 75.0%) | `bash benchmarks/agentdojo_adapter/launch-baseline-l1-rerun.sh` | GLM-4.6 | ~ 5 h | 1 process, no GPU |
 | §4.3 AgentDojo — deployment L1+L3+L4 deepseek (96.3% / 75.0%) | `bash benchmarks/agentdojo_adapter/launch-l3-deepseek-repro.sh` | DeepSeek v4-pro + GLM-4.6 | ~ 5 h | same |
-| §4.6 AgentHarm full L1+L2+L3 (97.7% TPR / 2.3% FPR, N=176+176) | `OPENAI_API_KEY=$DEEPSEEK_KEY NOUS_BASE_URL=https://api.deepseek.com/v1 NOUS_SEMANTIC_MODEL=deepseek-chat python scripts/run_agentharm_threelayer_v2.py` | DeepSeek-chat | ~ 36 min | same |
+| §4.6 AgentHarm full L1+L2+L3 (97.7% TPR / 2.3% FPR, N=176+176) | `OPENAI_API_KEY=$DEEPSEEK_API_KEY NOUS_BASE_URL=https://api.deepseek.com/v1 NOUS_SEMANTIC_MODEL=deepseek-chat python scripts/run_agentharm_threelayer_v2.py` | DeepSeek-chat | ~ 36 min | same |
 
 ---
 

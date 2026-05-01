@@ -647,9 +647,9 @@ gate is manipulated, but file artifacts retain detectable fingerprints.
 \end{table}
 
 The 97.7\% (L1+L2+L3) $\to$ 3.7\% (L1+L4-deterministic) gap on
-AgentHarm vs.\ AgentDojo (and the related legacy 100\% $\to$ 14.8\%
-\texttt{qwen-turbo} L3 gap, no longer reproducible) is the central
-evidence: constraints that
+AgentHarm vs.\ AgentDojo (and the related legacy 100\% on AgentHarm
+val $n{=}36$ $\to$ 14.8\% \texttt{qwen-turbo} L3 gap, no longer
+reproducible) is the central evidence: constraints that
 intercept generic criminal content have near-zero coverage of
 application-layer owner-harm. A controlled zero-shot LLM experiment
 (Appendix~\ref{app:control}) shows 62.7\% on AgentHarm and 59.3\% on
@@ -894,7 +894,7 @@ require the corresponding subscription endpoint.
     AgentDojo deployment 96.3\% L1+L3+L4 deepseek (\S\ref{subsec:deployment_mode})
       & \texttt{bash benchmarks/agentdojo\_adapter/} \texttt{launch-l3-deepseek-repro.sh} & DeepSeek & $\sim$5h & $\sim$\$15 \\
     AgentHarm L1+L2+L3 full ($N{=}176$+$176$): 97.7\% TPR / 2.3\% FPR (\S\ref{subsec:cross})
-      & \texttt{OPENAI\_API\_KEY=\$DEEPSEEK\_KEY} \texttt{NOUS\_BASE\_URL=https://api.deepseek.com/v1} \texttt{NOUS\_SEMANTIC\_MODEL=deepseek-chat} \texttt{python scripts/run\_agentharm\_threelayer\_v2.py} & DeepSeek & $\sim$36 min & $\sim$\$3 \\
+      & \texttt{OPENAI\_API\_KEY=\$DEEPSEEK\_API\_KEY} \texttt{NOUS\_BASE\_URL=https://api.deepseek.com/v1} \texttt{NOUS\_SEMANTIC\_MODEL=deepseek-chat} \texttt{python scripts/run\_agentharm\_threelayer\_v2.py} & DeepSeek & $\sim$36 min & $\sim$\$3 \\
     \bottomrule
   \end{tabular}
 \end{table}

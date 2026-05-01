@@ -29,7 +29,7 @@
 | AgentDojo deployment L1 + GLM-4.6 | §4.3 | 95.9% / 75.0% (603/472 of 629) | --- | `launch-baseline-l1-rerun.sh` | ~5h | $0 |
 | AgentDojo deployment L1+L3+L4 deepseek + GLM-4.6 | §4.3 | 96.3% / 75.0% (606/472 of 629) | --- | `launch-l3-deepseek-repro.sh` | ~5h | ~$15 |
 | AgentDojo deployment baseline GLM-4.6 alone | §4.3 | 95.2% / 79.0% | --- | (same suite, mode=baseline) | ~5h | $0 |
-| AgentHarm L1+L2+L3 (deepseek-chat) full TPR / FPR | §4.6 + App.C | **97.7% (172/176) / 2.3% (4/176)** | TPR [94.3%, 99.1%]; FPR [0.9%, 5.7%] | `OPENAI_API_KEY=$DEEPSEEK_KEY NOUS_BASE_URL=https://api.deepseek.com/v1 python scripts/run_agentharm_threelayer_v2.py` | ~36 min | ~$3 |
+| AgentHarm L1+L2+L3 (deepseek-chat) full TPR / FPR | §4.6 + App.C | **97.7% (172/176) / 2.3% (4/176)** | TPR [94.3%, 99.1%]; FPR [0.9%, 5.7%] | `OPENAI_API_KEY=$DEEPSEEK_API_KEY NOUS_BASE_URL=https://api.deepseek.com/v1 NOUS_SEMANTIC_MODEL=deepseek-chat python scripts/run_agentharm_threelayer_v2.py` | ~36 min | ~$3 |
 | AgentHarm Generic-LLM zero-shot baseline | App.\,C | 62.7% | --- | `python scripts/exp_eval.py` | --- | --- |
 | AgentDojo Generic-LLM zero-shot baseline | App.\,C | 59.3% (16/27) | --- | (same) | --- | --- |
 
