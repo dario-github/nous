@@ -24,7 +24,7 @@
 | Hijacking gate-only / verifier-only / both / neither | §4.4 / §6.2 | 11/30/15/4 | --- | `python scripts/eval_d2_verifier.py` | ~10s | $0 |
 | Hijacking combined TPR | §4.4 | 93.3% (56/60) | [84.1%, 97.4%] | (same) | (same) | (same) |
 | Hijacking benign FP | §4.4 | 0/30 | [0.0%, 11.4%] | (same) | (same) | (same) |
-| AgentDojo isolation L1+L4 (deterministic) | §4.2 | 3.7% (1/27) | [0.7%, 18.3%] | `bash launch-baseline-l1-rerun.sh` | ~5h | $0 (GLM) |
+| AgentDojo isolation L1+L4 (deterministic) | §4.2 | 3.7% (1/27); util 97.9%; FPR 2.1% | [0.7%, 18.3%] | `cd benchmarks/agentdojo_adapter && uv run --project ../agentdojo python run_eval.py` | ~1-3 min | $0 |
 | AgentDojo isolation L1+L3+L4 (qwen-turbo legacy) | §4.2 | 14.8% (4/27) | [5.9%, 32.5%] | NOT REPRODUCIBLE | --- | --- |
 | AgentDojo deployment L1 + GLM-4.6 | §4.3 | 95.9% / 75.0% (603/472 of 629) | --- | `launch-baseline-l1-rerun.sh` | ~5h | $0 |
 | AgentDojo deployment L1+L3+L4 deepseek + GLM-4.6 | §4.3 | 96.3% / 75.0% (606/472 of 629) | --- | `launch-l3-deepseek-repro.sh` | ~5h | ~$15 |

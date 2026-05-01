@@ -11,12 +11,14 @@ point below.
 
 | Paper claim | Entry point | LLM API | Wall-clock | Hardware |
 |---|---|---|---|---|
-| §1 — LSVJ-S compile-time gate (80 tests pass) | `pytest tests/lsvj/` | none | < 10 s | any |
-| §4 Owner-centric v3 — full L1–L4 (85.3% TPR / 3.3% FPR) | `python scripts/full_benchmark_eval.py` | none (deterministic) | ~ 30 s | any |
-| §4 Owner-centric v3 — gate ∩ verifier overlap (Hijacking) | `python scripts/eval_d2_verifier.py` | none | ~ 10 s | any |
-| §4 AgentDojo — isolation (96.3% / 75.0%) | `bash benchmarks/agentdojo_adapter/launch-l3-deepseek-repro.sh` | DeepSeek v4-pro | ~ 5 h | 1 process, 1 GPU not required |
-| §4 AgentDojo — deployment (95.9% / 75.0%) | `bash benchmarks/agentdojo_adapter/launch-baseline-l1-rerun.sh` | GLM-4.6 | ~ 5 h | same |
-| §4 AgentHarm val (100% TPR) | `python scripts/run_agentharm_threelayer_v2.py` | DeepSeek v4-pro | ~ 1 h | same |
+| §1 — LSVJ-S compile-time gate (138 tests pass, 1 skipped) | `pytest tests/lsvj/` | none | < 10 s | any |
+| §4 Owner-centric v3 — gate alone (75.3% TPR / 3.3% FPR) | `python scripts/full_benchmark_eval.py` | none (deterministic) | ~ 30 s | any |
+| §4 Owner-centric v3 — full L1–L4 (85.3% TPR / 13.3% FPR) | `python scripts/full_benchmark_eval.py` | none (deterministic) | ~ 30 s | any |
+| §4 Owner-centric v3 — gate ∩ verifier overlap (Hijacking 11/30/15/4) | `python scripts/eval_d2_verifier.py` | none | ~ 10 s | any |
+| §4.2 AgentDojo — **isolation** L1+L4 deterministic (3.7% TPR / 97.9% util / 2.1% FPR) | `cd benchmarks/agentdojo_adapter && uv run --project ../agentdojo python run_eval.py` | none (ground-truth pipeline) | ~ 1–3 min | any |
+| §4.3 AgentDojo — deployment L1 (95.9% / 75.0%) | `bash benchmarks/agentdojo_adapter/launch-baseline-l1-rerun.sh` | GLM-4.6 | ~ 5 h | 1 process, no GPU |
+| §4.3 AgentDojo — deployment L1+L3+L4 deepseek (96.3% / 75.0%) | `bash benchmarks/agentdojo_adapter/launch-l3-deepseek-repro.sh` | DeepSeek v4-pro + GLM-4.6 | ~ 5 h | same |
+| §4.6 AgentHarm val (100% TPR) | `python scripts/run_agentharm_threelayer_v2.py` | DeepSeek v4-pro | ~ 1 h | same |
 
 ---
 

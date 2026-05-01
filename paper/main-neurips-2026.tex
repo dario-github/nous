@@ -527,7 +527,7 @@ agreement because the held-out slice is single-annotator by
 construction (the second author is a co-author of this paper but does
 not label data). The held-out slice was sealed against the development
 slice via a SHA-256-frozen JSON file (\texttt{data/owner\_harm\_heldout\_v3.json},
-hash committed in our public repository) before any of the numbers in
+hash committed in our supplementary code repository) before any of the numbers in
 Tables~\ref{tab:ohb_category}--\ref{tab:hijacking} were computed. We
 explicitly do not present this benchmark as an external validity
 instrument; it is a diagnostic that exposes per-category sensitivity
@@ -726,12 +726,13 @@ since our deployment evidence is from a single agent backbone
 (GLM-4.6) on AgentDojo's application-tool surface and may not
 generalize to other agents or attack regimes.
 
-Every numerical claim in this paper maps to a single command in our
-public repository; we have independently re-executed all no-API-key
-commands on 2026-05-01 from a fresh checkout and verified the headline
-numbers reproduce deterministically. A full claim-to-command index
-appears in Appendix~\ref{app:repro} and in
-\texttt{REPRODUCIBILITY.md} in the supplementary materials.
+Every numerical claim in this paper maps to a single command in the
+anonymized supplementary code repository; we have independently
+re-executed all no-API-key commands on 2026-05-01--02 from a fresh
+checkout and verified the headline numbers reproduce
+deterministically. A full claim-to-command index appears in
+Appendix~\ref{app:repro} and in \texttt{REPRODUCIBILITY.md} in the
+supplementary materials.
 
 \subsection{Limitations}
 \label{subsec:limitations}
@@ -871,8 +872,8 @@ authorization scope, and task goals.
 \label{app:repro}
 
 Every numerical claim in the main paper maps to a single command in
-our public repository (\texttt{REPRODUCIBILITY.md} in the
-supplementary materials). The deterministic claims (LSVJ-S compile
+the anonymized supplementary code repository (\texttt{REPRODUCIBILITY.md}
+in the supplementary materials). The deterministic claims (LSVJ-S compile
 gate, Owner-Harm v3 full L1--L4, Hijacking layer overlap) require no
 API key and complete in under one minute on commodity hardware. The
 LLM-bound claims (AgentDojo isolation/deployment, AgentHarm 100\% TPR)
@@ -897,7 +898,7 @@ require the corresponding subscription endpoint.
     Hijacking layer overlap 11/30/15/4 (\S\ref{subsec:disc_hijacking})
       & \texttt{python scripts/eval\_d2\_verifier.py} & --- & $\sim$10s & \$0 \\
     AgentDojo isolation L1+L4 = 3.7\% (\S\ref{subsec:agentdojo})
-      & \texttt{bash benchmarks/agentdojo\_adapter/} \texttt{launch-baseline-l1-rerun.sh} & GLM & $\sim$5h & \$0 \\
+      & \texttt{cd benchmarks/agentdojo\_adapter \&\&} \texttt{uv run --project ../agentdojo python} \texttt{run\_eval.py} & --- & $\sim$1--3\,min & \$0 \\
     AgentDojo deployment 95.9\%/75.0\% L1 (\S\ref{subsec:deployment_mode})
       & \texttt{bash benchmarks/agentdojo\_adapter/} \texttt{launch-baseline-l1-rerun.sh} & GLM & $\sim$5h & \$0 \\
     AgentDojo deployment 96.3\% L1+L3+L4 deepseek (\S\ref{subsec:deployment_mode})
@@ -908,12 +909,16 @@ require the corresponding subscription endpoint.
   \end{tabular}
 \end{table}
 
-We re-executed all no-API-key commands on 2026-05-01 from a fresh
+We re-executed all no-API-key commands on 2026-05-01--02 from a fresh
 checkout and verified the headline numbers reproduce
-deterministically. The LSVJ-S test count is 138/139 (one skipped
+deterministically: \texttt{pytest tests/lsvj/} (138 passed),
+\texttt{python scripts/full\_benchmark\_eval.py} (Owner-Harm v3 numbers
+match), \texttt{python scripts/eval\_d2\_verifier.py} (Hijacking layer
+overlap 11/30/15/4 matches), and the AgentDojo isolation
+\texttt{run\_eval.py} (3.7\% / 97.9\% / 2.1\% in 1--3 minutes). The LSVJ-S test count is 138/139 (one skipped
 because the optional \texttt{scallopy} dependency is not installed by
-default) under the path-independent CI subset that our public
-repository runs on every push. The LLM-bound L3 deployment number
+default) under the path-independent CI subset that our supplementary
+code drop runs on every push. The LLM-bound L3 deployment number
 (96.3\%/75.0\%) was independently reproduced on the same date via the
 locked DeepSeek-V4-pro endpoint. The AgentDojo legacy L1+L3+L4 = 14.8\%
 number is acknowledged in \S\ref{subsec:limitations} as not currently
