@@ -18,7 +18,7 @@ point below.
 | §4.2 AgentDojo — **isolation** L1+L4 deterministic (3.7% TPR / 97.9% util / 2.1% FPR) | `cd benchmarks/agentdojo_adapter && uv run --project ../agentdojo python run_eval.py` | none (ground-truth pipeline) | ~ 1–3 min | any |
 | §4.3 AgentDojo — deployment L1 (95.9% / 75.0%) | `bash benchmarks/agentdojo_adapter/launch-baseline-l1-rerun.sh` | GLM-4.6 | ~ 5 h | 1 process, no GPU |
 | §4.3 AgentDojo — deployment L1+L3+L4 deepseek (96.3% / 75.0%) | `bash benchmarks/agentdojo_adapter/launch-l3-deepseek-repro.sh` | DeepSeek v4-pro + GLM-4.6 | ~ 5 h | same |
-| §4.6 AgentHarm val (100% TPR) | `python scripts/run_agentharm_threelayer_v2.py` | DeepSeek v4-pro | ~ 1 h | same |
+| §4.6 AgentHarm full L1+L2+L3 (97.7% TPR / 2.3% FPR, N=176+176) | `OPENAI_API_KEY=$DEEPSEEK_KEY NOUS_BASE_URL=https://api.deepseek.com/v1 NOUS_SEMANTIC_MODEL=deepseek-chat python scripts/run_agentharm_threelayer_v2.py` | DeepSeek-chat | ~ 36 min | same |
 
 ---
 
@@ -197,22 +197,34 @@ Each takes ~ 5 h. Results land in
 
 ---
 
-## §4 — AgentHarm val (100% TPR)
+## §4.6 — AgentHarm full L1+L2+L3 (97.7% TPR / 2.3% FPR)
 
-Reproduces the L1 + L2 + L3 stack on the AgentHarm validation slice
-(176 harmful + 176 benign). Raw scenarios live in
+Reproduces the L1 + L2 + L3 stack on the AgentHarm \texttt{test\_public}
+split (176 harmful + 176 benign), reproduced 2026-05-02 with locked
+\texttt{deepseek-chat} L3. Raw scenarios live in
 `docs/agentharm-raw-scenarios.json`.
 
 ```bash
-export DEEPSEEK_API_KEY=...
+export OPENAI_API_KEY=$DEEPSEEK_API_KEY
+export NOUS_BASE_URL=https://api.deepseek.com/v1
+export NOUS_SEMANTIC_MODEL=deepseek-chat
 python scripts/run_agentharm_threelayer_v2.py
 ```
 
-Expected output (paper §4 AgentHarm row):
+Expected output (paper §4.6 AgentHarm row, full N=176+176):
 
 ```
-TPR 100.0% [90.3%, 100.0%]   FPR 0.0% [0.0%, 9.7%]
+[3/3] Running L1+L2+L3 (Semantic Gate with deepseek-chat)...
+  TPR=97.7% FPR=2.3% hard_TPR=97.7% hard_FPR=2.3% (~36 min)
+
+  L1 → L1+L2+L3 deltas:
+    TPR  59.1% → 97.7%   (+38.6 pp)
+    FPR  52.3% →  2.3%   (-50.0 pp)
 ```
+
+L3 contributes the entire +38.6 pp TPR. Per-category 7/8 reach 100%
+TPR; Cybercrime 90% (9/10), Drugs 90% (18/20). FPR concentrated in
+Disinformation (20% benign FP, 1/5).
 
 ---
 
@@ -240,7 +252,7 @@ This is the structural-boundary disjointness claim cited in §4 and §5.
 * AgentDojo deployment — GLM-4.6 agent at temperature `0.0`, `k=1`;
   per-task LLM behaviour is reasonably stable but the 629-task aggregate
   may move ± 0.5 pp between runs.
-* AgentHarm — `k=3` self-consistency at temperature `0.0`.
+* AgentHarm — temperature `0.0`, `repeat=1` per `SemanticGateConfig` default; deterministic across replays.
 
 ---
 

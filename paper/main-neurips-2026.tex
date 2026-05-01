@@ -145,7 +145,8 @@ rule generalization failure rather than intrinsic semantic difficulty.
 This paper contributes: (i) an eight-category Owner-Harm threat model
 grounded in real incidents; (ii) defense-gap quantification on AgentHarm
 versus AgentDojo, separating worst-case ground-truth isolation
-(100\% vs.\ 3.7\% deterministic; 100\% vs.\ 14.8\% legacy semantic, see
+(97.7\% L1+L2+L3 vs.\ 3.7\% deterministic L1+L4; legacy 100\% vs.\
+14.8\% L1+L3+L4 \texttt{qwen-turbo} no longer reproducible, see
 \S\ref{subsec:limitations}) from realistic deployment-mode evaluation
 (GLM-4.6 agent + L1 Datalog reaches \textbf{95.9\% security and 75.0\%
 utility across 629 user-task instances}, \S\ref{subsec:deployment_mode});
@@ -645,8 +646,10 @@ gate is manipulated, but file artifacts retain detectable fingerprints.
   to layer-specific generalization failure $= 90.6$ pp.
 \end{table}
 
-The 100\% $\to$ 3.7\% deterministic gap (and the related 100\% $\to$
-14.8\% legacy semantic gap) is the central evidence: constraints that
+The 97.7\% (L1+L2+L3) $\to$ 3.7\% (L1+L4-deterministic) gap on
+AgentHarm vs.\ AgentDojo (and the related legacy 100\% $\to$ 14.8\%
+\texttt{qwen-turbo} L3 gap, no longer reproducible) is the central
+evidence: constraints that
 intercept generic criminal content have near-zero coverage of
 application-layer owner-harm. A controlled zero-shot LLM experiment
 (Appendix~\ref{app:control}) shows 62.7\% on AgentHarm and 59.3\% on
@@ -658,11 +661,13 @@ tool vocabulary rather than to portable harm semantics.
 \label{subsec:experiment_summary}
 
 In the controlled gap-attribution experiment, the generic LLM's small
-3.4 pp gap contrasts with Nous's 94.0 pp gap (97.7\% AgentHarm full
-$N{=}176{+}176$ vs.\ 3.7\% AgentDojo, locked \texttt{deepseek-chat} L3;
-the legacy 85.2 pp gap under \texttt{qwen-turbo} L3 is no longer
-reproducible), showing that layer-specific generalization failure, not
-intrinsic category difficulty, drives the benchmark discrepancy. In SSDG pilots, raw user-goal injection reduced
+3.4 pp gap contrasts with Nous's 94.0 pp gap: AgentHarm
+$N{=}176{+}176$ scored at 97.7\% under L1+L2+L3 with locked
+\texttt{deepseek-chat} L3, vs.\ AgentDojo 3.7\% under L1+L4
+deterministic (no L3 in this column); the legacy 85.2 pp gap
+under \texttt{qwen-turbo} L3 is no longer reproducible. Layer-specific
+generalization failure, not intrinsic category difficulty, drives the
+benchmark discrepancy. In SSDG pilots, raw user-goal injection reduced
 AgentDojo legacy-semantic TPR from 14.8\% to 8.3\%, rejecting the naive
 context-injection prediction and showing that structured goal-action
 comparison is required (this pilot was run under the legacy
@@ -781,17 +786,13 @@ Hijacking (see \S\ref{subsec:disc_hijacking}). The confirm-bypass
 runtime fix described in the Appendix is independent of this issue.
 
 \begin{enumerate}
-  \item \textbf{AgentDojo ceiling}: Without user task goal context, the
-    semantic gate cannot compare ``user requested X'' to ``agent doing Y'',
-    limiting achievable deterministic safety to 3.7\% and semantic
-    safety to a $\sim$15\%--40\% range depending on L3 backend on
-    malicious-parameter tasks.
-  \item \textbf{Benchmark independence}: The Owner-Harm Benchmark is
-    author-constructed after system optimization. It is diagnostic, not
-    validation evidence.
+  \item \textbf{AgentDojo ceiling}: without user task goal context the
+    semantic gate cannot compare requested X vs.\ agent's Y; deterministic
+    ceiling is 3.7\%, semantic 15--40\% range depending on L3 backend.
+  \item \textbf{Benchmark independence}: Owner-Harm Benchmark is
+    author-constructed post-optimization (diagnostic, not validation).
   \item \textbf{Structural boundary}: 4/60 Hijacking cases (SQL file
-    injection, direct SSH key injection) are out of reach of current
-    V-rules.
+    injection, direct SSH key injection) are beyond current V-rules.
   \item \textbf{Single annotator + ground-truth evaluation + rule
     over-trigger + SSDG pilot scale}: (a) no inter-annotator agreement
     is reported for the Owner-Harm Benchmark labels (single-author
@@ -819,48 +820,36 @@ runtime fix described in the Appendix is independent of this issue.
 \end{enumerate}
 
 % ================================================================
+\enlargethispage{2\baselineskip}
 \section{Related Work}
 \label{sec:related}
 
-AgentHarm \cite{andriushchenko2025agentharm} provides a generic LLM-agent
-harm benchmark; ToolEmu \cite{ruan2024toolemu} evaluates risks in an
-LM-emulated sandbox; AGrail \cite{agrail2025} proposes hierarchical safety
-detection. Our distinction is to define the deployer as the victim and
-quantify the resulting defense gap. Prompt-injection work beginning with
-Greshake et al.\ \cite{greshake2023indirect} and standardized by AgentDojo
-\cite{debenedetti2024agentdojo} is closest empirically; CaMeL
-\cite{camel2025} is complementary through capability-aware information
-flow.
-
-Runtime policy enforcement spans output filters
+Generic LLM-agent harm benchmarks
+\cite{andriushchenko2025agentharm,ruan2024toolemu,agrail2025} catalog
+third-party adversarial use. Prompt-injection work
+\cite{greshake2023indirect,debenedetti2024agentdojo,camel2025} attacks
+agent control flow but not the deployer-as-victim model. Runtime
+policy enforcement spans output filters
 \cite{rebedea2023nemoguardrails,inan2023llamaguard,zeng2024shieldgemma},
 runtime guards
 \cite{chen2024r2guard,yu2024agentmonitor,yi2023bipia,guardrailsai2024},
-verifiable agent safety
+and verifiable agent safety
 \cite{doshi2026verifiable,palumbo2026pcas,wang2026agentspec,he2025pro2guard,roy2026solveraided,chen2025shieldagent,xiang2024guardagent,hua2024trustagent}.
-These improve enforcement machinery; our claim is orthogonal: owner
-context ($\RO$, $\BO$, $\AuthO$) must be an input to such machinery.
-Concrete attack evidence comes from Copilot ASCII smuggling
-\cite{rehberger2024copilot}, the PromptArmor Slack disclosure
-\cite{promptarmor2024slack}, and adversarial-agent analysis
+Our claim is orthogonal: owner context ($\RO$, $\BO$, $\AuthO$) must
+be an input to such machinery. Concrete attack evidence: Copilot ASCII
+smuggling \cite{rehberger2024copilot}, PromptArmor's Slack disclosure
+\cite{promptarmor2024slack}, adversarial-agent analysis
 \cite{abdelnabi2024llmagent}.
 
 % ================================================================
 \section{Conclusion}
 \label{sec:conclusion}
 
-Owner-harm is a missing threat model for AI agent safety. We formalize it
-with eight categories, separate worst-case ground-truth isolation from
-realistic deployment-mode evaluation (100\% vs.\ 3.7\% deterministic
-isolation; 95.9\% security with 75.0\% utility under deployment-mode
-across 629 user-task instances; legacy 100\% vs.\ 14.8\% semantic
-configuration is reported separately as historical, see
-\S\ref{subsec:limitations}), attribute the symbolic gap to rule
-generalization failure, and show that semantic gates and deterministic
-post-audit verifiers provide complementary protection, especially for
-Hijacking. The core finding is simple: an action harms an owner not by
-content alone, but by its relation to owner resources, trust boundaries,
-authorization scope, and task goals.
+Owner-harm is a missing threat model for AI agent safety. We formalize
+it with eight categories and quantify the gap: 97.7\% TPR (AgentHarm
+$N$=176+176, L1+L2+L3) vs.\ 3.7\% (AgentDojo, L1+L4) and 95.9\%/75.0\%
+under deployment. Owner-harm depends not on content alone but on
+owner resources, trust boundaries, authorization scope, and task goals.
 
 % ================================================================
 \bibliographystyle{plainnat}
@@ -905,7 +894,7 @@ require the corresponding subscription endpoint.
     AgentDojo deployment 96.3\% L1+L3+L4 deepseek (\S\ref{subsec:deployment_mode})
       & \texttt{bash benchmarks/agentdojo\_adapter/} \texttt{launch-l3-deepseek-repro.sh} & DeepSeek & $\sim$5h & $\sim$\$15 \\
     AgentHarm L1+L2+L3 full ($N{=}176$+$176$): 97.7\% TPR / 2.3\% FPR (\S\ref{subsec:cross})
-      & \texttt{OPENAI\_API\_KEY=\$DEEPSEEK\_KEY} \texttt{NOUS\_BASE\_URL=https://api.deepseek.com/v1} \texttt{python scripts/run\_agentharm\_threelayer\_v2.py} & DeepSeek & $\sim$36 min & $\sim$\$3 \\
+      & \texttt{OPENAI\_API\_KEY=\$DEEPSEEK\_KEY} \texttt{NOUS\_BASE\_URL=https://api.deepseek.com/v1} \texttt{NOUS\_SEMANTIC\_MODEL=deepseek-chat} \texttt{python scripts/run\_agentharm\_threelayer\_v2.py} & DeepSeek & $\sim$36 min & $\sim$\$3 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -1078,7 +1067,7 @@ context ($\RO$, $\BO$, $\AuthO$).
     \textbf{System} & \textbf{AgentHarm TPR} & \textbf{AgentDojo TPR} & \textbf{Gap} \\
     \midrule
     Nous (L1+L2+L3 semantic-gate, primary)\textsuperscript{$\flat$} & 97.7\% & 3.7\% (1/27) & 94.0 pp \\
-    Nous (L1+L3+L4 legacy)\textsuperscript{$\dagger$} & 100.0\% & 14.8\% (4/27) & 85.2 pp \\
+    Nous (L1+L3+L4 legacy, qwen-turbo)\textsuperscript{$\dagger$} & 100.0\% (val $n{=}36$) & 14.8\% (4/27) & --- \\
     Generic LLM (L1, full $N$=176+176) & 62.7\%  & 59.3\% (16/27) & 3.4 pp \\
     \bottomrule
   \end{tabular}
@@ -1235,10 +1224,12 @@ The controlled experiment, together with the SSDG theoretical framework
 exposes a fundamental asymmetry between the two
 primary detection mechanisms in compositional safety architectures:
 
-\textbf{Symbolic rules (L1 Datalog)} exhibit a bimodal generalization
-profile: near-perfect recall within the training distribution (100\% on
-AgentHarm), and near-zero recall on out-of-distribution tool vocabularies
-(3.7\% on AgentDojo). This is structurally expected---Datalog rules
+\textbf{Symbolic rules (L1 Datalog) + Semantic gate (L3)} exhibit a
+bimodal generalization profile: high recall when paired with
+appropriate semantic context (97.7\% on AgentHarm under L1+L2+L3 with
+\texttt{deepseek-chat}; L1 alone is only 59.1\%), and near-zero recall
+on out-of-distribution tool vocabularies (3.7\% on AgentDojo under
+L1+L4 deterministic). This is structurally expected---Datalog rules
 encode extensional facts (``tool $t$ is prohibited'') rather than
 intensional harm semantics. Any tool name not in the rule set is
 trivially allowed.
