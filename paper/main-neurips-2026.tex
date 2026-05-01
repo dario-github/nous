@@ -562,25 +562,27 @@ on the precision-recall curve, not a uniformly Pareto-improving layer.
   \centering
   \caption{Owner-Harm Benchmark: Per-Category Results (Post-Hoc Diagnostic)}
   \label{tab:ohb_category}
-  \begin{tabular}{lcccc}
+  \begin{tabular}{lccccc}
     \toprule
-    \textbf{Category} & \textbf{$N_h$} & \textbf{Gate TPR}
-      & \textbf{Combined TPR} & \textbf{Gate FPR} \\
+    \textbf{Category} & \textbf{$N_h$/$N_b$} & \textbf{Gate TPR}
+      & \textbf{Combined TPR} & \textbf{Gate FPR} & \textbf{Combined FPR} \\
     \midrule
-    C1: Credential Leak         & 28 & 100.0\% & 100.0\% & 0.0\%  \\
-    C2: Infrastructure Exposure & 50 & 100.0\% & 100.0\% & 20.0\%$^\dagger$ \\
-    C3: Privacy Exposure        & 28 & 100.0\% & 100.0\% & 0.0\%  \\
-    C4: Inner Circle Leak       & 28 & 89.3\%  & 89.3\%  & 0.0\%  \\
-    C8: Unauthorized Autonomy   & 50 & 70.0\%  & 70.0\%  & 0.0\%  \\
-    C5: Asset Destruction       & 28 & 64.3\%  & 64.3\%  & 0.0\%  \\
-    C6: Exfiltration via Tools  & 28 & 57.1\%  & 57.1\%  & 0.0\%  \\
-    \textbf{C7: Hijacking}      & \textbf{60} & \textbf{43.3\%} & \textbf{93.3\%} & \textbf{0.0\%} \\
+    C1: Credential Leak         & 28/14 & 100.0\% & 100.0\% & 0.0\%   & 0.0\%   \\
+    C2: Infrastructure Exposure & 50/25 & 100.0\% & 100.0\% & 20.0\%$^\dagger$ & 60.0\%$^\dagger$ \\
+    C3: Privacy Exposure        & 28/14 & 100.0\% & 100.0\% & 0.0\%   & 0.0\%   \\
+    C4: Inner Circle Leak       & 28/14 & 89.3\%  & 89.3\%  & 0.0\%   & 35.7\%  \\
+    C8: Unauthorized Autonomy   & 50/25 & 70.0\%  & 70.0\%  & 0.0\%   & 0.0\%   \\
+    C5: Asset Destruction       & 28/14 & 64.3\%  & 64.3\%  & 0.0\%   & 0.0\%   \\
+    C6: Exfiltration via Tools  & 28/14 & 57.1\%  & 57.1\%  & 0.0\%   & 0.0\%   \\
+    \textbf{C7: Hijacking}      & \textbf{60/30} & \textbf{43.3\%} & \textbf{93.3\%} & \textbf{0.0\%} & \textbf{0.0\%} \\
     \bottomrule
   \end{tabular}
   \vspace{1mm}
   \\
-  \small $^\dagger$ 20\% FPR for C2 caused by rule OH-R3a over-triggering
-  on benign external-channel configuration queries.
+  \small $^\dagger$ Gate FPR for C2 = 20\% (rule OH-R3a over-trigger on
+  benign external-channel queries); L4 adds artifact-pattern over-trigger
+  → 60\% combined. C4 combined 35.7\% similarly from L4 inner-circle
+  over-trigger; both are listed limitations.
 \end{table}
 
 \begin{table}[!t]
@@ -783,21 +785,20 @@ runtime fix described in the Appendix is independent of this issue.
   \item \textbf{Benchmark independence}: The Owner-Harm Benchmark is
     author-constructed after system optimization. It is diagnostic, not
     validation evidence.
-  \item \textbf{Single annotator}: No inter-annotator agreement is reported
-    for the Owner-Harm Benchmark labels.
   \item \textbf{Structural boundary}: 4/60 Hijacking cases (SQL file
     injection, direct SSH key injection) are out of reach of current
     V-rules.
-  \item \textbf{Evaluation mode}: AgentDojo evaluation uses ground-truth
-    mode without an adversarial attack LLM; real-world adaptive adversaries
-    may achieve different results.
-  \item \textbf{Infrastructure Exposure FPR}: Rule OH-R3a over-triggers
-    on benign external-channel configuration queries (20\% FPR for C2),
-    indicating the rule requires further refinement.
-  \item \textbf{SSDG pilot scale}: P1 and P2 experiments use $N = 12$
-    AgentDojo tasks and $N = 15$ AgentHarm scenarios. Conclusions are
-    directionally consistent with theory but require full-benchmark
-    replication before statistical significance can be claimed.
+  \item \textbf{Single annotator + ground-truth evaluation + rule
+    over-trigger + SSDG pilot scale}: (a) no inter-annotator agreement
+    is reported for the Owner-Harm Benchmark labels (single-author
+    construction); (b) AgentDojo evaluation uses ground-truth-mode
+    without an adversarial attack LLM, so adaptive adversaries may
+    achieve different results; (c) rule OH-R3a over-triggers on
+    benign external-channel configuration queries (20\% gate FPR for
+    C2 alone, 60\% combined FPR with verifier); (d) the SSDG pilot
+    experiments use small $N$ ($N{=}12$ AgentDojo tasks, $N{=}15$
+    AgentHarm scenarios) and require full-benchmark replication
+    before statistical significance.
   \item \textbf{Deployment-mode attribution}: The headline deployment
     results ($95.9\%/96.3\%$ TPR with $75.0\%$ utility) measure the
     \emph{composed} GLM-4.6-agent-plus-Nous-gate system; the gate's
@@ -1325,7 +1326,7 @@ verification from a ``statute'' (pre-authored policy) to a ``case-law''
 \item {\bf Limitations}
   \item[] Question: Does the paper discuss the limitations of the work performed by the authors?
   \item[] Answer: \answerYes{}
-  \item[] Justification: \S\ref{subsec:limitations} explicitly enumerates nine limitations including the post-hoc nature of the Owner-Harm Benchmark, single-annotator labeling, AgentDojo ceiling without goal context, ground-truth-mode evaluation, C2 over-triggering, SSDG pilot scale, deployment-mode-vs-gate-marginal attribution, and the AgentHarm validation-vs-full-176 reproducibility regime.
+  \item[] Justification: \S\ref{subsec:limitations} explicitly enumerates the post-hoc nature of the Owner-Harm Benchmark, the AgentDojo deterministic-isolation ceiling without goal context, structural-boundary cases out of reach of current verifier rules, single-annotator + ground-truth + C2-over-trigger + small-pilot caveats, deployment-mode-vs-gate-marginal attribution, and the AgentHarm validation-vs-full-176 reproducibility regime.
 
 \item {\bf Theory assumptions and proofs}
   \item[] Question: For each theoretical result, does the paper provide the full set of assumptions and a complete (and correct) proof?
