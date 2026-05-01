@@ -57,14 +57,22 @@ Day 3 (2026-05-02):
 - Verified SSDG framing remains "conceptual framework" with falsifiable hypotheses (no overclaim)
 - Verified all table captions clearly distinguish modes (isolation vs deployment vs diagnostic)
 
-## Compile state
+## Compile state (post codex 3rd-look fixes)
 
-- `paper/main-neurips-2026.pdf` (310KB, 18 pages)
-- Pages 1-9: main body (within NeurIPS 9-content-page limit)
-- Page 10: bibliography (does not count)
-- Pages 11-18: appendices including Reproducibility Index (does not count)
+- `paper/main-neurips-2026.pdf` (322KB, 18 pages)
+- **Pages 1-9: main body, strict NeurIPS 9-content-page compliant**
+  (Conclusion fully on page 9 via `\enlargethispage{2\baselineskip}` before
+  §Related Work; nothing main-body bleeds to page 10)
+- Page 10: pure bibliography (does not count)
+- Pages 11-18: appendices (Reproducibility Index, Eight Categories,
+  Comparison with Existing Taxonomies, Controlled Experiment Full Detail,
+  SSDG Experimental Predictions, Production Deployment Evidence,
+  Extended Discussion, Extended Future Work, Author Contributions
+  placeholder, NeurIPS Paper Checklist)
 - All cross-refs resolved (no "Table ??", "Section ??", or undefined refs)
 - Anonymized via default neurips_2026.sty (Anonymous Author(s) appears in compiled PDF)
+- AgentHarm headline updated 100%→97.7% on full N=176+176 with locked
+  deepseek-chat L3 (reproduced 2026-05-02, ~36min, ~$3)
 
 ## arxiv-submission package
 
