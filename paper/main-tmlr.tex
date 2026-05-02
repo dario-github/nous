@@ -1400,11 +1400,14 @@ P(r_0, a_0) & P(r_0, a_1) \\
 P(r_1, a_0) & P(r_1, a_1)
 \end{pmatrix}
 = \begin{pmatrix}
-0.4525 & 0.0475 \\
-0.0475 & 0.4525
+0.43 & 0.07 \\
+0.07 & 0.43
 \end{pmatrix},
 \]
-and the action marginal $K_G(y_A) = (0.5, 0.5)$. The $do$-conditionals are
+where each entry is computed by marginalizing $R$ out of the joint:
+e.g.~$P(r_0, a_0) = P(R{=}0)\,P(U_E \ge 0.95)\,P(U_A \ge 0.9) + P(R{=}1)\,P(U_E < 0.95)\,P(U_A < 0.9) \cdot \mathbf{1}\{R{=}1 \to Y_R{=}0\}$
+under the SCM above $= 0.5{\cdot}0.95{\cdot}0.9 + 0.5{\cdot}0.05{\cdot}0.1 = 0.43$.
+The action marginal is $K_G(y_A) = (0.5, 0.5)$. The $do$-conditionals are
 $K_G^{do(R = r_1)}(\cdot_A) = (0.1, 0.9)$ versus
 $K_G^{do(R = r_0)}(\cdot_A) = (0.9, 0.1)$, so
 $L(M_G) = 1 > 0$ --- the agent is faithful.
@@ -1412,14 +1415,14 @@ $L(M_G) = 1 > 0$ --- the agent is faithful.
 \paragraph{Construct $\pi_D$ via Lemmas A and B.}
 Disintegration (\Cref{lem:A}) gives the action-first factorization
 $K_G(y_R, y_A) = K_G(y_A) \cdot K_G(y_R \mid y_A)$ where
-$K_G(y_R = r_1 \mid y_A = a_1) = 0.4525 / 0.5 = 0.905$ and
-$K_G(y_R = r_1 \mid y_A = a_0) = 0.0475 / 0.5 = 0.095$.
+$K_G(y_R = r_1 \mid y_A = a_1) = 0.43 / 0.5 = 0.86$ and
+$K_G(y_R = r_1 \mid y_A = a_0) = 0.07 / 0.5 = 0.14$.
 Noise outsourcing (\Cref{lem:B}) realizes each factor as a structural
 equation:
 \begin{align*}
 Y_A^D &= \mathbf{1}\{U_A' < 0.5\}, &\quad U_A' \sim \mathrm{Unif}(0,1), \\
 R^D   &= \mathbf{1}\{U_R' < 0.5\}, &\quad U_R' \sim \mathrm{Unif}(0,1) \;\;\text{independent}, \\
-Y_R^D &= Y_A^D \cdot \mathbf{1}\{U_E' < 0.905\} + (1 - Y_A^D) \cdot \mathbf{1}\{U_E' < 0.095\},
+Y_R^D &= Y_A^D \cdot \mathbf{1}\{U_E' < 0.86\} + (1 - Y_A^D) \cdot \mathbf{1}\{U_E' < 0.14\},
 &\quad U_E' \sim \mathrm{Unif}(0,1).
 \end{align*}
 Crucially, $f_A^D$ does not take $R^D$ (or $U_R'$) as argument, so
