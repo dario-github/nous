@@ -424,7 +424,7 @@ and yet which produces statistically identical $(Y_R, Y_A)$ transcripts on
 every adaptive auditing protocol of every finite length.} The faithful agent
 and its decorative twin therefore induce the same observable channel: an
 auditor restricted to $(Y_R, Y_A)$ samples cannot certify --- with arbitrary
-budget, arbitrarily clever query strategy, or arbitrarily large $Q$ --- that
+budget, arbitrarily clever query strategy, or any finite $Q$ --- that
 the agent it is talking to is the faithful one. This is what makes
 auditing for \emph{causal reasoning faithfulness} a fundamentally different
 problem from auditing output reliability, action safety, or benchmark
@@ -603,13 +603,16 @@ consequences for LLM-agent auditing methodology:
 
 \begin{itemize}
   \item \emph{Behavioral evals cannot certify reasoning faithfulness.}
-  Any audit that consumes only $(Y_R, Y_A)$ pairs --- including
-  chain-of-thought consistency checks, self-consistency aggregation
-  \citep{wang2022selfconsistency}, judge-LLM rubrics, perturbation studies
-  on the prompt, or the family of context-coherence metrics we ourselves
-  attempted (\Cref{sec:empirical}) --- assigns the same score to $\pi_G$
-  and $\pi_D$ by construction. A method that scores $\pi_G$ above $\pi_D$
-  would falsify Theorem~\ref{thm:transcript-indist}(iv).
+  Any audit statistic that consumes only finite closed-API transcripts of
+  $(Y_R, Y_A)$ pairs --- including chain-of-thought consistency checks,
+  self-consistency aggregation \citep{wang2022selfconsistency}, judge-LLM
+  rubrics, perturbation studies on the prompt, or the family of
+  context-coherence metrics we ourselves attempted
+  (\Cref{sec:empirical}) --- has the same law under $\pi_G$ and $\pi_D$
+  by construction. In particular, any population score or expected score
+  computed from the transcript law is identical for the two agents. A
+  method that systematically scores $\pi_G$ above $\pi_D$ from such
+  transcripts would contradict Theorem~\ref{thm:transcript-indist}(iv).
   \item \emph{The bound is not weakened by query budget or adaptivity.}
   Clauses (iv)-(v) hold for every adaptive auditor and every finite $Q$,
   so neither ``run it on more inputs'' nor ``run it adversarially'' is an
