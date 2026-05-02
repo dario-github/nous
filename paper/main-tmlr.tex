@@ -17,6 +17,7 @@
 \usepackage[preprint]{tmlr-style/tmlr}
 \usepackage{amsmath,amssymb,amsfonts,amsthm,mathtools}
 \usepackage{booktabs,multirow}
+\usepackage{diagbox}
 \usepackage{xcolor}
 \usepackage{graphicx}
 \usepackage{tikz}
@@ -1225,13 +1226,15 @@ with mild $Y_A$-coupling and $\mathrm{Uniform}[-0.01, 0.01]$ per-cell noise so
 that the conditional kernel is non-degenerate. Hence $L(M_G) > 0$ by
 construction.
 
-For each $n \in \{100, 500, 2000\}$ samples per context, we form the empirical
-joint estimator $\hat K_G(y_R, y_A \mid c)$ as in
-\Cref{prop:finite-alphabet} (Laplace-smoothed by $10^{-6}$) and realize the
-decorative agent $\pi_D^\varepsilon$ via the structural decomposition of
-\Cref{thm:transcript-indist} where $f_A^D$ has no $R^D$ argument. We sample
-$300$ training transcripts per agent and $200$ test transcripts per agent at
-each $Q \in \{10, 50, 200\}$ under a fixed uniform-over-$\C$ auditor.
+For each $n \in \{100, 200, 500, 1000, 2000\}$ samples per context, we
+form the empirical joint estimator $\hat K_G(y_R, y_A \mid c)$ as in
+\Cref{prop:finite-alphabet} (Laplace-smoothed by $10^{-6}$) and realize
+the decorative agent $\pi_D^\varepsilon$ via the structural decomposition
+of \Cref{thm:transcript-indist} where $f_A^D$ has no $R^D$ argument. We
+sample $300$ training transcripts per agent and $200$ test transcripts
+per agent at each $Q \in \{1, 5, 10, 25, 50, 100, 200, 500\}$ under a
+fixed uniform-over-$\C$ auditor; the entire grid is repeated under
+$5$ random seeds and we report mean $\pm$ standard deviation bands.
 
 The auditor distinguisher is an $\ell_2$-regularized logistic regression
 ($\lambda = 10^{-3}$, $200$ epochs, $\mathrm{lr} = 0.05$) on a
@@ -1240,45 +1243,46 @@ bag-of-$(c, y_R, y_A)$-triples count vector of dimension $|\C| \cdot |\YR|
 the per-context TV $\dtv(K_G(\cdot \mid c), \hat K_G(\cdot \mid c))$.
 
 \paragraph{Results.}
-\Cref{tab:toy-results} summarizes a single seeded run (\texttt{seed = 20260427}),
-and \Cref{fig:auc-curve} plots AUC against the auditor budget $Q$ for each $n$.
+\Cref{tab:toy-results} summarizes the $5 \times 8 = 40$-cell grid
+averaged over $5$ seeds (\texttt{seed} $\in \{20260427,\ldots,20260501\}$),
+and \Cref{fig:auc-curve} plots AUC against the auditor budget $Q$ for
+each $n$ with shaded $\pm$ std bands.
 Three regularities are visible.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.78\linewidth]{toy-validation/auc-vs-Q.pdf}
-\caption{Transcript-classifier AUC versus auditor budget $Q$ at three
-distillation budgets $n$. Higher $n$ shrinks the per-context $\sup_c \dtv$ and
-flattens the AUC curve: at $n = 2000$ ($\sup_c \dtv \approx 0.05$), $Q = 10$
-yields random AUC; at $n = 100$ ($\sup_c \dtv \approx 0.26$), $Q = 200$ already
-saturates. The dashed reference is the bound $0.5 + \min(1, Q\varepsilon)/2$
-from Theorem~\ref{thm:approx} evaluated at $\varepsilon = \overline{\sup_c \dtv}$
-for $n=2000$.}
+\caption{Transcript-classifier AUC versus auditor budget $Q \in \{1,
+5, 10, 25, 50, 100, 200, 500\}$ at five distillation budgets $n \in
+\{100, 200, 500, 1000, 2000\}$ (mean over $5$ random seeds; shaded
+bands are $\pm$ standard deviation; dashed faint curves are the
+$0.5 + \min(1, Q\varepsilon)/2$ bound from \Cref{thm:approx} at
+$\varepsilon = \overline{\sup_c \dtv}$ per $n$). Higher $n$ shrinks
+$\sup_c \dtv$ from $0.265$ at $n=100$ to $0.060$ at $n=2000$ and
+delays AUC saturation: at $n=100$ AUC saturates by $Q=100$; at
+$n=2000$ AUC reaches only $0.91$ at $Q=500$.}
 \label{fig:auc-curve}
 \end{figure}
 
 \begin{table}[h]
 \centering\small
-\begin{tabular}{rrrrrr}
+\begin{tabular}{c|cccccccc}
 \toprule
-$n$ & $Q$ & $\sup_c \dtv$ & $\overline{\dtv}$ & $Q \cdot \sup \dtv$ & AUC \\
+\diagbox{$n$}{$Q$} & 1 & 5 & 10 & 25 & 50 & 100 & 200 & 500 \\
 \midrule
-100  & 10  & 0.268 & 0.214 & 2.68  & 0.764 \\
-100  & 50  & 0.239 & 0.207 & 11.95 & 0.979 \\
-100  & 200 & 0.256 & 0.212 & 51.17 & 1.000 \\
-\midrule
-500  & 10  & 0.112 & 0.094 & 1.12  & 0.584 \\
-500  & 50  & 0.119 & 0.094 & 5.95  & 0.821 \\
-500  & 200 & 0.123 & 0.098 & 24.65 & 0.986 \\
-\midrule
-2000 & 10  & 0.060 & 0.049 & 0.60  & 0.499 \\
-2000 & 50  & 0.051 & 0.045 & 2.53  & 0.557 \\
-2000 & 200 & 0.052 & 0.044 & 10.46 & 0.781 \\
+100  & .550\,\textsubscript{$\pm$.02} & .652\,\textsubscript{$\pm$.05} & .758\,\textsubscript{$\pm$.02} & .927\,\textsubscript{$\pm$.01} & .981\,\textsubscript{$\pm$.01} & \textbf{.999} & \textbf{1.00} & \textbf{1.00} \\
+200  & .538\,\textsubscript{$\pm$.02} & .597\,\textsubscript{$\pm$.02} & .658\,\textsubscript{$\pm$.02} & .806\,\textsubscript{$\pm$.03} & .922\,\textsubscript{$\pm$.01} & .988\,\textsubscript{$\pm$.00} & \textbf{1.00} & \textbf{1.00} \\
+500  & .511\,\textsubscript{$\pm$.01} & .530\,\textsubscript{$\pm$.05} & .597\,\textsubscript{$\pm$.01} & .654\,\textsubscript{$\pm$.02} & .783\,\textsubscript{$\pm$.01} & .898\,\textsubscript{$\pm$.02} & .979\,\textsubscript{$\pm$.01} & .999\,\textsubscript{$\pm$.00} \\
+1000 & .504\,\textsubscript{$\pm$.02} & .525\,\textsubscript{$\pm$.03} & .532\,\textsubscript{$\pm$.03} & .612\,\textsubscript{$\pm$.03} & .683\,\textsubscript{$\pm$.02} & .814\,\textsubscript{$\pm$.03} & .910\,\textsubscript{$\pm$.02} & .987\,\textsubscript{$\pm$.00} \\
+2000 & .501\,\textsubscript{$\pm$.03} & .520\,\textsubscript{$\pm$.04} & .487\,\textsubscript{$\pm$.02} & .544\,\textsubscript{$\pm$.03} & .608\,\textsubscript{$\pm$.03} & .695\,\textsubscript{$\pm$.03} & .800\,\textsubscript{$\pm$.03} & .912\,\textsubscript{$\pm$.03} \\
 \bottomrule
 \end{tabular}
-\caption{Toy validation. $n$ samples per context distill the joint kernel; $Q$ is
-the auditor budget; $\sup_c \dtv$ is the worst-case per-context TV between $K_G$
-and $\hat K_G$; AUC is the held-out classifier AUC. Source data:
+\caption{Toy validation: held-out transcript classifier AUC across
+$5 \times 8$ grid of $(n, Q)$, mean $\pm$ std over $5$ seeds.
+Per-$n$ averaged $\sup_c \dtv$: $n=100$: $0.265$, $n=200$: $0.184$,
+$n=500$: $0.125$, $n=1000$: $0.083$, $n=2000$: $0.060$ (so
+$\sup_c \dtv \propto n^{-1/2}$ as predicted by
+\Cref{prop:finite-alphabet}). Source data:
 \texttt{paper/toy-validation/results.json}.}
 \label{tab:toy-results}
 \end{table}
@@ -1289,13 +1293,15 @@ and $\hat K_G$; AUC is the held-out classifier AUC. Source data:
     with the $O(m^2 \varepsilon^{-2} \log(|\C| m / \delta))$ rate of
     \Cref{prop:finite-alphabet}.
   \item \emph{The $Q\varepsilon$ shape is observable}: at fixed $n = 2000$,
-    AUC moves from $0.499$ (random) at $Q = 10$ to $0.781$ at $Q = 200$,
+    AUC moves from $0.501 \pm 0.03$ (random) at $Q=1$ through
+    $0.487 \pm 0.02$ at $Q=10$ to $0.912 \pm 0.03$ at $Q=500$,
     paralleling the bound's monotone-in-$Q$ growth.
-  \item \emph{$Q\varepsilon \gg 1$ saturates}: at $n = 100$, $Q = 200$,
-    $Q \cdot \sup \dtv \approx 51 \gg 1$, and the classifier achieves
-    $\mathrm{AUC} = 1.000$. The $\min(1, Q\varepsilon)$ clipping in
-    \Cref{thm:approx} is the relevant regime; classifier-class confounding
-    cannot rescue indistinguishability once $Q\varepsilon$ is large.
+  \item \emph{$Q\varepsilon \gg 1$ saturates}: at $n = 100$, $Q = 100$,
+    $Q \cdot \sup_c \dtv \approx 27 \gg 1$, and the classifier achieves
+    $\mathrm{AUC} = 0.999$ (saturating to $1.000$ by $Q=200$). The
+    $\min(1, Q\varepsilon)$ clipping in \Cref{thm:approx} is the
+    relevant regime; classifier-class confounding cannot rescue
+    indistinguishability once $Q\varepsilon$ is large.
 \end{enumerate}
 
 \paragraph{Caveats.}

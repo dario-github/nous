@@ -1,13 +1,14 @@
 """Generate Figure 3: AUC vs Q curve for toy validation.
 
-Reads paper/toy-validation/results.json, produces paper/toy-validation/auc-vs-Q.pdf
-(vector PDF for inclusion via \\includegraphics).
+Reads paper/toy-validation/results.json (multi-seed densified grid)
+and produces paper/toy-validation/auc-vs-Q.pdf with mean ± std bands.
 """
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
+import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -23,61 +24,69 @@ with RESULTS.open() as fh:
 rows = data["rows"]
 n_values = sorted({r["n_per_context"] for r in rows})
 Q_values = sorted({r["Q"] for r in rows})
+n_seeds = data.get("n_seeds", 1)
 
-fig, ax = plt.subplots(figsize=(5.0, 3.4))
+fig, ax = plt.subplots(figsize=(6.4, 4.2))
 
-markers = {100: "o", 500: "s", 2000: "^"}
-colors = {100: "#d62728", 500: "#ff7f0e", 2000: "#2ca02c"}
+# Distinct color/marker per n
+n_palette = {
+    100:  ("#b2182b", "o"),
+    200:  ("#ef8a62", "s"),
+    500:  ("#fddbc7", "D"),
+    1000: ("#92c5de", "v"),
+    2000: ("#2166ac", "^"),
+}
+fallback_palette = plt.cm.viridis(np.linspace(0, 0.9, max(len(n_values), 1)))
 
-for n in n_values:
-    rs = [r for r in rows if r["n_per_context"] == n]
-    rs = sorted(rs, key=lambda r: r["Q"])
-    qs = [r["Q"] for r in rs]
-    aucs = [r["auc_test"] for r in rs]
-    sup_tvs = [r["sup_TV"] for r in rs]
-    avg_sup_tv = sum(sup_tvs) / len(sup_tvs)
+for idx, n in enumerate(n_values):
+    rs = sorted([r for r in rows if r["n_per_context"] == n], key=lambda r: r["Q"])
+    qs = np.array([r["Q"] for r in rs], dtype=float)
+    aucs = np.array([r["auc_test"] for r in rs], dtype=float)
+    stds = np.array([r.get("auc_std", 0.0) for r in rs], dtype=float)
+    sup_tv_avg = float(np.mean([r["sup_TV"] for r in rs]))
+
+    color, marker = n_palette.get(n, (None, "o"))
+    if color is None:
+        color = fallback_palette[idx]
+
     ax.plot(
         qs, aucs,
-        marker=markers[n],
-        color=colors[n],
-        linewidth=1.4,
-        markersize=6,
-        label=fr"$n={n}$  ($\overline{{\sup_c d_{{\mathrm{{TV}}}}}} \approx {avg_sup_tv:.3f}$)",
+        marker=marker, color=color,
+        linewidth=1.6, markersize=6, markerfacecolor=color, markeredgecolor="black",
+        markeredgewidth=0.5,
+        label=fr"$n={n}$  ($\overline{{\sup_c\,d_{{\mathrm{{TV}}}}}} \approx {sup_tv_avg:.3f}$)",
     )
+    if n_seeds > 1 and stds.max() > 0:
+        ax.fill_between(qs, aucs - stds, aucs + stds, color=color, alpha=0.18, linewidth=0)
 
-# Theoretical reference curve: AUC <= 0.5 + min(1, Q*eps)/2 with eps = sup_TV
-# Plot for n=2000 (smallest eps) as a dashed reference.
-import numpy as np
-n_ref = 2000
-ref_rows = [r for r in rows if r["n_per_context"] == n_ref]
-if ref_rows:
-    eps_ref = sum(r["sup_TV"] for r in ref_rows) / len(ref_rows)
-    qs_dense = np.linspace(min(Q_values), max(Q_values), 100)
-    auc_ref = 0.5 + np.minimum(1.0, qs_dense * eps_ref) / 2.0
-    ax.plot(
-        qs_dense, auc_ref,
-        linestyle="--", color=colors[n_ref], alpha=0.45, linewidth=1.0,
-        label=fr"bound $0.5 + \min(1, Q\varepsilon)/2$ at $n={n_ref}$",
-    )
+# Theoretical reference curves (one per n, dashed faint): AUC ≤ 0.5 + min(1, Q*eps)/2
+qs_dense = np.geomspace(min(Q_values), max(Q_values), 200)
+for idx, n in enumerate(n_values):
+    rs = [r for r in rows if r["n_per_context"] == n]
+    eps = float(np.mean([r["sup_TV"] for r in rs]))
+    color, _ = n_palette.get(n, (fallback_palette[idx], "o"))
+    auc_bound = 0.5 + np.minimum(1.0, qs_dense * eps) / 2.0
+    ax.plot(qs_dense, auc_bound, linestyle="--", color=color, alpha=0.35, linewidth=0.9)
 
-# Random-guess line
+# Random-guess + saturation
 ax.axhline(0.5, linestyle=":", color="grey", linewidth=0.8, alpha=0.7)
-ax.text(11, 0.512, "random", fontsize=8, color="grey")
-
-# Saturation line
 ax.axhline(1.0, linestyle=":", color="grey", linewidth=0.8, alpha=0.7)
+ax.text(min(Q_values), 0.515, "random", fontsize=8, color="grey")
 
 ax.set_xscale("log")
 ax.set_xticks(Q_values)
-ax.set_xticklabels([str(q) for q in Q_values])
+ax.set_xticklabels([str(int(q)) for q in Q_values])
 ax.set_yticks([0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
 ax.set_xlabel(r"auditor budget $Q$ (log scale)")
-ax.set_ylabel("transcript classifier AUC")
-ax.set_title(r"Theorem 1$'$ degradation: AUC vs. $Q$ at three distillation budgets $n$",
-             fontsize=10)
+ax.set_ylabel("transcript classifier AUC (held-out)")
+ax.set_title(
+    rf"Theorem 1$'$ degradation: AUC vs.\ $Q$ "
+    rf"(mean $\pm$ std over {n_seeds} seeds; dashed = $0.5 + \min(1, Q\varepsilon)/2$ bound)",
+    fontsize=9.5,
+)
 ax.set_ylim(0.45, 1.05)
 ax.grid(True, which="both", linestyle=":", alpha=0.4)
-ax.legend(loc="lower right", fontsize=8, framealpha=0.95)
+ax.legend(loc="lower right", fontsize=8.5, framealpha=0.95, title=fr"distillation budget")
 
 fig.tight_layout()
 fig.savefig(OUT_PDF)

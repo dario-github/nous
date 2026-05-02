@@ -228,29 +228,39 @@ def run_one_setting(
 
 def main() -> None:
     K_G = build_K_G()
-    settings = [
-        (n, q)
-        for n in [100, 500, 2000]
-        for q in [10, 50, 200]
-    ]
+    n_grid = [100, 200, 500, 1000, 2000]
+    Q_grid = [1, 5, 10, 25, 50, 100, 200, 500]
+    seeds = [20260427, 20260428, 20260429, 20260430, 20260501]  # 5 seeds for ±std bands
     rows: list[dict[str, float]] = []
-    for n, q in settings:
-        r = run_one_setting(K_G, n_per_context=n, Q=q)
-        print(
-            f"n={r.n_per_context:5d} Q={r.Q:4d}  "
-            f"sup_TV={r.sup_TV:.4f} mean_TV={r.mean_TV:.4f}  "
-            f"AUC={r.auc_test:.4f}  Q*sup_TV={r.Q * r.sup_TV:.3f}"
-        )
-        rows.append(
-            {
-                "n_per_context": r.n_per_context,
-                "Q": r.Q,
-                "sup_TV": r.sup_TV,
-                "mean_TV": r.mean_TV,
-                "Q_times_sup_TV": r.Q * r.sup_TV,
-                "auc_test": r.auc_test,
-            }
-        )
+    for n in n_grid:
+        for q in Q_grid:
+            runs = []
+            for s in seeds:
+                random.seed(s); np.random.seed(s)
+                runs.append(run_one_setting(K_G, n_per_context=n, Q=q))
+            aucs = [r.auc_test for r in runs]
+            sup_tvs = [r.sup_TV for r in runs]
+            mean_tvs = [r.mean_TV for r in runs]
+            auc_mean = float(np.mean(aucs))
+            auc_std = float(np.std(aucs, ddof=1))
+            sup_tv_mean = float(np.mean(sup_tvs))
+            mean_tv_mean = float(np.mean(mean_tvs))
+            print(
+                f"n={n:5d} Q={q:4d}  "
+                f"sup_TV={sup_tv_mean:.4f} mean_TV={mean_tv_mean:.4f}  "
+                f"AUC={auc_mean:.4f}±{auc_std:.4f}  Q*sup_TV={q * sup_tv_mean:.3f}"
+            )
+            rows.append({
+                "n_per_context": n,
+                "Q": q,
+                "sup_TV": sup_tv_mean,
+                "mean_TV": mean_tv_mean,
+                "Q_times_sup_TV": q * sup_tv_mean,
+                "auc_test": auc_mean,
+                "auc_std": auc_std,
+                "auc_per_seed": aucs,
+                "n_seeds": len(seeds),
+            })
 
     out_dir = Path(__file__).resolve().parent.parent / "paper" / "toy-validation"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -258,8 +268,11 @@ def main() -> None:
     with out.open("w") as fh:
         json.dump(
             {
-                "seed": SEED,
+                "seeds": seeds,
+                "n_seeds": len(seeds),
                 "alphabets": {"NC": NC, "NA": NA, "NR": NR},
+                "Q_grid": Q_grid,
+                "n_grid": n_grid,
                 "n_train_per_label": 300,
                 "n_test_per_label": 200,
                 "rows": rows,
