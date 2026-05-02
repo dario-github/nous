@@ -24,10 +24,14 @@ submit.
     Future Work, NeurIPS Paper Checklist)
 - **`paper/arxiv-submission/main-neurips-arxiv.zip`** (350 KB)
   — self-contained source + bbl + bib + style + PDF
+- **`paper/arxiv-submission/nous-supplementary.zip`** (487 KB) —
+  anonymized OpenReview supplementary code drop, extract-and-run
+  smoke-verified (105 lsvj tests pass + full_benchmark_eval runs)
 - **`paper/FREEZE-NOTE-2026-05-02.md`** — full claim-to-command audit
   + lessons + open weaknesses
-- **`paper/main-tmlr.pdf`** — Impossibility Theorem companion paper
-  (no deadline, also up-to-date)
+- **`paper/main-tmlr.pdf`** + **`paper/arxiv-submission/main-tmlr-arxiv-v2.zip`**
+  (768 KB w/ toy-validation figures) — Impossibility Theorem companion
+  paper, numbers synced to NeurIPS frame, no deadline pressure
 
 ## Today's commits (11 local, NOT pushed yet)
 
