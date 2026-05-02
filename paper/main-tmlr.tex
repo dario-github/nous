@@ -1005,10 +1005,13 @@ of these benchmarks must respect.
 \paragraph{Companion paper (this group).}
 The present paper is a theoretical companion to our own prior empirical
 work, \citet{zhang2026ownerharm}, which builds an action-policy
-\emph{Owner-Harm} safety system that achieves $100\%$ TPR / $0\%$ FPR on
-AgentHarm \citep{andriushchenko2025agentharm} but only $14.8\%$ TPR on
-AgentDojo prompt-injection tasks, and proposes the Symbolic-Semantic
-Defense Generalization (SSDG) framework. The two papers are deliberately
+\emph{Owner-Harm} safety system that achieves $97.7\%$ TPR / $2.3\%$
+FPR on AgentHarm \citep{andriushchenko2025agentharm} (full
+$N{=}176{+}176$, L1+L2+L3 with locked DeepSeek-chat L3) but only
+$3.7\%$ TPR on AgentDojo prompt-injection tasks (deterministic L1+L4;
+the legacy $14.8\%$ L1+L3+L4 \texttt{qwen-turbo} configuration is no
+longer reproducible), and proposes the Symbolic-Semantic Defense
+Generalization (SSDG) framework. The two papers are deliberately
 non-overlapping in target object: \citet{zhang2026ownerharm} is about
 \emph{which actions} an agent must not take, and is auditable from the
 action distribution under a closed API; the present paper is about the
