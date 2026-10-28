@@ -52,7 +52,7 @@ and exposes [llms.txt](llms.txt) as a structured index.
 | **L4 verifier** | `src/nous/verifier.py` | 6 deterministic audit rules + content scan, +0.038 ms / call |
 | **KG store** | `src/nous/db.py` | Cozo embedded Datalog + vector + FTS |
 | **AgentDojo adapter** | `benchmarks/agentdojo_adapter/` | Real LLM-pipeline wrapper for paper §4 deployment-mode runs |
-| **Owner-Harm v3 dataset** | `data/owner_harm_heldout_v3.json` | 300 H + 150 B held-out slice (paper §3.3) |
+| **Owner-Harm v3 dataset** | `data/owner_harm_heldout_v3.json` | 300 H + 150 B author-built diagnostic slice, frozen before evaluation; not an independent validation set (paper §3.3) |
 
 ---
 
@@ -67,8 +67,14 @@ LLM-pipeline.
 | AgentDojo (banking + slack + travel + workspace) | Isolation | 96.3 % | 75.0 % | 27 |
 | AgentDojo | Deployment | 95.9 % | 75.0 % | 629 |
 | AgentHarm (val) | Isolation | 100.0 % | — | 176 H + 176 B |
-| Owner-centric held-out v3, gate L1–L3 | Isolation | 75.3 % | 3.3 % FPR | 300 H + 150 B |
-| Owner-centric held-out v3, full L1–L4 | Isolation | 85.3 % | 3.3 % FPR | 300 H + 150 B |
+| Owner-Harm v3 diagnostic†, gate L1–L3 | Isolation | 75.3 % | 3.3 % FPR | 300 H + 150 B |
+| Owner-Harm v3 diagnostic†, full L1–L4 | Isolation | 85.3 % | 3.3 % FPR | 300 H + 150 B |
+
+† Owner-Harm v3 was built by the first author after the optimization
+loops and labeled by a single annotator. It was hash-frozen before any
+of these numbers were computed, but it is a post-hoc diagnostic, not an
+independent held-out validation set. See the paper's Owner-Harm
+Benchmark section.
 
 On the hijacking sub-slice the gate (L1–L3) and the post-gate verifier
 (L4) cover near-disjoint failure modes: 11 caught by gate alone, 30 by

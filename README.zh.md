@@ -49,7 +49,7 @@ L4 确定性后置验证。知识图谱负责事后审计的上下文增强。
 | **L4 后置验证** | `src/nous/verifier.py` | 6 条审计规则 + 内容扫描，单调用 +0.038 ms |
 | **KG 存储** | `src/nous/db.py` | Cozo 嵌入式 Datalog + 向量 + FTS |
 | **AgentDojo 适配器** | `benchmarks/agentdojo_adapter/` | 真实 LLM-pipeline 包装，论文 §4 部署模式跑分 |
-| **Owner-Harm v3 数据集** | `data/owner_harm_heldout_v3.json` | 300 H + 150 B held-out 切片（论文 §3.3） |
+| **Owner-Harm v3 数据集** | `data/owner_harm_heldout_v3.json` | 300 H + 150 B 作者自建的诊断集，评测前冻结；不是独立的验证集（论文 §3.3） |
 
 ---
 
@@ -63,8 +63,11 @@ L4 确定性后置验证。知识图谱负责事后审计的上下文增强。
 | AgentDojo（banking + slack + travel + workspace） | 隔离 | 96.3 % | 75.0 % | 27 |
 | AgentDojo | 部署 | 95.9 % | 75.0 % | 629 |
 | AgentHarm（val） | 隔离 | 100.0 % | — | 176 H + 176 B |
-| Owner-centric held-out v3，gate L1–L3 | 隔离 | 75.3 % | 3.3 % FPR | 300 H + 150 B |
-| Owner-centric held-out v3，full L1–L4 | 隔离 | 85.3 % | 3.3 % FPR | 300 H + 150 B |
+| Owner-Harm v3 诊断集†，gate L1–L3 | 隔离 | 75.3 % | 3.3 % FPR | 300 H + 150 B |
+| Owner-Harm v3 诊断集†，full L1–L4 | 隔离 | 85.3 % | 3.3 % FPR | 300 H + 150 B |
+
+† Owner-Harm v3 由第一作者在调优之后构建，单人标注；评测前已用哈希冻结，
+但它是事后诊断集，不是独立的留出验证集。详见论文 Owner-Harm Benchmark 一节。
 
 hijacking 子片上 gate (L1–L3) 与后置验证 (L4) 盲区几乎不重合：仅 gate
 抓 11 例、仅 verifier 抓 30 例、两者都抓 15 例、都漏 4 例。
