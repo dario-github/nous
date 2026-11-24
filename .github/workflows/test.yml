@@ -44,6 +44,7 @@ jobs:
           pytest tests/lsvj/ \
                  tests/test_scallop_sidecar.py \
                  tests/test_gateway_hook.py \
+                 tests/test_audit_owner_harm.py \
                  -v --tb=short
 
       - name: Schema 完整性检查
